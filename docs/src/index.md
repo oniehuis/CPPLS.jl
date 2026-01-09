@@ -35,7 +35,7 @@ julia> using CPPLS
 - Optional preprocessing utilities so that scaling, centering, or other chemometric
   transformations can be folded into the modeling workflow.
 
-## Quick taste
+## Quickstart
 
 ```@example 1
 using CPPLS
@@ -88,9 +88,11 @@ unlikely to arise from chance alone.
 
 ## Disclaimer
 
-CPPLS is research software provided “as is.” You remain responsible for validating every 
-discriminant analysis and any downstream decision or deployment based on these models; 
-the authors cannot be held liable if the algorithms produce misleading or incorrect results.
+CPPLS is provided "as is," without warranty of any kind. Users are responsible for
+independently validating all outputs and interpretations and for determining suitability
+for their specific applications. The authors and contributors disclaim any liability for
+errors, omissions, or any consequences arising from use of the software, including use
+in regulated, clinical, or safety-critical contexts.
 
 ## References
 

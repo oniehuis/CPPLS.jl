@@ -61,6 +61,44 @@ function random_batch_indices(
     batches
 end
 
+function resolve_observation_weights(
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+    observation_weights_fn::Union{Function,Nothing},
+    labels_train::AbstractVector,
+    train_indices::AbstractVector{<:Integer},
+    total_samples::Integer,
+)
+    if observation_weights_fn !== nothing
+        observation_weights === nothing || throw(
+            ArgumentError(
+                "Provide either observation_weights or observation_weights_fn, not both.",
+            ),
+        )
+        weights = observation_weights_fn(labels_train)
+        length(weights) == length(labels_train) || throw(
+            ArgumentError(
+                "observation_weights_fn must return a vector matching the number of training samples.",
+            ),
+        )
+        return weights
+    end
+
+    if observation_weights === nothing
+        return nothing
+    end
+
+    if length(observation_weights) == total_samples
+        return observation_weights[train_indices]
+    end
+
+    length(observation_weights) == length(train_indices) || throw(
+        ArgumentError(
+            "Length of observation_weights must match the total sample count or the number of training samples.",
+        ),
+    )
+    observation_weights
+end
+
 const CV_REGRESSION_MESSAGE = "CPPLS cross-validation currently supports only discriminant-analysis responses because the evaluation metric (NMC) is classification-specific."
 
 cv_regression_error(caller::AbstractString) =
@@ -75,6 +113,7 @@ cv_regression_error(caller::AbstractString) =
         num_inner_folds_repeats::Integer,
         gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}},
         observation_weights::Union{AbstractVector{<:Real},Nothing},
+        observation_weights_fn::Union{Function,Nothing},
         Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
         center::Bool,
         X_tolerance::Real,
@@ -99,7 +138,10 @@ count. Argument summary:
   both; forwarded to `fit_cppls_light`. Scalars keep γ fixed for every component,
   while tuples/vectors let each component pick the best γ from the shared
   candidate set.
-- `observation_weights`: optional weight vector matching the training rows.
+- `observation_weights`: optional weight vector matching the training rows (or the
+  full outer-training set; weights are subset per inner split).
+- `observation_weights_fn`: optional function `labels -> weights` recomputed per
+  inner split. Provide either `observation_weights` or `observation_weights_fn`.
 - `Y_auxiliary`: optional auxiliary response matrix aligned with `Y_train_full`.
 - `center`: `Bool` toggling mean-centering in the inner fits.
 - `X_tolerance`, `X_loading_weight_tolerance`, `t_squared_norm_tolerance`,
@@ -152,6 +194,7 @@ function optimize_num_latent_variables(
         <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
+    observation_weights_fn::Union{Function,Nothing},
     Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
@@ -184,6 +227,15 @@ function optimize_num_latent_variables(
         @views X_train = X_train_full[train_indices, :]
         @views Y_train = Y_train_full[train_indices, :]
 
+        labels_train = one_hot_to_labels(Y_train)
+        inner_weights = resolve_observation_weights(
+            observation_weights,
+            observation_weights_fn,
+            labels_train,
+            train_indices,
+            n_samples,
+        )
+
         Y_auxiliary_train =
             Y_auxiliary !== nothing ? Y_auxiliary[train_indices, :] : Y_auxiliary
 
@@ -194,7 +246,7 @@ function optimize_num_latent_variables(
             Y_train,
             max_components,
             gamma = gamma,
-            observation_weights = observation_weights,
+            observation_weights = inner_weights,
             Y_auxiliary = Y_auxiliary_train,
             center = center,
             X_tolerance = X_tolerance,
@@ -237,6 +289,7 @@ function optimize_num_latent_variables(
         <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
+    observation_weights_fn::Union{Function,Nothing},
     Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
@@ -263,6 +316,7 @@ function optimize_num_latent_variables(
         <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
+    observation_weights_fn::Union{Function,Nothing},
     Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
@@ -283,6 +337,7 @@ function optimize_num_latent_variables(
         num_inner_folds_repeats,
         gamma,
         observation_weights,
+        observation_weights_fn,
         Y_auxiliary,
         center,
         X_tolerance,
@@ -308,6 +363,7 @@ function optimize_num_latent_variables(
         <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
+    observation_weights_fn::Union{Function,Nothing},
     Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
@@ -326,16 +382,17 @@ function optimize_num_latent_variables(
         optimize_num_latent_variables(
             X_train_full,
             Y_train_full,
-            max_components,
-            num_inner_folds,
-            num_inner_folds_repeats,
-            gamma,
-            observation_weights,
-            Y_auxiliary,
-            center,
-            X_tolerance,
-            X_loading_weight_tolerance,
-            t_squared_norm_tolerance,
+        max_components,
+        num_inner_folds,
+        num_inner_folds_repeats,
+        gamma,
+        observation_weights,
+        observation_weights_fn,
+        Y_auxiliary,
+        center,
+        X_tolerance,
+        X_loading_weight_tolerance,
+        t_squared_norm_tolerance,
             gamma_rel_tol,
             gamma_abs_tol,
             weighted_nmc,
@@ -349,6 +406,7 @@ end
     nested_cv(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Integer};
         gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
+        observation_weights_fn::Union{Function,Nothing}=nothing,
         Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
@@ -375,7 +433,10 @@ Top-level nested CV driver for CPPLS. Parameter overview:
   passed to `fit_cppls_light`. Scalars enforce a single γ for all components,
   whereas tuples/vectors share candidate ranges from which each component selects
   its own optimum.
-- `observation_weights`: optional sample weights; `Y_auxiliary`: extra response features.
+- `observation_weights`: optional sample weights (full-length vectors are subset per
+  fold); `observation_weights_fn`: optional function `labels -> weights` recomputed
+  per training split (provide one or the other).
+- `Y_auxiliary`: extra response features.
 - `center`: toggle mean-centering; tolerances control numerical stability inside
   inner fits; `weighted_nmc` chooses between weighted/unweighted misclassification cost.
 - `num_outer_folds`, `num_outer_folds_repeats`: number of outer stratified folds
@@ -427,8 +488,13 @@ true
 function nested_cv(
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Integer};
-    gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
+    gamma::Union{
+        <:T1,
+        <:NTuple{2,T1},
+        <:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}},
+    } = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    observation_weights_fn::Union{Function,Nothing} = nothing,
     Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -481,6 +547,16 @@ function nested_cv(
         @views X_train = X_predictors[train_indices, :]
         @views Y_train = Y_responses[train_indices, :]
 
+        labels_train = one_hot_to_labels(Y_train)
+        outer_weights = resolve_observation_weights(
+            observation_weights,
+            observation_weights_fn,
+            labels_train,
+            train_indices,
+            n_samples,
+        )
+        inner_weights = observation_weights_fn === nothing ? outer_weights : nothing
+
         Y_auxiliary_train =
             Y_auxiliary !== nothing ? Y_auxiliary[train_indices, :] : Y_auxiliary
 
@@ -491,7 +567,8 @@ function nested_cv(
             num_inner_folds,
             num_inner_folds_repeats,
             gamma,
-            observation_weights,
+            inner_weights,
+            observation_weights_fn,
             Y_auxiliary_train,
             center,
             X_tolerance,
@@ -509,7 +586,7 @@ function nested_cv(
             Y_train,
             optimal_num_latent_variables[outer_fold_idx],
             gamma = gamma,
-            observation_weights = observation_weights,
+            observation_weights = outer_weights,
             Y_auxiliary = Y_auxiliary_train,
             center = center,
             X_tolerance = X_tolerance,
@@ -564,6 +641,7 @@ end
     nested_cv_permutation(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Integer};
         gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
+        observation_weights_fn::Union{Function,Nothing}=nothing,
         Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
@@ -585,7 +663,7 @@ Permutation-based significance test for the nested CV pipeline. Keywords mirror
 `nested_cv` but with explicit defaults suited for permutation tests. Parameter
 summary:
 
-- `gamma`, `observation_weights`, `Y_auxiliary`, `center`, tolerances,
+- `gamma`, `observation_weights`, `observation_weights_fn`, `Y_auxiliary`, `center`, tolerances,
   `weighted_nmc`: forwarded directly into each nested CV call. Only discriminant
   responses (integer one-hot matrices or categorical vectors) are supported because
   the scoring metric is classification-specific.
@@ -647,6 +725,7 @@ function nested_cv_permutation(
     Y_responses::AbstractMatrix{<:Integer};
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    observation_weights_fn::Union{Function,Nothing} = nothing,
     Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -694,6 +773,7 @@ function nested_cv_permutation(
             shuffled_Y_responses;
             gamma = gamma,
             observation_weights = observation_weights,
+            observation_weights_fn = observation_weights_fn,
             Y_auxiliary = Y_auxiliary,
             center = center,
             X_tolerance = X_tolerance,

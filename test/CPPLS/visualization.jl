@@ -6,7 +6,7 @@ using Test
 const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
 const ResolveException = Makie.ComputePipeline.ResolveException
 
-function dummy_cppls(; analysis = :discriminant)
+function dummy_cppls(; analysis = :discriminant, sample_labels = String[])
     X = Float64[
         1 0
         0 1
@@ -16,10 +16,16 @@ function dummy_cppls(; analysis = :discriminant)
 
     if analysis === :discriminant
         labels = categorical(["class1", "class2", "class1", "class2"])
-        return CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
+        return CPPLS.fit_cppls(
+            X,
+            labels,
+            2;
+            gamma = 0.5,
+            sample_labels = sample_labels,
+        )
     else
         y = reshape(Float64[0.1, -0.2, 0.3, -0.4], :, 1)
-        return CPPLS.fit_cppls(X, y, 2; gamma = 0.5)
+        return CPPLS.fit_cppls(X, y, 2; gamma = 0.5, sample_labels = sample_labels)
     end
 end
 
@@ -126,6 +132,16 @@ end
     @test MakieExt.cppls_category_labels(reg_cppls) == Any[]
 end
 
+@testset "resolve_sample_labels" begin
+    cppls = dummy_cppls(sample_labels = ["S1", "S2", "S3", "S4"])
+    @test MakieExt.resolve_sample_labels(cppls, Makie.automatic, true) ==
+          ["S1", "S2", "S3", "S4"]
+    @test MakieExt.resolve_sample_labels(cppls, ["A", "B", "C", "D"], true) ==
+          ["A", "B", "C", "D"]
+    @test MakieExt.resolve_sample_labels(cppls, Makie.automatic, false) == Any[]
+    @test MakieExt.resolve_sample_labels(cppls, nothing, true) == Any[]
+end
+
 @testset "scoreplot_kwdict" begin
     kw = MakieExt.scoreplot_kwdict(NamedTuple{(:markersize,),Tuple{Int}}((12,)))
     @test haskey(kw, :markersize)
@@ -143,9 +159,9 @@ end
         ax,
         :xlabel,
         MakieExt.SCOREPLOT_AUTO_LABEL,
-        "Compound 1",
+        "Component 1",
     )
-    @test Makie.to_value(ax.xlabel) == "Compound 1"
+    @test Makie.to_value(ax.xlabel) == "Component 1"
 
     MakieExt.maybe_apply_axis_label!(ax, :xlabel, "Custom Label", "ignored")
     @test Makie.to_value(ax.xlabel) == "Custom Label"
@@ -157,7 +173,7 @@ end
 @testset "merge_axis_defaults" begin
     merged = MakieExt.merge_axis_defaults((xlabel = "X",))
     @test merged[:xlabel] == "X"
-    @test merged[:ylabel] == "Compound 2"
+    @test merged[:ylabel] == "Component 2"
 
     fallback = MakieExt.merge_axis_defaults(:not_a_tuple)
     @test fallback == MakieExt.SCOREPLOT_AXIS_DEFAULTS
@@ -187,4 +203,21 @@ end
         da_model;
         color = (:red,),
     )
+end
+
+@testset "scoreplot color helpers" begin
+    da_model = dummy_cppls()
+    mapping = CPPLS.scoreplot_color_mapping(da_model)
+    @test length(mapping) == 2
+    @test mapping["class1"] == Makie.wong_colors(2)[1]
+    @test mapping["class2"] == Makie.wong_colors(2)[2]
+
+    colors = CPPLS.scoreplot_colors(da_model, ["class2", "class1"])
+    @test colors[1] == mapping["class2"]
+    @test colors[2] == mapping["class1"]
+
+    @test_throws ArgumentError CPPLS.scoreplot_colors(da_model, ["missing"])
+
+    reg_model = dummy_cppls(analysis = :regression)
+    @test isempty(CPPLS.scoreplot_color_mapping(reg_model))
 end

@@ -227,6 +227,15 @@ function optimize_num_latent_variables(
         @views X_train = X_train_full[train_indices, :]
         @views Y_train = Y_train_full[train_indices, :]
 
+        @assert !isempty(train_indices) "inner=$inner_fold_idx: empty train set"
+        @assert !isempty(test_indices) "inner=$inner_fold_idx: empty validation set"
+        @assert size(X_train, 1) == size(Y_train, 1) "inner=$inner_fold_idx: X/Y train rows mismatch"
+        @assert size(X_validation, 1) == size(Y_validation, 1) "inner=$inner_fold_idx: X/Y val rows mismatch"
+        @assert all(isfinite, X_train) "inner=$inner_fold_idx: X_train has NaN/Inf"
+        @assert all(isfinite, Y_train) "inner=$inner_fold_idx: Y_train has NaN/Inf"
+        @assert all(isfinite, X_validation) "inner=$inner_fold_idx: X_val has NaN/Inf"
+        @assert all(isfinite, Y_validation) "inner=$inner_fold_idx: Y_val has NaN/Inf"
+
         labels_train = one_hot_to_labels(Y_train)
         inner_weights = resolve_observation_weights(
             observation_weights,
@@ -235,6 +244,11 @@ function optimize_num_latent_variables(
             train_indices,
             n_samples,
         )
+
+        @assert inner_weights === nothing || length(inner_weights) == length(train_indices) "inner=$inner_fold_idx: weight length mismatch"
+        @assert inner_weights === nothing || all(isfinite, inner_weights) "inner=$inner_fold_idx: weights NaN/Inf"
+        @assert inner_weights === nothing || all(inner_weights .>= 0) "inner=$inner_fold_idx: negative weights"
+        @assert inner_weights === nothing || sum(inner_weights) > 0 "inner=$inner_fold_idx: weights sum to zero"
 
         Y_auxiliary_train =
             Y_auxiliary !== nothing ? Y_auxiliary[train_indices, :] : Y_auxiliary
@@ -547,6 +561,15 @@ function nested_cv(
         @views X_train = X_predictors[train_indices, :]
         @views Y_train = Y_responses[train_indices, :]
 
+        @assert !isempty(train_indices) "outer=$outer_fold_idx: empty train set"
+        @assert !isempty(test_indices) "outer=$outer_fold_idx: empty test set"
+        @assert size(X_train, 1) == size(Y_train, 1) "outer=$outer_fold_idx: X/Y train rows mismatch"
+        @assert size(X_test, 1) == size(Y_test, 1) "outer=$outer_fold_idx: X/Y test rows mismatch"
+        @assert all(isfinite, X_train) "outer=$outer_fold_idx: X_train has NaN/Inf"
+        @assert all(isfinite, Y_train) "outer=$outer_fold_idx: Y_train has NaN/Inf"
+        @assert all(isfinite, X_test) "outer=$outer_fold_idx: X_test has NaN/Inf"
+        @assert all(isfinite, Y_test) "outer=$outer_fold_idx: Y_test has NaN/Inf"
+
         labels_train = one_hot_to_labels(Y_train)
         outer_weights = resolve_observation_weights(
             observation_weights,
@@ -556,6 +579,11 @@ function nested_cv(
             n_samples,
         )
         inner_weights = observation_weights_fn === nothing ? outer_weights : nothing
+
+        @assert outer_weights === nothing || length(outer_weights) == length(train_indices) "outer=$outer_fold_idx: weight length mismatch"
+        @assert outer_weights === nothing || all(isfinite, outer_weights) "outer=$outer_fold_idx: weights NaN/Inf"
+        @assert outer_weights === nothing || all(outer_weights .>= 0) "outer=$outer_fold_idx: negative weights"
+        @assert outer_weights === nothing || sum(outer_weights) > 0 "outer=$outer_fold_idx: weights sum to zero"
 
         Y_auxiliary_train =
             Y_auxiliary !== nothing ? Y_auxiliary[train_indices, :] : Y_auxiliary
@@ -767,6 +795,11 @@ function nested_cv_permutation(
 
         shuffled_indices = shuffle(1:n_samples)
         shuffled_Y_responses = @view Y_responses[shuffled_indices, :]
+
+        @assert size(shuffled_Y_responses, 1) == n_samples "perm=$i: Y rows mismatch"
+        @assert size(shuffled_Y_responses, 2) == size(Y_responses, 2) "perm=$i: Y cols mismatch"
+        @assert all(isfinite, X_predictors) "perm=$i: X has NaN/Inf"
+        @assert all(isfinite, shuffled_Y_responses) "perm=$i: Y has NaN/Inf"
 
         outer_fold_accuracies, _ = nested_cv(
             X_predictors,

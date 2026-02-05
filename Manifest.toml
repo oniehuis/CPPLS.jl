@@ -454,9 +454,9 @@ version = "3.5.4+0"
 
 [[deps.Optim]]
 deps = ["ADTypes", "EnumX", "FillArrays", "LineSearches", "LinearAlgebra", "NLSolversBase", "NaNMath", "PositiveFactorizations", "Printf", "SparseArrays", "Statistics"]
-git-tree-sha1 = "e4f98846b70ef55e111ac8c40add135256c0cc47"
+git-tree-sha1 = "7957b66b4e80f1031417197099f35273f7dd93dd"
 uuid = "429524aa-4258-5aef-a3af-852621145aeb"
-version = "2.0.0"
+version = "2.0.1"
 
     [deps.Optim.extensions]
     OptimMOIExt = "MathOptInterface"

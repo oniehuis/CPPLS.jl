@@ -26,11 +26,29 @@ end
 function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     n_rows, n_cols = size(X)
 
+    @assert n_rows > 0 && n_cols > 0 "cca: X has zero rows/cols"
+    @assert size(Y, 1) == n_rows "cca: X/Y row mismatch"
+    @assert size(Y, 2) > 0 "cca: Y has zero columns"
+    @assert all(isfinite, X) "cca: X has NaN/Inf"
+    @assert all(isfinite, Y) "cca: Y has NaN/Inf"
+
     qx = qr(X, ColumnNorm())
     qy = qr(Y, ColumnNorm())
 
-    dx = rank(qx.R)
-    dy = rank(qy.R)
+    x_info = "X size=$(size(X)) strides=($(stride(X, 1)), $(stride(X, 2))) eltype=$(eltype(X)) finite=$(all(isfinite, X))"
+    y_info = "Y size=$(size(Y)) strides=($(stride(Y, 1)), $(stride(Y, 2))) eltype=$(eltype(Y)) finite=$(all(isfinite, Y))"
+
+    dx = try
+        rank(qx.R)
+    catch err
+        error("cca: rank(X) failed: $(err)\n$(x_info)")
+    end
+
+    dy = try
+        rank(qy.R)
+    catch err
+        error("cca: rank(Y) failed: $(err)\n$(y_info)")
+    end
 
     @inbounds if dx == 0
         throw(ErrorException("X has rank 0"))

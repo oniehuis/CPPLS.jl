@@ -793,7 +793,7 @@ function nested_cv_permutation(
     for i = 1:num_permutations
         verbose && println("Permutation: ", i, " / ", num_permutations)
 
-        shuffled_indices = shuffle(1:n_samples)
+        shuffled_indices = shuffle(rng, 1:n_samples)
         shuffled_Y_responses = @view Y_responses[shuffled_indices, :]
 
         @assert size(shuffled_Y_responses, 1) == n_samples "perm=$i: Y rows mismatch"

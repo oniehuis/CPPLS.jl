@@ -156,15 +156,24 @@ function correlation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     X_standard_deviations = sqrt.(mean(X .^ 2, dims = 1))
     debug_assert(all(isfinite, X_standard_deviations), "correlation: X_standard_deviations has NaN/Inf")
     zero_std_mask = vec(X_standard_deviations .== 0.0)
+    if any(zero_std_mask)
+        debug_log("correlation: X columns with zero std: $(findall(zero_std_mask))")
+    end
     X_standard_deviations[zero_std_mask] .= 1
 
     col_norms = sqrt.(mean(Y .^ 2, dims = 1))
     debug_assert(all(isfinite, col_norms), "correlation: Y column norms have NaN/Inf")
+    zero_norm_mask = vec(col_norms .== 0.0)
+    if any(zero_norm_mask)
+        debug_log("correlation: Y columns with zero norm: $(findall(zero_norm_mask))")
+    end
+    col_norms[zero_norm_mask] .= 1
     X_Y_correlations = (X' * Y) ./ (n * (X_standard_deviations' * col_norms))
     debug_assert(all(isfinite, X_Y_correlations), "correlation: X_Y_correlations has NaN/Inf")
 
     X_standard_deviations[zero_std_mask] .= 0
     X_Y_correlations[zero_std_mask, :, :] .= 0
+    X_Y_correlations[:, zero_norm_mask, :] .= 0
 
     X_Y_correlations, X_standard_deviations
 end
@@ -480,12 +489,26 @@ function compute_cppls_weights(
 
     max_corr = maximum(X_Y_correlations)
     max_std = maximum(X_standard_deviations)
+    if !(isfinite(max_corr) && max_corr > 0)
+        debug_log("compute_cppls_weights: max X_Y_correlations <= 0 or NaN; max=$(max_corr) min=$(minimum(X_Y_correlations))")
+    end
+    if !(isfinite(max_std) && max_std > 0)
+        debug_log("compute_cppls_weights: max X_standard_deviations <= 0 or NaN; max=$(max_std) min=$(minimum(X_standard_deviations))")
+    end
     debug_assert(isfinite(max_corr) && max_corr > 0, "compute_cppls_weights: max X_Y_correlations <= 0 or NaN")
     debug_assert(isfinite(max_std) && max_std > 0, "compute_cppls_weights: max X_standard_deviations <= 0 or NaN")
 
     correlation_signs = sign.(X_Y_correlations)
-    X_Y_correlations = abs.(X_Y_correlations) ./ maximum(X_Y_correlations)
-    X_standard_deviations /= maximum(X_standard_deviations)
+    if max_corr > 0
+        X_Y_correlations = abs.(X_Y_correlations) ./ max_corr
+    else
+        X_Y_correlations .= 0
+    end
+    if max_std > 0
+        X_standard_deviations ./= max_std
+    else
+        X_standard_deviations .= 0
+    end
 
     debug_assert(all(isfinite, X_Y_correlations), "compute_cppls_weights: X_Y_correlations has NaN/Inf (post-norm)")
     debug_assert(all(isfinite, X_standard_deviations), "compute_cppls_weights: X_standard_deviations has NaN/Inf (post-norm)")

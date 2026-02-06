@@ -12,6 +12,7 @@ end
 
 const CPPLS_DEBUG_ASSERTS = get(ENV, "CPPLS_DEBUG_ASSERTS", "0") == "1"
 debug_assert(cond, msg) = CPPLS_DEBUG_ASSERTS && (@assert cond msg)
+debug_log(msg) = CPPLS_DEBUG_ASSERTS && @warn msg
 
 function centerscale(
     M::AbstractMatrix{<:Real},

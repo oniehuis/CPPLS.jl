@@ -458,6 +458,11 @@ function compute_cppls_weights(
     gamma_abs_tol::Real,
 )
 
+    @assert all(isfinite, X_deflated) "compute_cppls_weights: X_deflated has NaN/Inf"
+    @assert all(isfinite, Y_combined) "compute_cppls_weights: Y_combined has NaN/Inf"
+    @assert all(isfinite, Y_responses) "compute_cppls_weights: Y_responses has NaN/Inf"
+    @assert observation_weights === nothing || all(isfinite, observation_weights) "compute_cppls_weights: weights have NaN/Inf"
+
     X_Y_correlations, X_standard_deviations =
         correlation(X_deflated, Y_combined, observation_weights)
 

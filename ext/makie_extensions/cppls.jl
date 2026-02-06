@@ -729,18 +729,24 @@ function plot_projection!(
         throw(ArgumentError("`color_by` must be :true_bins, :pred_bins, or :fixed"))
     end
 
+    all_colors = if color_by == :fixed
+        nothing
+    else
+        scoreplot_colors(cppls, label_source)
+    end
+
     colors_correct = if color_by == :fixed
         correct_color === nothing && throw(ArgumentError("`correct_color` must be set when color_by=:fixed"))
         correct_color
     else
-        response_label_colors(cppls, label_source[mask])
+        all_colors[mask]
     end
 
     colors_wrong = if color_by == :fixed
         wrong_color === nothing && throw(ArgumentError("`wrong_color` must be set when color_by=:fixed"))
         wrong_color
     else
-        response_label_colors(cppls, label_source[.!mask])
+        all_colors[.!mask]
     end
 
     if !isempty(scores_correct)

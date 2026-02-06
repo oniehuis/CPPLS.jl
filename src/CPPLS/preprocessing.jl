@@ -10,11 +10,27 @@ function center_mean(M::AbstractMatrix{<:Real}, ::Nothing)
 end
 
 
-centerscale(M::AbstractMatrix{<:Real}, observation_weights::AbstractVector{<:Real}) =
-    (M .- (observation_weights' * M) / sum(observation_weights)) .* observation_weights
+function centerscale(
+    M::AbstractMatrix{<:Real},
+    observation_weights::AbstractVector{<:Real},
+)
+    @assert all(isfinite, M) "centerscale: M has NaN/Inf"
+    @assert all(isfinite, observation_weights) "centerscale: weights have NaN/Inf"
+    @assert all(observation_weights .>= 0) "centerscale: weights have negative values"
+    s = sum(observation_weights)
+    @assert isfinite(s) && s > 0 "centerscale: weights sum to zero or NaN/Inf"
+    scaled = (M .- (observation_weights' * M) / s) .* observation_weights
+    @assert all(isfinite, scaled) "centerscale: produced NaN/Inf"
+    scaled
+end
 
 
-centerscale(M::AbstractMatrix{<:Real}, ::Nothing) = M .- mean(M, dims = 1)
+function centerscale(M::AbstractMatrix{<:Real}, ::Nothing)
+    @assert all(isfinite, M) "centerscale: M has NaN/Inf"
+    centered = M .- mean(M, dims = 1)
+    @assert all(isfinite, centered) "centerscale: produced NaN/Inf"
+    centered
+end
 
 
 convert_to_float64(M::AbstractMatrix{T}) where {T<:Real} =

@@ -730,19 +730,19 @@ function process_component!(
     tᵢ_squared_norm_tolerance::Real,
 )
 
-    @assert all(isfinite, X_deflated) "process_component!: X_deflated has NaN/Inf (start)"
-    @assert all(isfinite, Y_responses) "process_component!: Y_responses has NaN/Inf (start)"
-    @assert all(isfinite, X_loading_weightsᵢ) "process_component!: X_loading_weights has NaN/Inf (start)"
+    debug_assert(all(isfinite, X_deflated), "process_component!: X_deflated has NaN/Inf (start)")
+    debug_assert(all(isfinite, Y_responses), "process_component!: Y_responses has NaN/Inf (start)")
+    debug_assert(all(isfinite, X_loading_weightsᵢ), "process_component!: X_loading_weights has NaN/Inf (start)")
 
     X_loading_weightsᵢ .= (
         X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) .*
         (abs.(X_loading_weightsᵢ) .>= X_loading_weight_tolerance)
     )
 
-    @assert all(isfinite, X_loading_weightsᵢ) "process_component!: X_loading_weights has NaN/Inf (normalized)"
+    debug_assert(all(isfinite, X_loading_weightsᵢ), "process_component!: X_loading_weights has NaN/Inf (normalized)")
 
     X_scoresᵢ = X_deflated * X_loading_weightsᵢ
-    @assert all(isfinite, X_scoresᵢ) "process_component!: X_scores has NaN/Inf"
+    debug_assert(all(isfinite, X_scoresᵢ), "process_component!: X_scores has NaN/Inf")
     tᵢ_squared_norm = X_scoresᵢ' * X_scoresᵢ
 
     if isapprox(tᵢ_squared_norm, 0.0)
@@ -752,7 +752,7 @@ function process_component!(
     Y_loadingsᵢ = (Y_responses' * X_scoresᵢ) / tᵢ_squared_norm
 
     X_deflated .-= X_scoresᵢ * X_loadingsᵢ'
-    @assert all(isfinite, X_deflated) "process_component!: X_deflated has NaN/Inf (after deflation)"
+    debug_assert(all(isfinite, X_deflated), "process_component!: X_deflated has NaN/Inf (after deflation)")
 
     small_norm_flags[i, :] .= vec(sum(abs.(X_deflated), dims = 1) .< X_tolerance)
     X_deflated[:, small_norm_flags[i, :]] .= 0

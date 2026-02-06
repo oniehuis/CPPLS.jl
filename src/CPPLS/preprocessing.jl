@@ -10,25 +10,28 @@ function center_mean(M::AbstractMatrix{<:Real}, ::Nothing)
 end
 
 
+const CPPLS_DEBUG_ASSERTS = get(ENV, "CPPLS_DEBUG_ASSERTS", "0") == "1"
+debug_assert(cond, msg) = CPPLS_DEBUG_ASSERTS && (@assert cond msg)
+
 function centerscale(
     M::AbstractMatrix{<:Real},
     observation_weights::AbstractVector{<:Real},
 )
-    @assert all(isfinite, M) "centerscale: M has NaN/Inf"
-    @assert all(isfinite, observation_weights) "centerscale: weights have NaN/Inf"
-    @assert all(observation_weights .>= 0) "centerscale: weights have negative values"
+    debug_assert(all(isfinite, M), "centerscale: M has NaN/Inf")
+    debug_assert(all(isfinite, observation_weights), "centerscale: weights have NaN/Inf")
+    debug_assert(all(observation_weights .>= 0), "centerscale: weights have negative values")
     s = sum(observation_weights)
-    @assert isfinite(s) && s > 0 "centerscale: weights sum to zero or NaN/Inf"
+    debug_assert(isfinite(s) && s > 0, "centerscale: weights sum to zero or NaN/Inf")
     scaled = (M .- (observation_weights' * M) / s) .* observation_weights
-    @assert all(isfinite, scaled) "centerscale: produced NaN/Inf"
+    debug_assert(all(isfinite, scaled), "centerscale: produced NaN/Inf")
     scaled
 end
 
 
 function centerscale(M::AbstractMatrix{<:Real}, ::Nothing)
-    @assert all(isfinite, M) "centerscale: M has NaN/Inf"
+    debug_assert(all(isfinite, M), "centerscale: M has NaN/Inf")
     centered = M .- mean(M, dims = 1)
-    @assert all(isfinite, centered) "centerscale: produced NaN/Inf"
+    debug_assert(all(isfinite, centered), "centerscale: produced NaN/Inf")
     centered
 end
 

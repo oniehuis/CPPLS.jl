@@ -419,6 +419,18 @@ end
         correct_color = :red,
     )
 
+    @test CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        color_by = :fixed,
+        correct_color = :red,
+        wrong_color = :blue,
+    ) === nothing
+
     # show_labels branch with correct length
     @test CPPLS.plot_projection!(
         ax,
@@ -429,6 +441,21 @@ end
         Y_predicted;
         show_labels = true,
         labels = ["a", "b", "c", "d"],
+    ) === nothing
+
+    fake_cppls = (;
+        analysis_mode = :discriminant,
+        da_categories = categorical(["class1", "class2"]),
+        response_labels = nothing,
+    )
+    @test CPPLS.plot_projection!(
+        ax,
+        fake_cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        color_by = :pred_bins,
     ) === nothing
 end
 
@@ -452,5 +479,19 @@ end
 
     struct DummyBlock end
     push!(fig2.content, DummyBlock())
+    MakieExt.hide_axis_legends!(ax2)
+
+    # cover bbox branches using a mock Legend-like object
+    struct MockLegend
+        bbox
+    end
+    struct BadBBox end
+    Makie.to_value(::BadBBox) = error("boom")
+
+    ax_bbox = Makie.to_value(ax2.scene.viewport)
+    push!(fig2.content, MockLegend(ax_bbox))
+    MakieExt.hide_axis_legends!(ax2)
+
+    push!(fig2.content, MockLegend(BadBBox()))
     MakieExt.hide_axis_legends!(ax2)
 end

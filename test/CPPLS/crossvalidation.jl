@@ -20,9 +20,17 @@ const CROSSVAL_X = Float64[
     11.0 6.8 2.2 13.7
     12.1 7.5 4.3 15.0
     13.2 8.2 1.5 16.3
+    14.3 9.0 3.8 17.5
+    15.4 9.7 2.0 18.9
+    16.5 10.4 4.6 20.1
+    17.6 11.1 1.2 21.4
 ]
 
 const CROSSVAL_Y = [
+    1 0
+    0 1
+    1 0
+    0 1
     1 0
     0 1
     1 0
@@ -50,6 +58,10 @@ const CROSSVAL_LABELS = categorical([
     "class2",
     "class1",
     "class2",
+    "class1",
+    "class2",
+    "class1",
+    "class2",
 ])
 
 const CROSSVAL_LABELS_PLAIN = [
@@ -65,10 +77,14 @@ const CROSSVAL_LABELS_PLAIN = [
     "class2",
     "class1",
     "class2",
+    "class1",
+    "class2",
+    "class1",
+    "class2",
 ]
 
 @testset "random_batch_indices builds stratified folds" begin
-    strata = [1, 1, 1, 2, 2, 2]
+    strata = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]
     folds = CPPLS.random_batch_indices(
         strata,
         3,
@@ -77,7 +93,7 @@ const CROSSVAL_LABELS_PLAIN = [
 
     @test length(folds) == 3
     @test sort!(reduce(vcat, folds)) == collect(1:length(strata))
-    @test all(length(batch) == 2 for batch in folds)
+    @test all(length(batch) == 4 for batch in folds)
     @test_throws ArgumentError CPPLS.random_batch_indices(strata, 0)
     @test_throws ArgumentError CPPLS.random_batch_indices(
         strata,

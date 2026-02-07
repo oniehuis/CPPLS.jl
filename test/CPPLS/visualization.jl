@@ -5,7 +5,6 @@ using Test
 
 const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
 const ResolveException = Makie.ComputePipeline.ResolveException
-const _test_bbox_value = Ref{Any}(nothing)
 
 function dummy_cppls(; analysis = :discriminant, sample_labels = String[])
     X = Float64[
@@ -475,28 +474,40 @@ end
     fig2 = Makie.Figure(size = (200, 200))
     ax2 = Makie.Axis(fig2[1, 1])
     scatter!(ax2, [1.0], [1.0]; label = "pt")
-    axislegend(ax2)
+    legend = axislegend(ax2)
     MakieExt.hide_axis_legends!(ax2)
 
     struct DummyBlock end
     push!(fig2.content, DummyBlock())
     MakieExt.hide_axis_legends!(ax2)
 
-    # cover bbox branches by extending Legend properties for tests
+    # cover bbox branches through the helper without monkeypatching Base
     struct BadBBox end
     Makie.to_value(::BadBBox) = error("boom")
 
-    Base.propertynames(legend::Makie.Legend, private::Bool) = begin
-        # Avoid recursion: build from type fields instead of delegating.
-        names = fieldnames(typeof(legend))
-        :bbox in names ? names : (names..., :bbox)
-    end
-    Base.getproperty(legend::Makie.Legend, s::Symbol) =
-        s === :bbox ? _test_bbox_value[] : invoke(Base.getproperty, Tuple{Any,Symbol}, legend, s)
+    hidden = Makie.Legend[]
+    record_hide!(blk) = push!(hidden, blk)
 
     ax_bbox = Makie.to_value(ax2.scene.viewport)
-    _test_bbox_value[] = BadBBox()
-    MakieExt.hide_axis_legends!(ax2)
-    _test_bbox_value[] = ax_bbox
-    MakieExt.hide_axis_legends!(ax2)
+    MakieExt._hide_axis_legends!(
+        [legend],
+        ax_bbox;
+        hasprop = (_, _) -> true,
+        getprop = (_, _) -> BadBBox(),
+        hide! = record_hide!,
+    )
+    MakieExt._hide_axis_legends!(
+        [legend],
+        ax_bbox;
+        hasprop = (_, _) -> true,
+        getprop = (_, _) -> ax_bbox,
+        hide! = record_hide!,
+    )
+    MakieExt._hide_axis_legends!(
+        [legend],
+        ax_bbox;
+        hasprop = (_, _) -> false,
+        hide! = record_hide!,
+    )
+    @test length(hidden) == 3
 end

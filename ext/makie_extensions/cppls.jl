@@ -814,6 +814,25 @@ function normalize_legend_position(pos)
     return pos
 end
 
+function _hide_axis_legends!(blocks, ax_bbox; to_value = Makie.to_value, hide! = Makie.hide!, hasprop = hasproperty, getprop = getproperty)
+    for block in blocks
+        block isa Makie.Legend || continue
+        if hasprop(block, :bbox)
+            bbox = try
+                to_value(getprop(block, :bbox))
+            catch
+                nothing
+            end
+            if ax_bbox === nothing || bbox === nothing || bbox == ax_bbox
+                hide!(block)
+            end
+        else
+            hide!(block)
+        end
+    end
+    return nothing
+end
+
 function hide_axis_legends!(ax)
     parent = getproperty(ax, :parent)
     parent isa Makie.Figure || return nothing
@@ -822,20 +841,6 @@ function hide_axis_legends!(ax)
     catch
         nothing
     end
-    for block in parent.content
-        block isa Makie.Legend || continue
-        if hasproperty(block, :bbox)
-            bbox = try
-                Makie.to_value(getproperty(block, :bbox))
-            catch
-                nothing
-            end
-            if ax_bbox === nothing || bbox === nothing || bbox == ax_bbox
-                Makie.hide!(block)
-            end
-        else
-            Makie.hide!(block)
-        end
-    end
+    _hide_axis_legends!(parent.content, ax_bbox)
     return nothing
 end

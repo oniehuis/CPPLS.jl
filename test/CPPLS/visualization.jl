@@ -150,6 +150,12 @@ end
         ["alpha", "gamma"];
         color = (:red, :green),
     )
+
+    # response_labels shorter than labels -> fall back to labels
+    fake_short = (; response_labels = ["alpha"])
+    auto_colors = CPPLS.response_label_colors(fake_short, labels; color = Makie.automatic)
+    @test length(auto_colors) == 3
+    @test length(unique(auto_colors)) == 2
 end
 
 @testset "scoreplot_color_mapping branches" begin
@@ -167,6 +173,13 @@ end
         color_by_response = false,
     )
     @test isempty(auto)
+
+    solid = CPPLS.scoreplot_color_mapping(
+        da_model;
+        color = :red,
+        color_by_response = false,
+    )
+    @test solid["class1"] == Makie.to_color(:red)
 end
 
 @testset "apply_alpha_to_colors" begin
@@ -360,15 +373,84 @@ end
         Y_predicted;
         show_labels = true,
     )
+
+    # style_by_match=false and color_by=:true_bins
+    @test CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        style_by_match = false,
+        color_by = :true_bins,
+    ) === nothing
+
+    # color_by=:pred_bins with no response_labels uses da_categories
+    @test CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        color_by = :pred_bins,
+    ) === nothing
+
+    # fixed colors require correct_color / wrong_color
+    @test_throws ArgumentError CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        color_by = :fixed,
+        wrong_color = :red,
+    )
+    @test_throws ArgumentError CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        color_by = :fixed,
+        correct_color = :red,
+    )
+
+    # show_labels branch with correct length
+    @test CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        show_labels = true,
+        labels = ["a", "b", "c", "d"],
+    ) === nothing
 end
 
 @testset "legend helpers" begin
     fig = Makie.Figure(size = (200, 200))
     ax = Makie.Axis(fig[1, 1])
     @test CPPLS.safe_axislegend(ax) === nothing
+    @test_throws ArgumentError CPPLS.safe_axislegend(ax; position = :not_a_pos)
     @test MakieExt.normalize_legend_position(:tr) == :rt
     @test MakieExt.normalize_legend_position(:tl) == :lt
     @test MakieExt.normalize_legend_position(:br) == :rb
     @test MakieExt.normalize_legend_position(:bl) == :lb
     @test MakieExt.normalize_legend_position(:custom) == :custom
+
+    # hide_axis_legends! branches
+    fig2 = Makie.Figure(size = (200, 200))
+    ax2 = Makie.Axis(fig2[1, 1])
+    scatter!(ax2, [1.0], [1.0]; label = "pt")
+    axislegend(ax2)
+    MakieExt.hide_axis_legends!(ax2)
+
+    struct DummyBlock end
+    push!(fig2.content, DummyBlock())
+    MakieExt.hide_axis_legends!(ax2)
 end

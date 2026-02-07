@@ -145,6 +145,46 @@ end
     @test all(isnan.(coeffs_one_y))
 end
 
+@testset "compute_cppls_weights handles zero max normalization" begin
+    # max_corr == 0 path: X and Y are uncorrelated but non-degenerate
+    X = [
+        1.0 0.0
+        -1.0 0.0
+        0.0 1.0
+        0.0 -1.0
+    ]
+    Y = [
+        1.0 1.0
+        1.0 1.0
+        -1.0 -1.0
+        -1.0 -1.0
+    ]
+
+    loadings, _, _, _, gamma, _ = CPPLS.compute_cppls_weights(
+        X,
+        Y,
+        Y,
+        nothing,
+        (0.0, 0.0),
+        1e-6,
+        1e-12,
+    )
+    @test gamma == 0.0
+    @test all(isfinite.(loadings))
+
+    # max_std == 0 path: X has zero variance everywhere
+    X_zero = zeros(4, 2)
+    @test_throws ErrorException CPPLS.compute_cppls_weights(
+        X_zero,
+        Y,
+        Y,
+        nothing,
+        (0.0, 0.0),
+        1e-6,
+        1e-12,
+    )
+end
+
 @testset "weight helpers and gamma search utilities" begin
     σ = reshape([1.0, 2.0, 1.5], 1, :)
     variance_weights = CPPLS.compute_variance_weights(σ)

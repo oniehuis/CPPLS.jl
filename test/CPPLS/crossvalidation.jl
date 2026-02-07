@@ -94,10 +94,76 @@ const CROSSVAL_LABELS_PLAIN = [
     @test length(folds) == 3
     @test sort!(reduce(vcat, folds)) == collect(1:length(strata))
     @test all(length(batch) == 4 for batch in folds)
+    @test_throws ArgumentError CPPLS.random_batch_indices(strata, 4)
     @test_throws ArgumentError CPPLS.random_batch_indices(strata, 0)
     @test_throws ArgumentError CPPLS.random_batch_indices(
         strata,
         length(strata) + 1,
+    )
+
+    uneven = vcat(fill(1, 5), fill(2, 4))
+    @test_logs (:info, r"Stratum 1 .* not evenly divisible") begin
+        CPPLS.random_batch_indices(uneven, 2, CPPLS.MersenneTwister(2))
+    end
+end
+
+@testset "resolve_observation_weights with function" begin
+    labels = ["a", "b", "a", "b"]
+    train_indices = [1, 2, 3, 4]
+    total = length(labels)
+
+    fn = l -> ones(length(l))
+    @test CPPLS.resolve_observation_weights(nothing, fn, labels, train_indices, total) ==
+          ones(length(labels))
+
+    @test_throws ArgumentError CPPLS.resolve_observation_weights(
+        ones(length(labels)),
+        fn,
+        labels,
+        train_indices,
+        total,
+    )
+
+    bad_fn = l -> ones(length(l) + 1)
+    @test_throws ArgumentError CPPLS.resolve_observation_weights(
+        nothing,
+        bad_fn,
+        labels,
+        train_indices,
+        total,
+    )
+end
+
+@testset "resolve_observation_weights with vector" begin
+    labels = ["a", "b", "a", "b"]
+    train_indices = [2, 4]
+    total = length(labels)
+
+    full_weights = [0.1, 0.2, 0.3, 0.4]
+    @test CPPLS.resolve_observation_weights(
+        full_weights,
+        nothing,
+        labels,
+        train_indices,
+        total,
+    ) == full_weights[train_indices]
+
+    train_weights = [0.7, 0.8]
+    @test CPPLS.resolve_observation_weights(
+        train_weights,
+        nothing,
+        labels,
+        train_indices,
+        total,
+    ) == train_weights
+
+    bad_weights = [1.0, 2.0, 3.0]
+    @test_throws ArgumentError CPPLS.resolve_observation_weights(
+        bad_weights,
+        nothing,
+        labels,
+        train_indices,
+        total,
     )
 end
 

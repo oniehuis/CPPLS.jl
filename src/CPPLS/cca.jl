@@ -26,29 +26,11 @@ end
 function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     n_rows, n_cols = size(X)
 
-    debug_assert(n_rows > 0 && n_cols > 0, "cca: X has zero rows/cols")
-    debug_assert(size(Y, 1) == n_rows, "cca: X/Y row mismatch")
-    debug_assert(size(Y, 2) > 0, "cca: Y has zero columns")
-    debug_assert(all(isfinite, X), "cca: X has NaN/Inf")
-    debug_assert(all(isfinite, Y), "cca: Y has NaN/Inf")
-
     qx = qr(X, ColumnNorm())
     qy = qr(Y, ColumnNorm())
 
-    x_info = "X size=$(size(X)) strides=($(stride(X, 1)), $(stride(X, 2))) eltype=$(eltype(X)) finite=$(all(isfinite, X))"
-    y_info = "Y size=$(size(Y)) strides=($(stride(Y, 1)), $(stride(Y, 2))) eltype=$(eltype(Y)) finite=$(all(isfinite, Y))"
-
-    dx = try
-        rank(qx.R)
-    catch err
-        error("cca: rank(X) failed: $(err)\n$(x_info)")
-    end
-
-    dy = try
-        rank(qy.R)
-    catch err
-        error("cca: rank(Y) failed: $(err)\n$(y_info)")
-    end
+    dx = rank(qx.R)
+    dy = rank(qy.R)
 
     @inbounds if dx == 0
         throw(ErrorException("X has rank 0"))
@@ -154,25 +136,14 @@ end
 function correlation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     n = size(X, 1)
     X_standard_deviations = sqrt.(mean(X .^ 2, dims = 1))
-    debug_assert(all(isfinite, X_standard_deviations), "correlation: X_standard_deviations has NaN/Inf")
     zero_std_mask = vec(X_standard_deviations .== 0.0)
-    if any(zero_std_mask)
-        debug_log("correlation: X columns with zero std: $(findall(zero_std_mask))")
-    end
     X_standard_deviations[zero_std_mask] .= 1
 
     col_norms = sqrt.(mean(Y .^ 2, dims = 1))
-    debug_assert(all(isfinite, col_norms), "correlation: Y column norms have NaN/Inf")
-    zero_norm_mask = vec(col_norms .== 0.0)
-    if any(zero_norm_mask)
-        debug_log("correlation: Y columns with zero norm: $(findall(zero_norm_mask))")
-    end
     X_Y_correlations = (X' * Y) ./ (n * (X_standard_deviations' * col_norms))
-    debug_assert(all(isfinite, X_Y_correlations), "correlation: X_Y_correlations has NaN/Inf")
 
     X_standard_deviations[zero_std_mask] .= 0
     X_Y_correlations[zero_std_mask, :, :] .= 0
-    X_Y_correlations[:, zero_norm_mask, :] .= 0
 
     X_Y_correlations, X_standard_deviations
 end
@@ -198,15 +169,9 @@ function compute_general_weights(
     gamma::Real,
     correlation_signs::AbstractMatrix{<:Real})
 
-    debug_assert(all(isfinite, X_standard_deviations), "compute_general_weights: X_standard_deviations has NaN/Inf")
-    debug_assert(all(isfinite, X_Y_correlations), "compute_general_weights: X_Y_correlations has NaN/Inf")
-    debug_assert(isfinite(gamma) && 0 < gamma < 1, "compute_general_weights: gamma must be in (0,1)")
-
     transformed_X_standard_deviations = X_standard_deviations .^ ((1 - gamma) / gamma)
     transformed_X_Y_correlations =
         correlation_signs .* abs.(X_Y_correlations) .^ (gamma / (1 - gamma))
-    debug_assert(all(isfinite, transformed_X_standard_deviations), "compute_general_weights: transformed X_standard_deviations has NaN/Inf")
-    debug_assert(all(isfinite, transformed_X_Y_correlations), "compute_general_weights: transformed X_Y_correlations has NaN/Inf")
     transformed_X_Y_correlations .* transformed_X_standard_deviations'
 end
 
@@ -475,34 +440,15 @@ function compute_cppls_weights(
     gamma_abs_tol::Real,
 )
 
-    debug_assert(all(isfinite, X_deflated), "compute_cppls_weights: X_deflated has NaN/Inf")
-    debug_assert(all(isfinite, Y_combined), "compute_cppls_weights: Y_combined has NaN/Inf")
-    debug_assert(all(isfinite, Y_responses), "compute_cppls_weights: Y_responses has NaN/Inf")
-    debug_assert(observation_weights === nothing || all(isfinite, observation_weights), "compute_cppls_weights: weights have NaN/Inf")
-
     X_Y_correlations, X_standard_deviations =
         correlation(X_deflated, Y_combined, observation_weights)
 
-    debug_assert(all(isfinite, X_Y_correlations), "compute_cppls_weights: X_Y_correlations has NaN/Inf (pre-norm)")
-    debug_assert(all(isfinite, X_standard_deviations), "compute_cppls_weights: X_standard_deviations has NaN/Inf (pre-norm)")
-
     max_corr = maximum(X_Y_correlations)
     max_std = maximum(X_standard_deviations)
-    if !(isfinite(max_corr) && max_corr > 0)
-        debug_log("compute_cppls_weights: max X_Y_correlations <= 0 or NaN; max=$(max_corr) min=$(minimum(X_Y_correlations))")
-    end
-    if !(isfinite(max_std) && max_std > 0)
-        debug_log("compute_cppls_weights: max X_standard_deviations <= 0 or NaN; max=$(max_std) min=$(minimum(X_standard_deviations))")
-    end
-    debug_assert(isfinite(max_corr) && max_corr > 0, "compute_cppls_weights: max X_Y_correlations <= 0 or NaN")
-    debug_assert(isfinite(max_std) && max_std > 0, "compute_cppls_weights: max X_standard_deviations <= 0 or NaN")
 
     correlation_signs = sign.(X_Y_correlations)
     X_Y_correlations = abs.(X_Y_correlations) ./ max_corr
     X_standard_deviations ./= max_std
-
-    debug_assert(all(isfinite, X_Y_correlations), "compute_cppls_weights: X_Y_correlations has NaN/Inf (post-norm)")
-    debug_assert(all(isfinite, X_standard_deviations), "compute_cppls_weights: X_standard_deviations has NaN/Inf (post-norm)")
 
     compute_best_loadings(
         X_deflated,

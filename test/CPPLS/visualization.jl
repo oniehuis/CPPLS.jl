@@ -29,6 +29,30 @@ function dummy_cppls(; analysis = :discriminant, sample_labels = String[])
     end
 end
 
+function dummy_cppls3(; analysis = :discriminant, sample_labels = String[])
+    X = Float64[
+        1 0 2
+        0 1 3
+        2 1 1
+        3 2 0
+        4 1 2
+    ]
+
+    if analysis === :discriminant
+        labels = categorical(["class1", "class2", "class1", "class2", "class1"])
+        return CPPLS.fit_cppls(
+            X,
+            labels,
+            3;
+            gamma = 0.5,
+            sample_labels = sample_labels,
+        )
+    else
+        y = reshape(Float64[0.1, -0.2, 0.3, -0.4, 0.2], :, 1)
+        return CPPLS.fit_cppls(X, y, 3; gamma = 0.5, sample_labels = sample_labels)
+    end
+end
+
 @testset "order_preserving_unique" begin
     labels = ["red", "blue", "red", "green", "blue", "yellow"]
     ordered = MakieExt.order_preserving_unique(labels)
@@ -104,6 +128,45 @@ end
     auto = MakieExt.resolve_label_colors(labels, :cyan)
     expected = MakieExt.normalize_palette(:cyan, 3)
     @test Set(auto) == Set(expected[1:3])
+end
+
+@testset "response_label_colors" begin
+    fake = (; response_labels = ["alpha", "beta"])
+    labels = ["alpha", "beta", "alpha"]
+    colors = CPPLS.response_label_colors(fake, labels; color = (:red, :green))
+    @test length(colors) == 3
+
+    colors_alpha = CPPLS.response_label_colors(fake, labels; color = (:red, :green), alpha = 0.5)
+    @test colors_alpha[1].alpha ≈ 0.5
+
+    @test_throws ArgumentError CPPLS.response_label_colors(
+        fake,
+        labels;
+        color = (:red,),
+    )
+
+    @test_throws ArgumentError CPPLS.response_label_colors(
+        fake,
+        ["alpha", "gamma"];
+        color = (:red, :green),
+    )
+end
+
+@testset "scoreplot_color_mapping branches" begin
+    da_model = dummy_cppls()
+    manual = CPPLS.scoreplot_color_mapping(
+        da_model;
+        color = (:red, :green),
+        color_manual = true,
+    )
+    @test length(manual) == 2
+
+    auto = CPPLS.scoreplot_color_mapping(
+        da_model;
+        color = Makie.automatic,
+        color_by_response = false,
+    )
+    @test isempty(auto)
 end
 
 @testset "apply_alpha_to_colors" begin
@@ -203,6 +266,8 @@ end
         da_model;
         color = (:red,),
     )
+
+    @test_throws ResolveException CPPLS.scoreplot(da_model; labels = ["onlyone"])
 end
 
 @testset "scoreplot color helpers" begin
@@ -220,4 +285,90 @@ end
 
     reg_model = dummy_cppls(analysis = :regression)
     @test isempty(CPPLS.scoreplot_color_mapping(reg_model))
+end
+
+@testset "axis_defaults_for_dims" begin
+    struct BadDims end
+    Base.convert(::Type{Tuple}, ::BadDims) = error("boom")
+    defaults = MakieExt.axis_defaults_for_dims(BadDims())
+    @test defaults == MakieExt.SCOREPLOT_AXIS_DEFAULTS
+
+    if !isdefined(Main, :CairoMakie)
+        @eval Main module CairoMakie end
+    end
+    cppls = dummy_cppls3()
+    orig_backend = Makie.current_backend
+    @eval Makie current_backend() = Main.CairoMakie
+    try
+        @test MakieExt.default_scoreplot_dims(cppls) == (1, 2)
+    finally
+        @eval Makie current_backend() = $orig_backend
+    end
+end
+
+@testset "scoreplot 3d branches" begin
+    cppls3 = dummy_cppls3()
+    fig = Makie.Figure(size = (200, 200))
+    ax = Makie.Axis3(fig[1, 1])
+    plot = CPPLS.scoreplot!(
+        ax,
+        cppls3;
+        dims = (1, 2, 3),
+        show_labels = true,
+        labels = ["a", "b", "c", "d", "e"],
+        hover_labels = true,
+    )
+    @test plot isa Makie.Plot
+    @test Makie.to_value(ax.zlabel) == "z"
+end
+
+@testset "plot_projection helpers" begin
+    cppls = dummy_cppls()
+    scores = [0.1 0.2; 0.3 0.4; 0.5 0.6; 0.7 0.8]
+    bins = ["class1", "class2", "class1", "class2"]
+    Y_project = [1 0; 0 1; 1 0; 0 1]
+    Y_predicted = [1 0; 1 0; 1 0; 0 1]
+    fig = Makie.Figure(size = (200, 200))
+    ax = Makie.Axis(fig[1, 1])
+
+    @test CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        show_labels = false,
+    ) === nothing
+
+    @test_throws ArgumentError CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        color_by = :fixed,
+    )
+
+    @test_throws ArgumentError CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        show_labels = true,
+    )
+end
+
+@testset "legend helpers" begin
+    fig = Makie.Figure(size = (200, 200))
+    ax = Makie.Axis(fig[1, 1])
+    @test CPPLS.safe_axislegend(ax) === nothing
+    @test MakieExt.normalize_legend_position(:tr) == :rt
+    @test MakieExt.normalize_legend_position(:tl) == :lt
+    @test MakieExt.normalize_legend_position(:br) == :rb
+    @test MakieExt.normalize_legend_position(:bl) == :lb
+    @test MakieExt.normalize_legend_position(:custom) == :custom
 end

@@ -5,6 +5,7 @@ using Test
 
 const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
 const ResolveException = Makie.ComputePipeline.ResolveException
+const _test_bbox_value = Ref{Any}(nothing)
 
 function dummy_cppls(; analysis = :discriminant, sample_labels = String[])
     X = Float64[
@@ -481,17 +482,21 @@ end
     push!(fig2.content, DummyBlock())
     MakieExt.hide_axis_legends!(ax2)
 
-    # cover bbox branches using a mock Legend-like object
-    struct MockLegend
-        bbox
-    end
+    # cover bbox branches by extending Legend properties for tests
     struct BadBBox end
     Makie.to_value(::BadBBox) = error("boom")
 
-    ax_bbox = Makie.to_value(ax2.scene.viewport)
-    push!(fig2.content, MockLegend(ax_bbox))
-    MakieExt.hide_axis_legends!(ax2)
+    Base.propertynames(legend::Makie.Legend, private::Bool) = begin
+        # Avoid recursion: build from type fields instead of delegating.
+        names = fieldnames(typeof(legend))
+        :bbox in names ? names : (names..., :bbox)
+    end
+    Base.getproperty(legend::Makie.Legend, s::Symbol) =
+        s === :bbox ? _test_bbox_value[] : invoke(Base.getproperty, Tuple{Any,Symbol}, legend, s)
 
-    push!(fig2.content, MockLegend(BadBBox()))
+    ax_bbox = Makie.to_value(ax2.scene.viewport)
+    _test_bbox_value[] = BadBBox()
+    MakieExt.hide_axis_legends!(ax2)
+    _test_bbox_value[] = ax_bbox
     MakieExt.hide_axis_legends!(ax2)
 end

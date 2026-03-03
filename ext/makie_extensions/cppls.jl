@@ -36,6 +36,54 @@ const _GENERIC_PLOT_ATTRS = let
     end
 end
 
+function _rgba_with_alpha(color, alpha::Real)
+    c = Makie.to_color(color)
+    return Makie.RGBAf(
+        Makie.ColorTypes.red(c),
+        Makie.ColorTypes.green(c),
+        Makie.ColorTypes.blue(c),
+        Float32(alpha),
+    )
+end
+
+function _map_attributes!(plot, input_nodes, output_nodes, f)
+    attrs = plot.attributes
+    input_obs = [
+        haskey(attrs, name) ? attrs[name] : plot[name]
+        for name in input_nodes
+    ]
+    output_obs = [
+        haskey(attrs, name) ? attrs[name] : (attrs[name] = Makie.Observable{Any}(nothing))
+        for name in output_nodes
+    ]
+
+    function update_outputs(args...)
+        result = f(args...)
+        if length(output_obs) == 1
+            output_obs[1][] = result
+        else
+            result_tuple = result isa Tuple ? result : Tuple(result)
+            length(result_tuple) == length(output_obs) || throw(
+                ArgumentError(
+                    "attribute mapping returned $(length(result_tuple)) values for $(length(output_obs)) outputs",
+                ),
+            )
+            for (obs, value) in zip(output_obs, result_tuple)
+                obs[] = value
+            end
+        end
+        return nothing
+    end
+
+    onany(update_outputs, plot, input_obs...; update = false)
+    update_outputs(map(Makie.to_value, input_obs)...)
+    return output_obs
+end
+
+function _map_attributes!(f::Function, plot, input_nodes, output_nodes)
+    return _map_attributes!(plot, input_nodes, output_nodes, f)
+end
+
 function normalize_palette(default_color, n_unique)
     fallback = Makie.wong_colors(max(n_unique, 1))
     provided_palette =
@@ -178,7 +226,8 @@ function response_label_colors(cppls, labels; color = Makie.automatic, color_man
     end
 
     if alpha isa Number && alpha != 1
-        palette = [Makie.RGBAf(Makie.to_color(c), Float32(clamp(alpha, 0, 1))) for c in palette]
+        alpha_val = clamp(alpha, 0, 1)
+        palette = [_rgba_with_alpha(c, alpha_val) for c in palette]
     end
 
     mapping = Dict(label_keys[i] => palette[i] for i in eachindex(label_keys))
@@ -275,7 +324,7 @@ with_alpha(colors::Tuple, alpha) = tuple((with_alpha(color, alpha) for color in 
 with_alpha(color::Dict, alpha) = Dict(k => with_alpha(v, alpha) for (k, v) in color)
 with_alpha(color::Nothing, _) = nothing
 with_alpha(color, alpha) =
-    is_automatic_color(color) ? color : Makie.RGBAf(Makie.to_color(color), Float32(alpha))
+    is_automatic_color(color) ? color : _rgba_with_alpha(color, alpha)
 
 function cppls_category_labels(cppls)
     if hasproperty(cppls, :analysis_mode) &&
@@ -349,8 +398,8 @@ function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.AbstractCPPLS}})
         :is_3d,
     ]
 
-    map!(
-        plot.attributes,
+    _map_attributes!(
+        plot,
         input_nodes,
         output_nodes,
     ) do cppls,
@@ -418,22 +467,30 @@ function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.AbstractCPPLS}})
     end
 
     is_3d = Makie.to_value(plot.is_3d)
+    scatter_kwargs = (
+        marker = plot.marker,
+        markersize = plot.markersize,
+        strokecolor = plot.strokecolor,
+        strokewidth = plot.strokewidth,
+        alpha = plot.alpha,
+        inspectable = plot.inspectable,
+    )
     scatter_plot = if is_3d
         scatter!(
             plot,
-            plot.attributes,
             plot.score_x,
             plot.score_y,
             plot.score_z;
             color = plot.point_color,
+            scatter_kwargs...,
         )
     else
         scatter!(
             plot,
-            plot.attributes,
             plot.score_x,
             plot.score_y;
             color = plot.point_color,
+            scatter_kwargs...,
         )
     end
 

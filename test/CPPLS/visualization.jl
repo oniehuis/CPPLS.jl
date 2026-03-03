@@ -1,10 +1,25 @@
 using CategoricalArrays
 using Makie
-import Makie.ComputePipeline
 using Test
 
 const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
-const ResolveException = Makie.ComputePipeline.ResolveException
+const ResolveException = let
+    if isdefined(Makie, :ComputePipeline)
+        try
+            cp = getfield(Makie, :ComputePipeline)
+            isdefined(cp, :ResolveException) && return getfield(cp, :ResolveException)
+        catch
+        end
+    end
+    if isdefined(Makie, :MakieCore)
+        try
+            mc = getfield(Makie, :MakieCore)
+            isdefined(mc, :ResolveException) && return getfield(mc, :ResolveException)
+        catch
+        end
+    end
+    Exception
+end
 
 function dummy_cppls(; analysis = :discriminant, sample_labels = String[])
     X = Float64[

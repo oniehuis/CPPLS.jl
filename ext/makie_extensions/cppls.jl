@@ -71,7 +71,11 @@ function _map_attributes!(plot, input_nodes, output_nodes, f)
         return nothing
     end
 
-    onany(update_outputs, plot, input_obs...; update = false)
+    if plot isa Makie.Plot || plot isa Makie.Scene
+        onany(update_outputs, plot, input_obs...; update = false)
+    else
+        onany(update_outputs, input_obs...; update = false)
+    end
     update_outputs(map(Makie.to_value, input_obs)...)
     return output_obs
 end

@@ -114,6 +114,22 @@ end
 end
 
 @testset "_map_attributes! single output" begin
+    struct DummyPlot
+        attributes::Dict{Symbol,Any}
+    end
+    Base.getindex(plot::DummyPlot, name::Symbol) = plot.attributes[name]
+
+    input_obs = Makie.Observable(3)
+    dummy = DummyPlot(Dict(:in => input_obs))
+    outputs = MakieExt._map_attributes!(dummy, [:in], [:out]) do value
+        value + 1
+    end
+
+    @test length(outputs) == 1
+    @test outputs[1][] == 4
+    input_obs[] = 10
+    @test outputs[1][] == 11
+
     fig = Makie.Figure(size = (100, 100))
     ax = Makie.Axis(fig[1, 1])
     plot = scatter!(ax, [1.0], [1.0]; color = :red)

@@ -5,7 +5,6 @@ authors = ["Oliver Niehuis <oliver.niehuis@biologie.uni-freiburg.de> and contrib
 
 [deps]
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
-JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -20,10 +19,19 @@ Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
 MakieExtension = "Makie"
 
 [compat]
+CategoricalArrays = "0.10"
 julia = "1.12"
+Makie = "0.21"
+Optim = "1"
+Reexport = "1"
+StatsBase = "0.34"
+
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[preferences]
+precompile = true
 
 [targets]
 test = ["Test"]

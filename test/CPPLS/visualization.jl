@@ -3,7 +3,7 @@ using Makie
 using Test
 
 const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
-const ResolveException = let
+resolve_exception_type() = begin
     if isdefined(Makie, :ComputePipeline)
         try
             cp = getfield(Makie, :ComputePipeline)
@@ -18,7 +18,7 @@ const ResolveException = let
         catch
         end
     end
-    Exception
+    return Exception
 end
 
 function dummy_cppls(; analysis = :discriminant, sample_labels = String[])
@@ -123,11 +123,16 @@ end
     end
 
     @test length(outputs) == 1
-    @test outputs[1][] == plot.color[]
-    @test plot.attributes[:mapped_color][] == plot.color[]
+    @test Makie.to_color(outputs[1][]) == Makie.to_color(:red)
 
     plot.color[] = :blue
-    @test outputs[1][] == plot.color[]
+    @test Makie.to_color(outputs[1][]) == Makie.to_color(:blue)
+end
+
+@testset "_assign_mapping_result! single output" begin
+    obs = Makie.Observable(0)
+    MakieExt._assign_mapping_result!([obs], 5)
+    @test obs[] == 5
 end
 
 @testset "manual_color_sequence" begin
@@ -306,13 +311,14 @@ end
     reg_model = dummy_cppls(analysis = :regression)
     @test CPPLS.scoreplot(reg_model) isa Makie.FigureAxisPlot
 
-    @test_throws ResolveException CPPLS.scoreplot(da_model; dims = (1, 3))
-    @test_throws ResolveException CPPLS.scoreplot(
+    resolve_exc = resolve_exception_type()
+    @test_throws resolve_exc CPPLS.scoreplot(da_model; dims = (1, 3))
+    @test_throws resolve_exc CPPLS.scoreplot(
         da_model;
         color = (:red,),
     )
 
-    @test_throws ResolveException CPPLS.scoreplot(da_model; labels = ["onlyone"])
+    @test_throws resolve_exc CPPLS.scoreplot(da_model; labels = ["onlyone"])
 end
 
 @testset "scoreplot color helpers" begin

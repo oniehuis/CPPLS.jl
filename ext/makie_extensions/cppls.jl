@@ -48,6 +48,14 @@ end
 
 function _map_attributes!(plot, input_nodes, output_nodes, f)
     attrs = plot.attributes
+    if isdefined(Makie, :ComputeGraph) && attrs isa Makie.ComputeGraph
+        if length(output_nodes) == 1
+            Makie.ComputePipeline.map!(f, attrs, input_nodes, output_nodes[1])
+        else
+            Makie.ComputePipeline.map!(f, attrs, input_nodes, output_nodes)
+        end
+        return [attrs[name] for name in output_nodes]
+    end
     input_obs = [
         haskey(attrs, name) ? attrs[name] : plot[name]
         for name in input_nodes
@@ -59,25 +67,38 @@ function _map_attributes!(plot, input_nodes, output_nodes, f)
 
     function update_outputs(args...)
         result = f(args...)
-        if length(output_obs) == 1
-            output_obs[1][] = result
-        else
-            result_tuple = result isa Tuple ? result : Tuple(result)
-            length(result_tuple) == length(output_obs) || throw(
-                ArgumentError(
-                    "attribute mapping returned $(length(result_tuple)) values for $(length(output_obs)) outputs",
-                ),
-            )
-            for (obs, value) in zip(output_obs, result_tuple)
-                obs[] = value
-            end
-        end
+        _assign_mapping_result!(output_obs, result)
         return nothing
     end
 
     onany(update_outputs, plot, input_obs...; update = false)
     update_outputs(map(Makie.to_value, input_obs)...)
     return output_obs
+end
+
+function _coerce_mapping_result(result, n_outputs)
+    if n_outputs == 1
+        return result
+    end
+    result_tuple = result isa Tuple ? result : Tuple(result)
+    length(result_tuple) == n_outputs || throw(
+        ArgumentError(
+            "attribute mapping returned $(length(result_tuple)) values for $(n_outputs) outputs",
+        ),
+    )
+    return result_tuple
+end
+
+function _assign_mapping_result!(output_obs, result)
+    if length(output_obs) == 1
+        output_obs[1][] = result
+    else
+        result_tuple = _coerce_mapping_result(result, length(output_obs))
+        for (obs, value) in zip(output_obs, result_tuple)
+            obs[] = value
+        end
+    end
+    return nothing
 end
 
 function _map_attributes!(f::Function, plot, input_nodes, output_nodes)

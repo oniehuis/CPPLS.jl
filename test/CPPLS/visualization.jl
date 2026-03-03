@@ -113,6 +113,23 @@ end
     @test auto_entries == Makie.wong_colors(2)
 end
 
+@testset "_map_attributes! single output" begin
+    fig = Makie.Figure(size = (100, 100))
+    ax = Makie.Axis(fig[1, 1])
+    plot = scatter!(ax, [1.0], [1.0]; color = :red)
+
+    outputs = MakieExt._map_attributes!(plot, [:color], [:mapped_color]) do color
+        color
+    end
+
+    @test length(outputs) == 1
+    @test outputs[1][] == plot.color[]
+    @test plot.attributes[:mapped_color][] == plot.color[]
+
+    plot.color[] = :blue
+    @test outputs[1][] == plot.color[]
+end
+
 @testset "manual_color_sequence" begin
     labels = ["g1", "g2", "g1", "g3"]
     palette = MakieExt.manual_color_sequence((:red, :green, :blue), labels)

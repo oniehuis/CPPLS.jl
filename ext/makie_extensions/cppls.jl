@@ -78,13 +78,18 @@ function _map_attributes!(plot, input_nodes, output_nodes, f)
         return nothing
     end
 
+    _attach_onany!(plot, update_outputs, input_obs)
+    update_outputs(map(Makie.to_value, input_obs)...)
+    return output_obs
+end
+
+function _attach_onany!(plot, update_outputs, input_obs)
     if plot isa Makie.Plot || plot isa Makie.Scene
         onany(update_outputs, plot, input_obs...; update = false)
     else
         onany(update_outputs, input_obs...; update = false)
     end
-    update_outputs(map(Makie.to_value, input_obs)...)
-    return output_obs
+    return nothing
 end
 
 function _coerce_mapping_result(result, n_outputs)

@@ -145,6 +145,46 @@ end
     @test Makie.to_color(outputs[1][]) == Makie.to_color(:blue)
 end
 
+@testset "_map_attributes! multiple outputs" begin
+    struct DummyPlotMulti
+        attributes::Dict{Symbol,Any}
+    end
+    Base.getindex(plot::DummyPlotMulti, name::Symbol) = plot.attributes[name]
+
+    input_obs = Makie.Observable(2)
+    dummy = DummyPlotMulti(Dict(:in => input_obs))
+    outputs = MakieExt._map_attributes!(dummy, [:in], [:out1, :out2]) do value
+        [value, value + 1]
+    end
+
+    @test outputs[1][] == 2
+    @test outputs[2][] == 3
+
+    input_obs[] = 5
+    @test outputs[1][] == 5
+    @test outputs[2][] == 6
+end
+
+@testset "_attach_onany! branches" begin
+    fig = Makie.Figure(size = (100, 100))
+    ax = Makie.Axis(fig[1, 1])
+    plot = scatter!(ax, [1.0], [1.0]; color = :red)
+    obs = Makie.Observable(1)
+    MakieExt._attach_onany!(plot, _ -> nothing, [obs])
+
+    struct DummyPlotAttach
+        attributes::Dict{Symbol,Any}
+    end
+    MakieExt._attach_onany!(DummyPlotAttach(Dict()), _ -> nothing, [obs])
+end
+
+@testset "_coerce_mapping_result" begin
+    @test MakieExt._coerce_mapping_result(5, 1) == 5
+    @test MakieExt._coerce_mapping_result((1, 2), 2) == (1, 2)
+    @test MakieExt._coerce_mapping_result([3, 4], 2) == (3, 4)
+    @test_throws ArgumentError MakieExt._coerce_mapping_result((1,), 2)
+end
+
 @testset "manual_color_sequence" begin
     labels = ["g1", "g2", "g1", "g3"]
     palette = MakieExt.manual_color_sequence((:red, :green, :blue), labels)

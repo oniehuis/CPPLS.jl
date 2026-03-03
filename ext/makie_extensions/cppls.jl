@@ -67,7 +67,14 @@ function _map_attributes!(plot, input_nodes, output_nodes, f)
 
     function update_outputs(args...)
         result = f(args...)
-        _assign_mapping_result!(output_obs, result)
+        if length(output_obs) == 1
+            output_obs[1][] = result
+        else
+            result_tuple = _coerce_mapping_result(result, length(output_obs))
+            for (obs, value) in zip(output_obs, result_tuple)
+                obs[] = value
+            end
+        end
         return nothing
     end
 
@@ -91,18 +98,6 @@ function _coerce_mapping_result(result, n_outputs)
         ),
     )
     return result_tuple
-end
-
-function _assign_mapping_result!(output_obs, result)
-    if length(output_obs) == 1
-        output_obs[1][] = result
-    else
-        result_tuple = _coerce_mapping_result(result, length(output_obs))
-        for (obs, value) in zip(output_obs, result_tuple)
-            obs[] = value
-        end
-    end
-    return nothing
 end
 
 function _map_attributes!(f::Function, plot, input_nodes, output_nodes)

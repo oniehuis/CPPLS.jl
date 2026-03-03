@@ -145,12 +145,6 @@ end
     @test Makie.to_color(outputs[1][]) == Makie.to_color(:blue)
 end
 
-@testset "_assign_mapping_result! single output" begin
-    obs = Makie.Observable(0)
-    MakieExt._assign_mapping_result!([obs], 5)
-    @test obs[] == 5
-end
-
 @testset "manual_color_sequence" begin
     labels = ["g1", "g2", "g1", "g3"]
     palette = MakieExt.manual_color_sequence((:red, :green, :blue), labels)

@@ -358,13 +358,8 @@ end
         @eval Main module CairoMakie end
     end
     cppls = dummy_cppls3()
-    orig_backend = Makie.current_backend
-    @eval Makie current_backend() = Main.CairoMakie
-    try
-        @test MakieExt.default_scoreplot_dims(cppls) == (1, 2)
-    finally
-        @eval Makie current_backend() = $orig_backend
-    end
+    @test MakieExt.default_scoreplot_dims(cppls; backend_provider = () -> Main.CairoMakie) ==
+          (1, 2)
 end
 
 @testset "scoreplot 3d branches" begin

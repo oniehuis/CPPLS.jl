@@ -627,10 +627,10 @@ merge_axis_defaults(axis, dims) = axis_defaults_for_dims(dims)
 merge_axis_defaults(axis::NamedTuple) = merge_axis_defaults(axis, (1, 2))
 merge_axis_defaults(axis) = merge_axis_defaults(axis, (1, 2))
 
-default_scoreplot_dims(cppls) = begin
+default_scoreplot_dims(cppls; backend_provider = Makie.current_backend) = begin
     hasproperty(cppls, :X_scores) || return (1, 2)
     backend = try
-        Makie.current_backend()
+        backend_provider()
     catch
         nothing
     end

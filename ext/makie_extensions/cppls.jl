@@ -25,6 +25,17 @@ is_automatic(value) =
 is_automatic_color(value) =
     value isa Makie.Automatic || value === Makie.Automatic() || value === Makie.automatic
 
+const _GENERIC_PLOT_ATTRS = let
+    if isdefined(Makie, :mixin_generic_plot_attributes)
+        Makie.mixin_generic_plot_attributes()
+    elseif isdefined(Makie, :MakieCore) &&
+           isdefined(Makie.MakieCore, :mixin_generic_plot_attributes)
+        Makie.MakieCore.mixin_generic_plot_attributes()
+    else
+        ()
+    end
+end
+
 function normalize_palette(default_color, n_unique)
     fallback = Makie.wong_colors(max(n_unique, 1))
     provided_palette =
@@ -312,7 +323,7 @@ end
     strokecolor = @inherit markerstrokecolor
     strokewidth = @inherit markerstrokewidth
 
-    Makie.mixin_generic_plot_attributes()...
+    _GENERIC_PLOT_ATTRS...
 end
 
 function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.AbstractCPPLS}})

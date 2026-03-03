@@ -3,14 +3,6 @@ using Markdown
 using Makie
 using CPPLS
 
-function ensure_makie_extension!()
-    ext = Base.get_extension(CPPLS, :MakieExtension)
-    return ext !== nothing ? ext :
-           Base.require_extension(CPPLS, :MakieExtension)
-end
-
-ensure_makie_extension!()
-
 DocMeta.setdocmeta!(
     CPPLS,
     :DocTestSetup,

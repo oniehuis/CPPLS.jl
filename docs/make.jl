@@ -43,4 +43,13 @@ makedocs(
     ],
 )
 
-deploydocs(repo = "github.com/oniehuis/CPPLS.jl", devbranch = "main")
+deploydocs(
+    repo = "github.com/oniehuis/CPPLS.jl", 
+    devbranch = "main", 
+    push_preview = false,
+    versions = [
+		"stable" => "v^",
+		"v#.#.#",
+		"dev" => "dev",
+	],
+)

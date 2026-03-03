@@ -1,6 +1,6 @@
 name = "CPPLS"
 uuid = "165bcf3d-aa04-45f7-b691-acf9bd4168c1"
-version = "1.0.0-DEV"
+version = "0.0.1"
 authors = ["Oliver Niehuis <oliver.niehuis@biologie.uni-freiburg.de> and contributors"]
 
 [deps]

@@ -678,7 +678,13 @@ function add_scoreplot_legend!(
         scatter!(axis, [NaN], [NaN]; color = mapping[key], label = key, marker = marker, markersize = markersize)
     end
 
-    return axislegend(axis; position = position)
+    hide_axis_legends!(axis)
+    return safe_axislegend(
+        axis;
+        position = normalize_legend_position(position),
+        merge = true,
+        unique = true,
+    )
 end
 
 function scoreplot(
@@ -795,7 +801,7 @@ function plot_projection!(
     label_align = (:center, :bottom),
     show_legend = true,
     legend_position = :tr,
-    legend_labels = ("correct", "wrong"),
+    legend_labels = ("consistent", "inconsistent"),
 )
     correct isa NamedTuple || throw(ArgumentError("`correct` must be a NamedTuple"))
     wrong isa NamedTuple || throw(ArgumentError("`wrong` must be a NamedTuple"))

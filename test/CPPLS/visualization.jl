@@ -68,6 +68,18 @@ function dummy_cppls3(; analysis = :discriminant, sample_labels = String[])
     end
 end
 
+function legend_labels(legend)
+    groups = Makie.to_value(legend.entrygroups)
+    labels = String[]
+    for (_, entries) in groups
+        for entry in entries
+            label = Makie.to_value(entry.attributes[:label])
+            push!(labels, string(label))
+        end
+    end
+    return labels
+end
+
 @testset "order_preserving_unique" begin
     labels = ["red", "blue", "red", "green", "blue", "yellow"]
     ordered = MakieExt.order_preserving_unique(labels)
@@ -593,4 +605,42 @@ end
         hide! = record_hide!,
     )
     @test length(hidden) == 3
+end
+
+@testset "scoreplot legend merge" begin
+    cppls = dummy_cppls()
+    scores = [0.1 0.2; 0.3 0.4; 0.5 0.6; 0.7 0.8]
+    bins = ["class1", "class2", "class1", "class2"]
+    Y_project = [1 0; 0 1; 1 0; 0 1]
+    Y_predicted = [1 0; 1 0; 1 0; 0 1]
+
+    fig = Makie.Figure(size = (200, 200))
+    ax = Makie.Axis(fig[1, 1])
+
+    CPPLS.plot_projection!(
+        ax,
+        cppls,
+        scores,
+        bins,
+        Y_project,
+        Y_predicted;
+        legend_position = :tr,
+        legend_labels = ("consistent", "inconsistent"),
+    )
+
+    CPPLS.scoreplot!(
+        ax,
+        cppls;
+        legend_position = :lb,
+    )
+
+    legends = [blk for blk in fig.content if blk isa Makie.Legend]
+    @test length(legends) >= 2
+    visible_flags = [blk.blockscene.visible[] for blk in legends]
+    @test count(identity, visible_flags) == 1
+    visible_idx = findfirst(visible_flags)
+    @test visible_idx !== nothing
+    visible_labels = Set(legend_labels(legends[visible_idx]))
+    expected = Set(["consistent", "inconsistent", "class1", "class2"])
+    @test expected ⊆ visible_labels
 end

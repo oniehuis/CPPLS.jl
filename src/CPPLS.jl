@@ -85,6 +85,8 @@ label at the hovered sample point (no additional calls required).
 
 Use `show_legend=false` to suppress the automatically generated legend, and
 `legend_position`, `legend_marker`, and `legend_markersize` to adjust its style.
+When enabled, any existing axis legend is hidden and replaced with a merged,
+unique legend.
 
 Returns the `Plot` object created by `scoreplotplot`, matching Makie’s usual
 figure/axis semantics. The implementation itself is provided by the Makie
@@ -110,7 +112,8 @@ For interactive backends (e.g. GLMakie), set `hover_labels=true` to show a fixed
 label at the hovered sample point (no additional calls required).
 
 Use `show_legend=false` to suppress the legend and `legend_position`,
-`legend_marker`, and `legend_markersize` to adjust its style.
+`legend_marker`, and `legend_markersize` to adjust its style. When enabled, any
+existing axis legend is hidden and replaced with a merged, unique legend.
 """
 function scoreplot! end
 Base.@doc SCOREPLOT_BANG_DOC scoreplot!

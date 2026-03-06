@@ -108,6 +108,21 @@ julia> CPPLS.robustcor([1, 1, 1], [2, 3, 4])
 end
 
 """
+    invfreqweights(samples::AbstractVector)
+
+Return normalized inverse-frequency weights for `samples`. Each sample gets
+`1 / count(samples[i])`, rescaled to sum to 1.
+"""
+function invfreqweights(samples::AbstractVector)
+    countof = Dict{eltype(samples), Int}()
+    for sample in samples
+        countof[sample] = get(countof, sample, 0) + 1
+    end
+    w = [1 / countof[sample] for sample in samples]
+    w ./ sum(w)
+end
+
+"""
     separationaxis(Xscores::AbstractMatrix, Y::AbstractMatrix; method::Symbol=:centroid, 
     positive_class::Integer=1)
 

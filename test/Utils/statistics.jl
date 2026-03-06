@@ -38,6 +38,22 @@ end
     @test CPPLS.robustcor(constant, noisy) == 0.0
 end
 
+@testset "invfreqweights returns normalized inverse frequencies" begin
+    samples = ["A", "A", "B", "C", "C", "C"]
+    w = CPPLS.invfreqweights(samples)
+
+    @test length(w) == length(samples)
+    @test sum(w) ≈ 1.0
+    @test w[1] == w[2]
+
+    # Rare groups receive higher per-sample weights.
+    @test w[3] > w[1] > w[4]
+
+    # Total weight per class is balanced.
+    @test sum(w[[1, 2]]) ≈ sum(w[[3]])
+    @test sum(w[[3]]) ≈ sum(w[[4, 5, 6]])
+end
+
 @testset "separationaxis orients single and multi component projections" begin
     Y = [
         1 0

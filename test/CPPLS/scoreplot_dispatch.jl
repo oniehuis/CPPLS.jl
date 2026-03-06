@@ -1,17 +1,6 @@
 using CategoricalArrays
 using Test
 
-function reset_require_extension!()
-    @eval CPPLS function _require_extension(extsym::Symbol, pkg::AbstractString)
-        Base.get_extension(@__MODULE__, extsym) === nothing &&
-            error("Backend $(pkg) not loaded. Run `using $(pkg)` first.")
-        return nothing
-    end
-    return nothing
-end
-
-reset_require_extension!()
-
 @testset "scoreplot dispatch guards" begin
     samples = ["s1", "s2"]
     groups = ["g1", "g2"]
@@ -23,7 +12,7 @@ end
 
 @testset "scoreplot dispatch success" begin
     @eval CPPLS begin
-        _require_extension(extsym::Symbol, pkg::AbstractString) = nothing
+        _require_extension(extsym::Symbol, pkg::String) = nothing
         function scoreplot_plotly(
             samples::AbstractVector{SubString{String}},
             groups,
@@ -41,6 +30,8 @@ end
             return (:makie, samples, groups, scores, kwargs)
         end
     end
+
+    override_method = which(CPPLS._require_extension, (Symbol, String))
 
     samples = [SubString("s1", 1:2), SubString("s2", 1:2)]
     groups = ["g1", "g2"]
@@ -133,7 +124,13 @@ end
     @test res[3] == cppls.da_categories
     @test res[4] == cppls.X_scores[:, 1:2]
 
-    @test_throws ErrorException CPPLS.scoreplot(cppls; backend = :unknown)
-end
+    res = CPPLS.scoreplot(cppls; backend = :plotly)
+    @test res[1] == :plotly
+    @test res[2] == cppls.sample_labels
+    @test res[3] == cppls.da_categories
+    @test res[4] == cppls.X_scores[:, 1:2]
 
-reset_require_extension!()
+    @test_throws ErrorException CPPLS.scoreplot(cppls; backend = :unknown)
+
+    Base.delete_method(override_method)
+end

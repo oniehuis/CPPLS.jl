@@ -61,3 +61,19 @@ end
     plot2 = res2 isa PlotlyJS.SyncPlot ? res2.plot : res2
     @test plot2.layout.title == "Custom"
 end
+
+@testset "scoreplot_plotly nothing kwargs" begin
+    samples = ["s1", "s2"]
+    groups = [:a, :b]
+    scores = [1.0 2.0; 3.0 4.0]
+
+    res = CPPLS.scoreplot_plotly(
+        samples,
+        groups,
+        scores;
+        default_trace = nothing,
+        default_marker = nothing,
+        plot_kwargs = nothing,
+    )
+    @test res isa Union{PlotlyJS.Plot, PlotlyJS.SyncPlot}
+end

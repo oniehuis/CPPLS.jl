@@ -4,6 +4,7 @@ using Test
 
 const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
 @test MakieExt !== nothing
+@test CPPLS._require_extension(:MakieExtension, "Makie") === nothing
 
 function set_backend(mod)
     @eval Makie current_backend() = $mod
@@ -65,6 +66,31 @@ end
         ),
     )
     @test res2 === fig2
+end
+
+@testset "scoreplot_makie nothing kwargs" begin
+    set_backend(missing)
+
+    samples = ["s1", "s2"]
+    groups = [:a, :b]
+    scores = [1.0 2.0; 3.0 4.0]
+
+    res = CPPLS.scoreplot_makie(
+        samples,
+        groups,
+        scores;
+        figure = nothing,
+        axis = nothing,
+        figure_kwargs = nothing,
+        axis_kwargs = nothing,
+        legend_kwargs = nothing,
+        show_legend = true,
+        show_inspector = false,
+        default_scatter = nothing,
+        default_trace = nothing,
+        default_marker = nothing,
+    )
+    @test res isa Figure
 end
 
 @testset "scoreplot_makie inspector" begin

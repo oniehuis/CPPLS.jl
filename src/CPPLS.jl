@@ -42,10 +42,6 @@ export one_hot_to_labels
 export find_invariant_and_variant_columns
 export decision_line
 
-matches_sample_length(value::AbstractVector, n) = length(value) == n
-matches_sample_length(value::Tuple, n) = length(value) == n
-matches_sample_length(::Any, ::Any) = Base.inferencebarrier(false)
-
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """
     scoreplot(samples, groups, scores; backend=:plotly, kwargs...)
@@ -53,6 +49,80 @@ const SCOREPLOT_DOC = """
 
 Backend dispatcher for CPPLS score plots. Use `backend=:plotly` (default) for the
 PlotlyJS extension or `backend=:makie` for the Makie extension.
+
+The dispatcher accepts *backend-agnostic* keywords and passes any remaining
+keywords to the selected backend. To avoid confusion, think of the keywords as
+belonging to three groups:
+
+General (backend-agnostic)
+- `backend::Symbol = :plotly`
+  Select the backend. Supported values: `:plotly`, `:makie`.
+
+PlotlyJS backend keywords (PlotlyJSExtension)
+- `group_order::Union{Nothing,AbstractVector} = nothing`
+  Order of groups (also draw order; later is on top). If `nothing`, uses
+  `levels(groups)` for `CategoricalArray`, else `unique(groups)`.
+- `default_trace = (;)`
+  PlotlyJS scatter kwargs applied to every group (except marker).
+- `group_trace::AbstractDict = Dict()`
+  Per-group PlotlyJS scatter kwargs.
+- `default_marker = (;)`
+  PlotlyJS marker kwargs for every group (keys must be `Symbol`s).
+- `group_marker::AbstractDict = Dict()`
+  Per-group marker kwargs (keys must be `Symbol`s).
+- `hovertemplate::AbstractString = "Sample: %{text}<br>Group: %{fullData.name}<br>LV1: %{x}<br>LV2: %{y}<extra></extra>"`
+  Hover text template. The default shows sample, group, LV1, LV2.
+- `layout::Union{Nothing,PlotlyJS.Layout} = nothing`
+  Layout object; if `nothing`, a default layout is created using `title`, `xlabel`,
+  and `ylabel`.
+- `plot_kwargs = (;)`
+  Extra kwargs passed to `PlotlyJS.plot` (e.g., `config`).
+- `show_legend::Union{Nothing,Bool} = nothing`
+  If `false`, sets `showlegend=false` for all traces.
+- `title::AbstractString = "Scores"`
+- `xlabel::AbstractString = "Latent Variable 1"`
+- `ylabel::AbstractString = "Latent Variable 2"`
+
+Makie backend keywords (MakieExtension)
+- `group_order::Union{Nothing,AbstractVector} = nothing`
+  Order of groups (also draw order).
+- `default_scatter = (;)`
+  Makie scatter kwargs applied to every group.
+- `group_scatter::AbstractDict = Dict()`
+  Per-group scatter kwargs.
+- `default_trace = (;)`
+  Additional scatter kwargs applied to every group (legacy convenience).
+- `group_trace::AbstractDict = Dict()`
+  Per-group scatter kwargs (legacy convenience).
+- `default_marker = (;)`
+  Marker-related kwargs applied to every group.
+- `group_marker::AbstractDict = Dict()`
+  Per-group marker kwargs.
+- `title::AbstractString = "Scores"`
+- `xlabel::AbstractString = "Latent Variable 1"`
+- `ylabel::AbstractString = "Latent Variable 2"`
+- `figure = nothing`
+  Provide an existing `Figure` to draw into.
+- `axis = nothing`
+  Provide an existing `Axis` to draw into.
+- `figure_kwargs = (;)`
+  Extra kwargs passed to `Figure` when it is created.
+- `axis_kwargs = (;)`
+  Extra kwargs passed to `Axis` when it is created.
+- `show_legend::Bool = true`
+  If `true`, calls `axislegend`.
+- `legend_kwargs = (;)`
+  Extra kwargs passed to `axislegend`.
+- `show_inspector::Bool = true`
+  If `true`, enables `DataInspector` on GLMakie/WGLMakie.
+- `inspector_kwargs = (;)`
+  Extra kwargs passed to `DataInspector`.
+
+Notes
+- The dispatcher checks that the requested backend is loaded and errors with
+  "Backend <pkg> not loaded" if not.
+- Unknown backend values throw `error("Unknown backend")`.
+- `scores` must have at least two columns (LV1 and LV2).
 """
 function scoreplot end
 Base.@doc SCOREPLOT_DOC scoreplot

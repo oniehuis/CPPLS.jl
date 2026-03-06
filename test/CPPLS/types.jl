@@ -1,7 +1,3 @@
-@testset "matches_sample_length fallback" begin
-    @test CPPLS.matches_sample_length(:foo, :bar) == false
-end
-
 @testset "CPPLS stores selected training artefact" begin
     configs = [
         (

@@ -5,6 +5,24 @@ using Test
     include(joinpath("CPPLS", "types.jl"))
 end
 
+@testset "CPPLS/scoreplot_dispatch" begin
+    include(joinpath("CPPLS", "scoreplot_dispatch.jl"))
+end
+
+@testset "CPPLS/scoreplot_makie" begin
+    include(joinpath("CPPLS", "scoreplot_makie.jl"))
+end
+
+if Base.find_package("PlotlyJS") !== nothing
+    @testset "CPPLS/scoreplot_plotly" begin
+        include(joinpath("CPPLS", "scoreplot_plotly.jl"))
+    end
+else
+    @testset "CPPLS/scoreplot_plotly" begin
+        @test true
+    end
+end
+
 @testset "CPPLS/predict" begin
     include(joinpath("CPPLS", "predict.jl"))
 end

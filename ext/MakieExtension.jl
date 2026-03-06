@@ -4,6 +4,6 @@ using Makie
 import CPPLS
 
 const ROOT = joinpath(@__DIR__, "..")
-include(joinpath(ROOT, "ext", "makie_extensions", "cppls.jl"))
+include(joinpath(ROOT, "ext", "makie_extensions", "scoreplot.jl"))
 
 end

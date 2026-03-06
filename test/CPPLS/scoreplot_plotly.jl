@@ -8,7 +8,7 @@ const PlotlyExt = Base.get_extension(CPPLS, :PlotlyJSExtension)
 @testset "scoreplot_plotly errors" begin
     samples = ["s1", "s2"]
     groups = [:a, :b]
-    scores = [1.0; 2.0]
+    scores = reshape([1.0, 2.0], 2, 1)
     @test_throws ErrorException CPPLS.scoreplot_plotly(samples, groups, scores)
 end
 
@@ -42,8 +42,9 @@ end
         show_legend = false,
         plot_kwargs = Dict("config" => PlotlyJS.PlotConfig(displayModeBar = false)),
     )
-    @test res isa PlotlyJS.Plot
-    @test length(res.data) == 2
+    @test res isa Union{PlotlyJS.Plot, PlotlyJS.SyncPlot}
+    plot = res isa PlotlyJS.SyncPlot ? res.plot : res
+    @test length(plot.data) == 2
 
     groups_cat = categorical(["x", "y", "x"]; levels = ["x", "y", "z"])
     layout = PlotlyJS.Layout(title = "Custom")
@@ -56,6 +57,7 @@ end
         layout = layout,
         group_marker = Dict("x" => Dict("color" => "green")),
     )
-    @test res2 isa PlotlyJS.Plot
-    @test res2.layout.title == "Custom"
+    @test res2 isa Union{PlotlyJS.Plot, PlotlyJS.SyncPlot}
+    plot2 = res2 isa PlotlyJS.SyncPlot ? res2.plot : res2
+    @test plot2.layout.title == "Custom"
 end

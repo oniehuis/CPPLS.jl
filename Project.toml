@@ -14,7 +14,7 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [weakdeps]
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-PlotlyJS = "f0f68f2c-4968-5a86-969c-8d7d370f61d8"
+PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"
 
 [extensions]
 MakieExtension = "Makie"

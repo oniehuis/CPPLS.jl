@@ -1,106 +1,43 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Cross Validation · CPPLS</title><meta name="title" content="Cross Validation · CPPLS"/><meta property="og:title" content="Cross Validation · CPPLS"/><meta property="twitter:title" content="Cross Validation · CPPLS"/><meta name="description" content="Documentation for CPPLS."/><meta property="og:description" content="Documentation for CPPLS."/><meta property="twitter:description" content="Documentation for CPPLS."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">CPPLS</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">CPPLS</span><ul><li><a class="tocitem" href="../theory/">Canonical Powered Partial Least Squares (CPPLS)</a></li><li><a class="tocitem" href="../types/">Types</a></li><li><a class="tocitem" href="../fit/">Fit</a></li><li><a class="tocitem" href="../predict/">Predict</a></li><li class="is-active"><a class="tocitem" href>Cross Validation</a></li><li><a class="tocitem" href="../visualization/">Visualization</a></li><li><a class="tocitem" href="../internal/">Internal</a></li></ul></li><li><span class="tocitem">Utils</span><ul><li><a class="tocitem" href="../../Utils/encoding/">Encoding</a></li><li><a class="tocitem" href="../../Utils/matrix/">Matrix</a></li><li><a class="tocitem" href="../../Utils/statistics/">Statistics</a></li><li><a class="tocitem" href="../../Utils/internal/">Internal</a></li></ul></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">CPPLS</a></li><li class="is-active"><a href>Cross Validation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Cross Validation</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/oniehuis/CPPLS.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/oniehuis/CPPLS.jl/blob/main/docs/src/CPPLS/crossvalidation.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Cross-Validation"><a class="docs-heading-anchor" href="#Cross-Validation">Cross Validation</a><a id="Cross-Validation-1"></a><a class="docs-heading-anchor-permalink" href="#Cross-Validation" title="Permalink"></a></h1><article><details class="docstring" open="true"><summary id="CPPLS.calculate_p_value"><a class="docstring-binding" href="#CPPLS.calculate_p_value"><code>CPPLS.calculate_p_value</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">calculate_p_value(permutation_accuracies::AbstractVector{&lt;:Real},
                   model_accuracy::Float64)</code></pre><p>Compute an empirical p-value from permutation test accuracies. Counts how many permutation  accuracies are less than or numerically equal to the observed <code>model_accuracy</code>, divides by  <code>length(permutation_accuracies) + 1</code> to include the observed model in the denominator.</p><p>Arguments</p><ul><li><code>permutation_accuracies</code>: vector of accuracies from label-shuffled runs.</li><li><code>model_accuracy</code>: accuracy achieved by the true model.</li></ul><p><strong>Example</strong></p><pre><code class="language-julia hljs">julia&gt; calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.6
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/bbd87a91229bf0596bd1b31f0691ac0e2f4b4da4/src/CPPLS/metrics.jl#L60-L77">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv"><a class="docstring-binding" href="#CPPLS.nested_cv"><code>CPPLS.nested_cv</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv(X::AbstractMatrix{&lt;:Real}, Y_prim::AbstractMatrix{&lt;:Integer};
-    gamma::Union{&lt;:Real, &lt;:NTuple{2, &lt;:Real}, &lt;:AbstractVector{&lt;:Union{&lt;:Real,&lt;:NTuple{2, &lt;:Real}}}}=0.5,
-    observation_weights::Union{AbstractVector{&lt;:Real},Nothing}=nothing,
-    observation_weights_fn::Union{Function,Nothing}=nothing,
-    Y_aux::Union{AbstractMatrix{&lt;:Real},Nothing}=nothing,
-    center::Bool=true,
-    X_tolerance::Real=1e-12,
-    X_loading_weight_tolerance::Real=eps(Float64),
-    t_squared_norm_tolerance::Real=1e-10,
-    gamma_rel_tol::Real=1e-6,
-    gamma_abs_tol::Real=1e-12,
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b644741f2f56d17e360e61a097238e40ae9e80de/src/CPPLS/metrics.jl#L60-L77">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_classification"><a class="docstring-binding" href="#CPPLS.cv_classification"><code>CPPLS.cv_classification</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_classification(; weighted=true)</code></pre><p>Return a named tuple with <code>score_fn</code>, <code>predict_fn</code>, <code>select_fn</code>, and <code>flag_fn</code> implementations for CPPLS classification (NMC-based scoring). These assume one-hot response matrices and CPPLS fits created in <code>:discriminant</code> mode.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b644741f2f56d17e360e61a097238e40ae9e80de/src/CPPLS/crossvalidation.jl#L242-L248">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_outlier_scan"><a class="docstring-binding" href="#CPPLS.cv_outlier_scan"><code>CPPLS.cv_outlier_scan</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_outlier_scan(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
+    spec::CPPLSSpec,
+    fit_kwargs::NamedTuple=(;),
+    num_outer_folds::Integer=8,
+    num_outer_folds_repeats::Integer=10 * num_outer_folds,
+    num_inner_folds::Integer=7,
+    num_inner_folds_repeats::Integer=num_inner_folds,
+    max_components::Integer=spec.n_components,
+    reshuffle_outer_folds::Bool=true,
+    rng::AbstractRNG=Random.GLOBAL_RNG,
+    verbose::Bool=true)</code></pre><p>Convenience outlier scan for classification. Returns per-sample test counts and misclassification counts plus the rate (<code>n_flagged ./ n_tested</code>). By default <code>reshuffle_outer_folds = true</code> so samples are repeatedly re-tested across random outer splits.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b644741f2f56d17e360e61a097238e40ae9e80de/src/CPPLS/crossvalidation.jl#L570-L587">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv"><a class="docstring-binding" href="#CPPLS.nested_cv"><code>CPPLS.nested_cv</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
+    spec::CPPLSSpec,
+    fit_kwargs::NamedTuple=(;),
+    score_fn::Function,
+    predict_fn::Function,
+    select_fn::Function,
     num_outer_folds::Integer=8,
     num_outer_folds_repeats::Integer=num_outer_folds,
     num_inner_folds::Integer=7,
     num_inner_folds_repeats::Integer=num_inner_folds,
-    max_components::Integer=5,
-    weighted_nmc::Bool=true,
+    max_components::Integer=spec.n_components,
+    strata::Union{AbstractVector{&lt;:Integer},Nothing}=nothing,
+    reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
-    verbose::Bool=true)</code></pre><p>Top-level nested CV driver for CPPLS. Parameter overview:</p><ul><li><code>X</code>, <code>Y_prim</code>: feature and one-hot response matrices (integer-valued). Wrapper methods accept categorical label vectors. Regression responses (real-valued vectors or matrices) are currently unsupported because only the NMC metric is implemented.</li><li><code>gamma</code>: either a scalar γ, a <code>(lo, hi)</code> tuple, or a vector of mixed candidates passed to <code>fit_cppls_light</code>. Scalars enforce a single γ for all components, whereas tuples/vectors share candidate ranges from which each component selects its own optimum.</li><li><code>observation_weights</code>: optional sample weights (full-length vectors are subset per fold); <code>observation_weights_fn</code>: optional function <code>labels -&gt; weights</code> recomputed per training split (provide one or the other).</li><li><code>Y_aux</code>: extra response features.</li><li><code>center</code>: toggle mean-centering; tolerances control numerical stability inside inner fits; <code>weighted_nmc</code> chooses between weighted/unweighted misclassification cost.</li><li><code>num_outer_folds</code>, <code>num_outer_folds_repeats</code>: number of outer stratified folds and how many to evaluate (≤ <code>num_outer_folds</code>).</li><li><code>num_inner_folds</code>, <code>num_inner_folds_repeats</code>: same for inner CV.</li><li><code>max_components</code>: maximum latent components considered by the inner loop.</li><li><code>rng</code>: random generator shared across fold shuffles; <code>verbose</code>: emit progress.</li></ul><p>For every outer fold the data is split into training/test partitions, an inner CV loop selects the optimal component count via <code>optimize_num_latent_variables</code>, the final <code>CPPLSFitLight</code> is fit on the outer training data with that count, and <code>accuracy = 1 - nmc</code> is computed on the outer test split. Returns a tuple <code>(outer_fold_accuracies, optimal_num_latent_variables)</code>.</p><p><strong>Example</strong></p><pre><code class="language-julia hljs">julia&gt; using Random
-
-julia&gt; X = rand(MersenneTwister(1), 12, 4);
-
-julia&gt; labels = repeat([&quot;red&quot;, &quot;blue&quot;, &quot;green&quot;], 4);
-
-julia&gt; Y, _ = labels_to_one_hot(labels);
-
-julia&gt; accs, comps = nested_cv(
-           X, Y;
-           gamma=0.5,
-           num_outer_folds=3,
-           num_inner_folds=2,
-           max_components=2,
-           rng=MersenneTwister(2),
-           verbose=false);
-[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-julia&gt; accs ≈ [1.1102230246251565e-16, 0.0, 0.0]
-true
-
-julia&gt; comps ≈ [1, 1, 1]
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/bbd87a91229bf0596bd1b31f0691ac0e2f4b4da4/src/CPPLS/crossvalidation.jl#L418-L500">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv_permutation"><a class="docstring-binding" href="#CPPLS.nested_cv_permutation"><code>CPPLS.nested_cv_permutation</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv_permutation(X::AbstractMatrix{&lt;:Real}, Y_prim::AbstractMatrix{&lt;:Integer};
-    gamma::Union{&lt;:Real, &lt;:NTuple{2,&lt;:Real}, &lt;:AbstractVector{&lt;:Union{&lt;:Real,&lt;:NTuple{2,&lt;:Real}}}}=0.5,
-    observation_weights::Union{AbstractVector{&lt;:Real},Nothing}=nothing,
-    observation_weights_fn::Union{Function,Nothing}=nothing,
-    Y_aux::Union{AbstractMatrix{&lt;:Real},Nothing}=nothing,
-    center::Bool=true,
-    X_tolerance::Real=1e-12,
-    X_loading_weight_tolerance::Real=eps(Float64),
-    t_squared_norm_tolerance::Real=1e-10,
-    gamma_rel_tol::Real=1e-6,
-    gamma_abs_tol::Real=1e-12,
-    num_outer_folds::Integer=9,
-    num_outer_folds_repeats::Integer=num_outer_folds,
-    num_inner_folds::Integer=8,
-    num_inner_folds_repeats::Integer=num_inner_folds,
-    max_components::Integer=5,
-    weighted_nmc::Bool=true,
+    verbose::Bool=true)</code></pre><p>Explicit nested cross-validation. The caller supplies <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code> so the routine is agnostic to regression vs classification. Use <code>spec</code> + <code>fit_kwargs</code> to configure CPPLS fitting.</p><p>If <code>spec.analysis_mode == :discriminant</code> and <code>response_labels</code> are not provided in <code>fit_kwargs</code>, default labels <code>&quot;1&quot;</code>, <code>&quot;2&quot;</code>, … are injected to satisfy the CPPLS fit metadata requirements.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b644741f2f56d17e360e61a097238e40ae9e80de/src/CPPLS/crossvalidation.jl#L354-L378">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv_permutation"><a class="docstring-binding" href="#CPPLS.nested_cv_permutation"><code>CPPLS.nested_cv_permutation</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv_permutation(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
+    spec::CPPLSSpec,
+    fit_kwargs::NamedTuple=(;),
+    score_fn::Function,
+    predict_fn::Function,
+    select_fn::Function,
     num_permutations::Integer=999,
+    num_outer_folds::Integer=8,
+    num_outer_folds_repeats::Integer=num_outer_folds,
+    num_inner_folds::Integer=7,
+    num_inner_folds_repeats::Integer=num_inner_folds,
+    max_components::Integer=spec.n_components,
+    strata::Union{AbstractVector{&lt;:Integer},Nothing}=nothing,
+    reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
-    verbose::Bool=true)</code></pre><p>Permutation-based significance test for the nested CV pipeline. Keywords mirror <code>nested_cv</code> but with explicit defaults suited for permutation tests. Parameter summary:</p><ul><li><code>gamma</code>, <code>observation_weights</code>, <code>observation_weights_fn</code>, <code>Y_aux</code>, <code>center</code>, tolerances, <code>weighted_nmc</code>: forwarded directly into each nested CV call. Only discriminant responses (integer one-hot matrices or categorical vectors) are supported because the scoring metric is classification-specific.</li><li><code>num_outer_folds</code>, <code>num_outer_folds_repeats</code>, <code>num_inner_folds</code>, <code>num_inner_folds_repeats</code>, <code>max_components</code>: control the inner/outer fold geometry per permutation.</li><li><code>num_permutations</code>: number of label shuffles (≥ 1).</li><li><code>rng</code>: governs shuffling of both labels and folds; <code>verbose</code>: prints progress.</li></ul><p>For each permutation, the rows of <code>Y_prim</code> are randomly shuffled, then <code>nested_cv</code> is executed with the same hyperparameters, and the mean outer-fold accuracy is recorded. Returns a vector of length <code>num_permutations</code> containing those mean accuracies so you can compute empirical p-values against the unpermuted nested-CV accuracy.</p><p><strong>Example</strong></p><pre><code class="language-julia hljs">julia&gt; using Random
-
-julia&gt; X = rand(MersenneTwister(1), 12, 4);
-
-julia&gt; labels = repeat([&quot;red&quot;, &quot;blue&quot;, &quot;green&quot;], 4);
-
-julia&gt; Y, classes = labels_to_one_hot(labels);
-
-julia&gt; perms = nested_cv_permutation(X, Y;
-                 gamma=0.5,
-                 num_outer_folds=3,
-                 num_inner_folds=2,
-                 max_components=2,
-                 num_permutations=2,
-                 verbose=false,
-                 rng=MersenneTwister(2));
-[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-
-julia&gt; perms ≈ [0.3055555555555556, 0.22222222222222224]
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/bbd87a91229bf0596bd1b31f0691ac0e2f4b4da4/src/CPPLS/crossvalidation.jl#L656-L738">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../predict/">« Predict</a><a class="docs-footer-nextpage" href="../visualization/">Visualization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 10 March 2026 13:09">Tuesday 10 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+    verbose::Bool=true)</code></pre><p>Permutation-based significance test for the nested CV pipeline. Returns a vector of mean scores (one per permutation).</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b644741f2f56d17e360e61a097238e40ae9e80de/src/CPPLS/crossvalidation.jl#L484-L504">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../predict/">« Predict</a><a class="docs-footer-nextpage" href="../visualization/">Visualization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 10 March 2026 19:38">Tuesday 10 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

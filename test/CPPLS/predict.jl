@@ -1,8 +1,8 @@
 using LinearAlgebra: I
 
 struct DummyProjectionModel <: CPPLS.AbstractCPPLSFit
-    projection::Matrix{Float64}
-    X_means::Matrix{Float64}
+    R::Matrix{Float64}
+    X_bar::Matrix{Float64}
 end
 
 function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Float64})
@@ -10,30 +10,30 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
     n_predictors = n_components
     n_responses = 2
 
-    regression_coefficients = zeros(Float64, n_predictors, n_responses, n_components)
-    X_loadings = zeros(Float64, n_predictors, n_components)
-    X_loading_weights = similar(X_loadings)
-    Y_scores = zeros(Float64, n_samples, n_components)
-    Y_loadings = zeros(Float64, n_responses, n_components)
-    projection = Matrix{Float64}(I, n_predictors, n_components)
-    X_means = zeros(Float64, 1, n_predictors)
-    Y_means = zeros(Float64, 1, n_responses)
+    B = zeros(Float64, n_predictors, n_responses, n_components)
+    P = zeros(Float64, n_predictors, n_components)
+    W_comp = similar(P)
+    U = zeros(Float64, n_samples, n_components)
+    C = zeros(Float64, n_responses, n_components)
+    R = Matrix{Float64}(I, n_predictors, n_components)
+    X_bar = zeros(Float64, 1, n_predictors)
+    Y_bar = zeros(Float64, 1, n_responses)
 
-    fitted_values = zeros(Float64, n_samples, n_responses, n_components)
+    Y_hat = zeros(Float64, n_samples, n_responses, n_components)
     for j = 1:n_components
-        fitted_values[:, 1, j] .= class_diff
-        fitted_values[:, 2, j] .= 0.0
+        Y_hat[:, 1, j] .= class_diff
+        Y_hat[:, 2, j] .= 0.0
     end
 
-    residuals = similar(fitted_values)
-    X_variance = ones(Float64, n_components)
-    X_total_variance = 1.0
-    gammas = fill(0.5, n_components)
-    canonical_correlations = fill(0.9, n_components)
-    small_norm_indices = zeros(Int, n_components, n_predictors)
-    canonical_coefficients = zeros(Float64, n_responses, n_components)
-    canonical_coefficients_y = zeros(Float64, n_responses, n_components)
-    W0_weights = zeros(Float64, n_predictors, n_responses, n_components)
+    F = similar(Y_hat)
+    X_var = ones(Float64, n_components)
+    X_var_total = 1.0
+    gamma = fill(0.5, n_components)
+    rho = fill(0.9, n_components)
+    zero_mask = zeros(Int, n_components, n_predictors)
+    a = zeros(Float64, n_responses, n_components)
+    b = zeros(Float64, n_responses, n_components)
+    W0 = zeros(Float64, n_predictors, n_responses, n_components)
     Z = zeros(Float64, n_samples, n_responses, n_components)
     sample_labels = ["sample_$i" for i = 1:n_samples]
     predictor_labels = ["x_$j" for j = 1:n_predictors]
@@ -41,25 +41,25 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
     da_categories = [i ≤ n_samples ÷ 2 ? :a : :b for i = 1:n_samples]
 
     return CPPLS.CPPLSFit(
-        regression_coefficients,
+        B,
         scores,
-        X_loadings,
-        X_loading_weights,
-        Y_scores,
-        Y_loadings,
-        projection,
-        X_means,
-        Y_means,
-        fitted_values,
-        residuals,
-        X_variance,
-        X_total_variance,
-        gammas,
-        canonical_correlations,
-        small_norm_indices,
-        canonical_coefficients,
-        canonical_coefficients_y,
-        W0_weights,
+        P,
+        W_comp,
+        U,
+        C,
+        R,
+        X_bar,
+        Y_bar,
+        Y_hat,
+        F,
+        X_var,
+        X_var_total,
+        gamma,
+        rho,
+        zero_mask,
+        a,
+        b,
+        W0,
         Z;
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
@@ -70,15 +70,15 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
 end
 
 @testset "predict applies centering and component selection" begin
-    regression_coefficients = Array{Float64}(undef, 2, 2, 2)
-    regression_coefficients[:, :, 1] = [1.0 0.0; 0.0 2.0]
-    regression_coefficients[:, :, 2] = [0.5 -0.2; 0.3 0.1]
-    X_means = reshape([1.0, 2.0], 1, :)
-    Y_means = reshape([0.25, -0.5], 1, :)
+    B = Array{Float64}(undef, 2, 2, 2)
+    B[:, :, 1] = [1.0 0.0; 0.0 2.0]
+    B[:, :, 2] = [0.5 -0.2; 0.3 0.1]
+    X_bar = reshape([1.0, 2.0], 1, :)
+    Y_bar = reshape([0.25, -0.5], 1, :)
     cppls = CPPLS.CPPLSFitLight(
-        regression_coefficients,
-        X_means,
-        Y_means,
+        B,
+        X_bar,
+        Y_bar,
         :regression,
     )
 
@@ -87,11 +87,11 @@ end
         2.0 1.0
         3.0 4.0
     ]
-    centered = X .- X_means
+    centered = X .- X_bar
 
-    expected = Array{Float64}(undef, size(X, 1), size(Y_means, 2), 2)
+    expected = Array{Float64}(undef, size(X, 1), size(Y_bar, 2), 2)
     for i = 1:2
-        expected[:, :, i] = centered * regression_coefficients[:, :, i] .+ Y_means
+        expected[:, :, i] = centered * B[:, :, i] .+ Y_bar
     end
 
     preds_full = CPPLS.predict(cppls, X)
@@ -99,18 +99,18 @@ end
 
     @test preds_full ≈ expected
     @test preds_one[:, :, 1] ≈ expected[:, :, 1]
-    @test size(preds_full) == (size(X, 1), size(Y_means, 2), 2)
+    @test size(preds_full) == (size(X, 1), size(Y_bar, 2), 2)
     @test_throws DimensionMismatch CPPLS.predict(cppls, X, 3)
 end
 
 @testset "predictonehot converts summed predictions to labels" begin
-    regression_coefficients = ones(Float64, 1, 2, 1)
-    X_means = reshape([0.0], 1, 1)
-    Y_means = reshape([0.1, -0.2], 1, :)
+    B = ones(Float64, 1, 2, 1)
+    X_bar = reshape([0.0], 1, 1)
+    Y_bar = reshape([0.1, -0.2], 1, :)
     cppls = CPPLS.CPPLSFitLight(
-        regression_coefficients,
-        X_means,
-        Y_means,
+        B,
+        X_bar,
+        Y_bar,
         :regression,
     )
 
@@ -127,7 +127,7 @@ end
     ]
 
     summed = sum(predictions, dims = 3)[:, :, 1]
-    adjusted = summed .- (size(predictions, 3) - 1) .* cppls.Y_means
+    adjusted = summed .- (size(predictions, 3) - 1) .* cppls.Y_bar
     expected_labels = map(argmax, eachrow(adjusted))
 
     expected_one_hot = zeros(Int, 3, 2)
@@ -139,21 +139,21 @@ end
     @test result == expected_one_hot
 end
 
-@testset "project centers inputs before applying projection" begin
-    X_means = reshape([0.5, -1.0], 1, :)
-    projection = [
+@testset "project centers inputs before applying R" begin
+    X_bar = reshape([0.5, -1.0], 1, :)
+    R = [
         1.0 0.0
         0.5 2.0
     ]
-    dummy = DummyProjectionModel(projection, X_means)
+    dummy = DummyProjectionModel(R, X_bar)
     X = [
         0.5 -1.0
         1.0 0.0
         2.0 1.0
     ]
 
-    centered = X .- X_means
-    expected_scores = centered * projection
+    centered = X .- X_bar
+    expected_scores = centered * R
 
     scores = CPPLS.project(dummy, X)
     @test scores ≈ expected_scores

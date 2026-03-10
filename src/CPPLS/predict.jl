@@ -1,6 +1,6 @@
 """
     predict(cppls::AbstractCPPLSFit, X::AbstractMatrix{<:Real},
-        n_components::Integer=size(cppls.regression_coefficients, 3)) -> Array{Float64, 3}
+        n_components::Integer=size(cppls.B, 3)) -> Array{Float64, 3}
 
 Generate predictions from a fitted CPPLS model for a given input matrix `X`.
 
@@ -22,9 +22,9 @@ Generate predictions from a fitted CPPLS model for a given input matrix `X`.
 ```
 julia> coeffs = reshape(Float64[0.5, 1.0], 2, 1, 1);  # two predictors, one target
 
-julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0], 1, 1);
+julia> X_bar = zeros(1, 2); Y_bar = reshape([0.0], 1, 1);
 
-julia> model = CPPLSFitLight(coeffs, X_mean, Y_mean, :regression);
+julia> model = CPPLSFitLight(coeffs, X_bar, Y_bar, :regression);
 
 julia> Xnew = [1.0 2.0; 3.0 4.0];
 
@@ -35,27 +35,27 @@ true
 function predict(
     cppls::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    n_components::T = size(cppls.regression_coefficients, 3),
+    n_components::T = size(cppls.B, 3),
 ) where {T<:Integer}
 
     n_samples_X = size(X, 1)
-    n_targets_Y = size(cppls.Y_means, 2)
+    n_targets_Y = size(cppls.Y_bar, 2)
 
-    if n_components > size(cppls.regression_coefficients, 3)
+    if n_components > size(cppls.B, 3)
         throw(
             DimensionMismatch("n_components exceeds the number of components in the model"),
         )
     end
 
-    X_centered = X .- cppls.X_means
-    fitted_values = similar(X, n_samples_X, n_targets_Y, n_components)
+    X_centered = X .- cppls.X_bar
+    Y_hat = similar(X, n_samples_X, n_targets_Y, n_components)
 
     for i = 1:n_components
-        @views fitted_values[:, :, i] .=
-            (X_centered * cppls.regression_coefficients[:, :, i] .+ cppls.Y_means)
+        @views Y_hat[:, :, i] .=
+            (X_centered * cppls.B[:, :, i] .+ cppls.Y_bar)
     end
 
-    fitted_values
+    Y_hat
 end
 
 """
@@ -66,7 +66,7 @@ assigning each sample to the class with the highest summed prediction across com
 after adjusting for overcounted means.
 
 # Arguments
-- `cppls`: A fitted CPPLS model object containing the mean response vector (`Y_means`).
+- `cppls`: A fitted CPPLS model object containing the mean response vector (`Y_bar`).
 - `predictions`: A 3D array of predictions with dimensions `(n_samples_X, n_targets_Y, 
   n_components)`. 
   Typically, this represents predicted values for multiple samples, targets, and components.
@@ -86,9 +86,9 @@ after adjusting for overcounted means.
 ```
 julia> coeffs = reshape(Float64[1, -1, 0.5, -0.5], 2, 2, 1);  # two predictors, two classes
 
-julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0 0.0], 1, 2);
+julia> X_bar = zeros(1, 2); Y_bar = reshape([0.0 0.0], 1, 2);
 
-julia> model = CPPLSFitLight(coeffs, X_mean, Y_mean, :regression);
+julia> model = CPPLSFitLight(coeffs, X_bar, Y_bar, :regression);
 
 julia> Xnew = [2.0 1.0; 0.5 3.0];
 
@@ -106,7 +106,7 @@ function predictonehot(cppls::AbstractCPPLSFit, predictions::AbstractArray{<:Rea
     n_classes = size(predictions, 2)
 
     Y_pred_sum = sum(predictions, dims = 3)[:, :, 1]
-    Y_pred_final = Y_pred_sum .- (n_components - 1) .* cppls.Y_means
+    Y_pred_final = Y_pred_sum .- (n_components - 1) .* cppls.Y_bar
 
     predicted_class_indices = argmax.(eachrow(Y_pred_final))
 
@@ -119,21 +119,21 @@ end
 Compute latent component scores by projecting new predictors `X` with a fitted CPPLS model.
 
 # Arguments
-- `cppls`: Any CPPLS model (e.g., `CPPLSFit` or `CPPLSFitLight`) providing `X_means` and
-  `projection`.
+- `cppls`: Any CPPLS model (e.g., `CPPLSFit` or `CPPLSFitLight`) providing `X_bar` and
+  `R`.
 - `X`: Predictor matrix shaped like the training data (`n_samples × n_features`).
 
 # Returns
 - Matrix of size `(n_samples, n_components)` containing the component scores.
 
 # Details
-- Centers `X` by subtracting `cppls.X_means`, then multiplies by the projection matrix.
+- Centers `X` by subtracting `cppls.X_bar`, then multiplies by the R matrix.
 
 # Example
 ```
 julia> struct DemoCPPLS <: CPPLS.AbstractCPPLSFit
-           projection::Matrix{Float64}
-           X_means::Matrix{Float64}
+           R::Matrix{Float64}
+           X_bar::Matrix{Float64}
        end
 
 julia> proj = reshape([1.0, 0.5], 2, 1)
@@ -147,10 +147,10 @@ julia> project(demo, [1.0 2.0; 3.0 4.0]) ≈ [1.25; 4.25]
 true
 ```
 In practice, `demo` would be the `CPPLSFit` object returned by `fit_cppls`, which already
-contains the appropriate projection matrix and predictor means.
+contains the appropriate R matrix and predictor means.
 """
 project(cppls::AbstractCPPLSFit, X::AbstractMatrix{<:Real}) =
-    (X .- cppls.X_means) * cppls.projection
+    (X .- cppls.X_bar) * cppls.R
 
 """
     decision_line(cppls::CPPLSFit; dims=(1, 2), n_components=maximum(dims))
@@ -180,18 +180,18 @@ function decision_line(
 )
     cppls.analysis_mode === :discriminant ||
         throw(ArgumentError("decision_line is only defined for discriminant CPPLS models"))
-    size(cppls.regression_coefficients, 2) == 2 ||
+    size(cppls.B, 2) == 2 ||
         throw(ArgumentError("decision_line currently supports exactly two classes"))
 
     n_components ≥ maximum(dims) ||
         throw(ArgumentError("n_components must be at least as large as the requested dims"))
-    n_components ≤ size(cppls.regression_coefficients, 3) ||
+    n_components ≤ size(cppls.B, 3) ||
         throw(ArgumentError("n_components exceeds the fitted CPPLS model"))
-    all(d -> 1 ≤ d ≤ size(cppls.X_scores, 2), dims) ||
+    all(d -> 1 ≤ d ≤ size(cppls.T, 2), dims) ||
         throw(ArgumentError("dims must refer to stored score columns"))
 
-    scores = cppls.X_scores[:, collect(dims)]
-    predictions = cppls.fitted_values[:, :, n_components]
+    scores = cppls.T[:, collect(dims)]
+    predictions = cppls.Y_hat[:, :, n_components]
     class_diff = predictions[:, 1] .- predictions[:, 2]
 
     A = hcat(ones(size(scores, 1)), scores)

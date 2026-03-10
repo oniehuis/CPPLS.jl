@@ -20,6 +20,16 @@ function validate_response_labels(labels::AbstractVector, n_targets::Integer)
     return labels
 end
 
+function resolve_Y_aux(
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing},
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing},
+)
+    if Y_aux !== nothing && Y_auxiliary !== nothing
+        throw(ArgumentError("Provide either Y_aux or Y_auxiliary, not both."))
+    end
+    return Y_aux === nothing ? Y_auxiliary : Y_aux
+end
+
 function _cppls_model_fit_kwargs(model::CPPLSSpec)
     return (
         gamma = model.gamma,
@@ -43,6 +53,7 @@ end
         n_components::Integer;
         gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
+        Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing,
         Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
@@ -71,8 +82,9 @@ Fit a Canonical Powered Partial Least Squares (CPPLS) model.
   `0.5`, i.e. no optimization.
 - `observation_weights`: A vector of individual weights for the observations (e.g., 
   experimental data or samples). Defaults to `nothing`.
-- `Y_auxiliary`: A matrix (or vector) of auxiliary response variables containing additional information 
-  about the observations. Defaults to `nothing`.
+- `Y_aux`: A matrix (or vector) of auxiliary response variables containing additional
+  information about the observations. Defaults to `nothing`. The legacy keyword
+  `Y_auxiliary` is accepted as an alias.
 - `center`: Whether to mean-center the `X` and `Y` matrices. Defaults to `true`.
 - `X_tolerance`: Tolerance for small norms in `X`. Columns of `X` with norms below this 
   threshold are set to zero during deflation. Defaults to `1e-12`.
@@ -95,31 +107,31 @@ Fit a Canonical Powered Partial Least Squares (CPPLS) model.
 
 # Returns
 A `CPPLSFit` object containing the following fields:
-- `regression_coefficients`: A 3D array of regression coefficients for 1, ..., 
+- `B`: A 3D array of regression coefficients for 1, ..., 
   `n_components`.
-- `X_scores`: A matrix of scores (latent variables) for the predictor matrix `X`.
-- `X_loadings`: A matrix of loadings for the predictor matrix `X`.
-- `X_loading_weights`: A matrix of loading weights for the predictor matrix `X`.
-- `Y_scores`: A matrix of scores (latent variables) for the response matrix `Y`.
-- `Y_loadings`: A matrix of loadings for the response matrix `Y`.
-- `projection`: The projection matrix used to convert `X` to scores.
-- `X_means`: A vector of means of the `X` variables (used for centering).
-- `Y_means`: A vector of means of the `Y` variables (used for centering).
-- `fitted_values`: An array of fitted values for the response matrix `Y`.
-- `residuals`: An array of residuals for the response matrix `Y`.
-- `X_variance`: A vector containing the amount of variance in `X` explained by each 
+- `T`: A matrix of scores (latent variables) for the predictor matrix `X`.
+- `P`: A matrix of loadings for the predictor matrix `X`.
+- `W_comp`: A matrix of loading weights for the predictor matrix `X`.
+- `U`: A matrix of scores (latent variables) for the response matrix `Y`.
+- `C`: A matrix of loadings for the response matrix `Y`.
+- `R`: The R matrix used to convert `X` to scores.
+- `X_bar`: A vector of means of the `X` variables (used for centering).
+- `Y_bar`: A vector of means of the `Y` variables (used for centering).
+- `Y_hat`: An array of fitted values for the response matrix `Y`.
+- `F`: An array of F for the response matrix `Y`.
+- `X_var`: A vector containing the amount of variance in `X` explained by each 
    component.
-- `X_total_variance`: The total variance in `X`.
-- `gammas`: The power parameter (`γ`) values obtained during power optimization.
-- `canonical_correlations`: Canonical correlation values for each component.
-- `small_norm_indices`: Indices of explanatory variables with norms close to or equal to 
+- `X_var_total`: The total variance in `X`.
+- `gamma`: The power parameter (`γ`) values obtained during power optimization.
+- `rho`: Canonical correlation values for each component.
+- `zero_mask`: Indices of explanatory variables with norms close to or equal to 
    zero.
-- `canonical_coefficients`: A matrix containing the canonical coefficients (`a`) from 
+- `a`: A matrix containing the canonical coefficients (`a`) from 
   canonical correlation analysis (`cor(Za, Yb)`).
-- `canonical_coefficients_y`: A matrix containing the canonical coefficients (`b`) for the
+- `b`: A matrix containing the canonical coefficients (`b`) for the
   responses from canonical correlation analysis.
-- `W0_weights`: Initial CPPLS weight matrices per component.
-- `Z`: Supervised predictor projections per component (`X_deflated * W0_weights`).
+- `W0`: Initial CPPLS weight matrices per component.
+- `Z`: Supervised predictor projections per component (`X_def * W0`).
 - `sample_labels`: The provided sample labels (or an empty vector if none were supplied).
 - `predictor_labels`: The provided predictor labels (or an empty vector).
 - `response_labels`: The provided response labels (or an empty vector).
@@ -133,8 +145,8 @@ A `CPPLSFit` object containing the following fields:
   correlation between linear combinations of `X` and `Y`.
 - The power parameter (`γ`) controls the balance between variance maximization and 
   correlation maximization. It is optimized within the specified bounds (`gamma_bounds`).
-- If `Y_auxiliary` is provided, it is concatenated with `Y` to form a combined response 
-  matrix (`Y_combined`), which is used during the fitting process.
+- If `Y_aux` is provided, it is concatenated with `Y` to form a combined response 
+  matrix (`Y`), which is used during the fitting process.
 - Passing a categorical response vector instead of a numeric matrix automatically triggers
   the discriminant-analysis variant of `fit_cppls` and infers class labels.
 
@@ -152,18 +164,19 @@ julia> Y, classes = labels_to_one_hot(labels);
 
 julia> model = fit_cppls(X, Y, 2; gamma=(0.7, 1.0));
 
-julia> model.X_means ≈ Matrix([1.4 1.4 1.2])
+julia> model.X_bar ≈ Matrix([1.4 1.4 1.2])
 
-julia> model.gammas ≈ [0.700185836799654, 0.9366214237592033]
+julia> model.gamma ≈ [0.700185836799654, 0.9366214237592033]
 true
 ```
 """
 function fit_cppls(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Real},
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -187,28 +200,30 @@ function fit_cppls(
         da_categories === nothing ||
         throw(ArgumentError("da_categories can only be provided for discriminant analysis"))
 
-    n_predictors = size(X_predictors, 2)
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+
+    n_predictors = size(X, 2)
 
     (
-        X_predictors,
-        Y_responses,
-        Y_combined,
+        X,
+        Y_prim,
+        Y,
         observation_weights,
-        X̄_mean,
-        Ȳ_mean,
-        X_deflated,
-        X_loading_weights,
-        X_loadings,
-        Y_loadings,
-        small_norm_flags,
-        regression_coefficients,
+        X_bar,
+        Y_bar,
+        X_def,
+        W_comp,
+        P,
+        C,
+        zero_mask,
+        B,
         n_samples_X,
         n_targets_Y,
     ) = cppls_prepare_data(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         n_components,
-        Y_auxiliary,
+        Y_aux,
         observation_weights,
         center,
     )
@@ -225,88 +240,88 @@ function fit_cppls(
         )
     end
 
-    X_scores = Matrix{Float64}(undef, n_samples_X, n_components)
-    canonical_coefficients = Matrix{Float64}(undef, size(Y_combined, 2), n_components)
-    canonical_coefficients_y = Matrix{Float64}(undef, n_targets_Y, n_components)
-    max_canonical_correlations = Vector{Float64}(undef, n_components)
-    gamma_values = fill(0.5, n_components)
-    X_score_norms = Vector{Float64}(undef, n_components)
-    Y_scores = Matrix{Float64}(undef, n_samples_X, n_components)
-    fitted_values = Array{Float64}(undef, n_samples_X, n_targets_Y, n_components)
-    W0_weights = Array{Float64}(undef, n_predictors, size(Y_combined, 2), n_components)
-    Z = Array{Float64}(undef, n_samples_X, size(Y_combined, 2), n_components)
+    T = Matrix{Float64}(undef, n_samples_X, n_components)
+    a = Matrix{Float64}(undef, size(Y, 2), n_components)
+    b = Matrix{Float64}(undef, n_targets_Y, n_components)
+    rho = Vector{Float64}(undef, n_components)
+    gamma_vals = fill(0.5, n_components)
+    t_norms = Vector{Float64}(undef, n_components)
+    U = Matrix{Float64}(undef, n_samples_X, n_components)
+    Y_hat = Array{Float64}(undef, n_samples_X, n_targets_Y, n_components)
+    W0 = Array{Float64}(undef, n_predictors, size(Y, 2), n_components)
+    Z = Array{Float64}(undef, n_samples_X, size(Y, 2), n_components)
 
     for i = 1:n_components
         (
-            X_loading_weightsᵢ,
-            max_canonical_correlations[i],
-            canonical_coefficients[:, i],
-            canonical_coefficients_y[:, i],
-            gamma_values[i],
-            W0_weightsᵢ,
+            wᵢ,
+            rho[i],
+            a[:, i],
+            b[:, i],
+            gamma_vals[i],
+            W0ᵢ,
         ) = (compute_cppls_weights(
-            X_deflated,
-            Y_combined,
-            Y_responses,
+            X_def,
+            Y,
+            Y_prim,
             observation_weights,
             gamma,
             gamma_rel_tol,
             gamma_abs_tol,
         ))
-        W0_weights[:, :, i] = W0_weightsᵢ
-        Z[:, :, i] = X_deflated * W0_weightsᵢ
+        W0[:, :, i] = W0ᵢ
+        Z[:, :, i] = X_def * W0ᵢ
 
-        X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ = process_component!(
+        tᵢ, tᵢ_squared_norm, cᵢ = process_component!(
             i,
-            X_deflated,
-            X_loading_weightsᵢ,
-            Y_responses,
-            X_loading_weights,
-            X_loadings,
-            Y_loadings,
-            regression_coefficients,
-            small_norm_flags,
+            X_def,
+            wᵢ,
+            Y_prim,
+            W_comp,
+            P,
+            C,
+            B,
+            zero_mask,
             X_tolerance,
             X_loading_weight_tolerance,
             t_squared_norm_tolerance,
         )
 
-        X_scores[:, i] = X_scoresᵢ
-        X_score_norms[i] = tᵢ_squared_norm
-        Y_scores[:, i] = Y_responses * Y_loadingsᵢ / (Y_loadingsᵢ' * Y_loadingsᵢ)
+        T[:, i] = tᵢ
+        t_norms[i] = tᵢ_squared_norm
+        U[:, i] = Y_prim * cᵢ / (cᵢ' * cᵢ)
 
         if i > 1
-            Y_scores[:, i] -= X_scores * (X_scores' * Y_scores[:, i] ./ X_score_norms)
+            U[:, i] -= T * (T' * U[:, i] ./ t_norms)
         end
-        fitted_values[:, :, i] = X_predictors * regression_coefficients[:, :, i]
+        Y_hat[:, :, i] = X * B[:, :, i]
     end
 
-    fitted_values .+= reshape(repeat(Ȳ_mean, n_samples_X), n_samples_X, length(Ȳ_mean), 1)
-    Y_residuals = Y_responses .- fitted_values
-    projection = X_loading_weights * pinv(X_loadings' * X_loading_weights)
-    X_variance_explained = vec(sum(X_loadings .* X_loadings, dims = 1)) .* X_score_norms
-    X_total_variance = sum(X_predictors .* X_predictors)
+    Y_hat .+= reshape(repeat(Y_bar, n_samples_X), n_samples_X, length(Y_bar), 1)
+    F = Y_prim .- Y_hat
+    R = W_comp * pinv(P' * W_comp)
+    X_var = vec(sum(P .* P, dims = 1)) .* t_norms
+    X_var_total = sum(X .* X)
 
     CPPLSFit(
-        regression_coefficients,
-        X_scores,
-        X_loadings,
-        X_loading_weights,
-        Y_scores,
-        Y_loadings,
-        projection,
-        X̄_mean,
-        Ȳ_mean,
-        fitted_values,
-        Y_residuals,
-        X_variance_explained,
-        X_total_variance,
-        gamma_values,
-        max_canonical_correlations,
-        small_norm_flags,
-        canonical_coefficients,
-        canonical_coefficients_y,
-        W0_weights,
+        B,
+        T,
+        P,
+        W_comp,
+        U,
+        C,
+        R,
+        X_bar,
+        Y_bar,
+        Y_hat,
+        F,
+        X_var,
+        X_var_total,
+        gamma_vals,
+        rho,
+        zero_mask,
+        a,
+        b,
+        W0,
         Z;
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
@@ -318,22 +333,24 @@ end
 
 function fit_cppls(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Real};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
     response_labels::AbstractVector = String[],
     da_categories = nothing,
 )
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
     return fit_cppls(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         model.n_components;
         _cppls_model_fit_kwargs_with_mode(model)...,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
         response_labels = response_labels,
@@ -357,7 +374,8 @@ Model-spec settings (already stored in `model`):
 
 Data/metadata settings (passed to `fit`):
 - `observation_weights`: optional sample weights (vector, length = n_samples).
-- `Y_auxiliary`: optional auxiliary responses (matrix with n_samples rows).
+- `Y_aux`: optional auxiliary responses (matrix with n_samples rows). The legacy
+  keyword `Y_auxiliary` is accepted as an alias.
 - `sample_labels`, `predictor_labels`, `response_labels`: metadata for diagnostics.
 - `da_categories`: override categorical levels for discriminant analysis.
 
@@ -372,11 +390,11 @@ preds = predict(model, X)
 """
 function fit(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses;
+    X::AbstractMatrix{<:Real},
+    Y_prim;
     kwargs...,
 )
-    fit_cppls(model, X_predictors, Y_responses; kwargs...)
+    fit_cppls(model, X, Y_prim; kwargs...)
 end
 
 """
@@ -412,26 +430,26 @@ true
 ```
 """
 function fit_cppls(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U},
     n_components::Integer = 2;
     kwargs...,
 ) where {T,R,V,C,U}
-    fit_cppls_from_labels(X_predictors, labels, n_components; kwargs...)
+    fit_cppls_from_labels(X, labels, n_components; kwargs...)
 end
 
 function fit_cppls(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractVector,
     n_components::Integer = 2;
     kwargs...,
 )
-    fit_cppls_from_labels(X_predictors, labels, n_components; kwargs...)
+    fit_cppls_from_labels(X, labels, n_components; kwargs...)
 end
 
 function fit_cppls(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
 ) where {T,R,V,C,U}
@@ -441,7 +459,7 @@ function fit_cppls(
         ),
     )
     fit_cppls_from_labels(
-        X_predictors,
+        X,
         labels,
         model.n_components;
         _cppls_model_fit_kwargs(model)...,
@@ -451,7 +469,7 @@ end
 
 function fit_cppls(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractVector;
     kwargs...,
 )
@@ -461,7 +479,7 @@ function fit_cppls(
         ),
     )
     fit_cppls_from_labels(
-        X_predictors,
+        X,
         labels,
         model.n_components;
         _cppls_model_fit_kwargs(model)...,
@@ -470,11 +488,12 @@ function fit_cppls(
 end
 
 function fit_cppls_from_labels(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels,
     n_components::Integer;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -492,15 +511,17 @@ function fit_cppls_from_labels(
         ),
     )
 
-    Y_responses, classes = labels_to_one_hot(labels)
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+
+    Y_prim, classes = labels_to_one_hot(labels)
 
     return fit_cppls(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         n_components;
         gamma = gamma,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
@@ -536,11 +557,12 @@ julia> model.analysis_mode
 ```
 """
 function fit_cppls(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractVector{<:Real},
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractVector{<:Real},
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -553,15 +575,17 @@ function fit_cppls(
     response_labels::AbstractVector = String[],
 ) where {T1<:Real,T2<:Real}
 
-    Y_matrix = reshape(Y_responses, :, 1)
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+
+    Y_matrix = reshape(Y_prim, :, 1)
 
     return fit_cppls(
-        X_predictors,
+        X,
         Y_matrix,
         n_components;
         gamma = gamma,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
@@ -577,21 +601,23 @@ end
 
 function fit_cppls(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractVector{<:Real};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractVector{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
     response_labels::AbstractVector = String[],
 )
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
     return fit_cppls(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         model.n_components;
         _cppls_model_fit_kwargs_with_mode(model)...,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
         response_labels = response_labels,
@@ -606,7 +632,7 @@ end
         n_components::Integer;
         gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
-        Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing,
+        Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
         X_loading_weight_tolerance::Real=eps(Float64),
@@ -642,16 +668,17 @@ julia> Y, classes = labels_to_one_hot(labels);
 
 julia> model = fit_cppls_light(X, Y, 2; gamma=(0.7, 1.0));
 
-julia> model.X_means ≈ Matrix([1.4 1.4 1.2])
+julia> model.X_bar ≈ Matrix([1.4 1.4 1.2])
 true
 ```
 """
 function fit_cppls_light(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Real},
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -662,35 +689,37 @@ function fit_cppls_light(
     analysis_mode::Symbol = :regression,
 ) where {T1<:Real,T2<:Real}
 
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+
     (
-        X_predictors,
-        Y_responses,
-        Y_combined,
+        X,
+        Y_prim,
+        Y,
         observation_weights,
-        X̄_mean,
-        Ȳ_mean,
-        X_deflated,
-        X_loading_weights,
-        X_loadings,
-        Y_loadings,
-        small_norm_flags,
-        regression_coefficients,
+        X_bar,
+        Y_bar,
+        X_def,
+        W_comp,
+        P,
+        C,
+        zero_mask,
+        B,
         _,
         _,
     ) = cppls_prepare_data(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         n_components,
-        Y_auxiliary,
+        Y_aux,
         observation_weights,
         center,
     )
 
     for i = 1:n_components
-        X_loading_weightsᵢ, _, _, _, _, _ = compute_cppls_weights(
-            X_deflated,
-            Y_combined,
-            Y_responses,
+        wᵢ, _, _, _, _, _ = compute_cppls_weights(
+            X_def,
+            Y,
+            Y_prim,
             observation_weights,
             gamma,
             gamma_rel_tol,
@@ -699,14 +728,14 @@ function fit_cppls_light(
 
         process_component!(
             i,
-            X_deflated,
-            X_loading_weightsᵢ,
-            Y_responses,
-            X_loading_weights,
-            X_loadings,
-            Y_loadings,
-            regression_coefficients,
-            small_norm_flags,
+            X_def,
+            wᵢ,
+            Y_prim,
+            W_comp,
+            P,
+            C,
+            B,
+            zero_mask,
             X_tolerance,
             X_loading_weight_tolerance,
             t_squared_norm_tolerance,
@@ -720,7 +749,7 @@ function fit_cppls_light(
         ),
     )
 
-    CPPLSFitLight(regression_coefficients, X̄_mean, Ȳ_mean, analysis_mode)
+    CPPLSFitLight(B, X_bar, Y_bar, analysis_mode)
 end
 
 """
@@ -750,31 +779,31 @@ julia> light_cat.analysis_mode
 
 julia> light_plain = fit_cppls_light(X, ["classA", "classB", "classA", "classB"], 2; gamma=0.5);
 
-julia> light_plain.regression_coefficients ≈ light_cat.regression_coefficients
+julia> light_plain.B ≈ light_cat.B
 true
 ```
 """
 function fit_cppls_light(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U},
     n_components::Integer = 2;
     kwargs...,
 ) where {T,R,V,C,U}
-    fit_cppls_light_from_labels(X_predictors, labels, n_components; kwargs...)
+    fit_cppls_light_from_labels(X, labels, n_components; kwargs...)
 end
 
 function fit_cppls_light(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractVector,
     n_components::Integer = 2;
     kwargs...,
 )
-    fit_cppls_light_from_labels(X_predictors, labels, n_components; kwargs...)
+    fit_cppls_light_from_labels(X, labels, n_components; kwargs...)
 end
 
 function fit_cppls_light(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
 ) where {T,R,V,C,U}
@@ -784,7 +813,7 @@ function fit_cppls_light(
         ),
     )
     fit_cppls_light_from_labels(
-        X_predictors,
+        X,
         labels,
         model.n_components;
         _cppls_model_fit_kwargs(model)...,
@@ -794,7 +823,7 @@ end
 
 function fit_cppls_light(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractVector;
     kwargs...,
 )
@@ -804,7 +833,7 @@ function fit_cppls_light(
         ),
     )
     fit_cppls_light_from_labels(
-        X_predictors,
+        X,
         labels,
         model.n_components;
         _cppls_model_fit_kwargs(model)...,
@@ -813,11 +842,12 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light_from_labels(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels,
     n_components::Integer;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -826,15 +856,16 @@ function fit_cppls_light_from_labels(
     gamma_abs_tol::Real = 1e-12,
     t_squared_norm_tolerance::Real = 1e-10,
 ) where {T1<:Real,T2<:Real}
-    Y_responses, _ = labels_to_one_hot(labels)
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+    Y_prim, _ = labels_to_one_hot(labels)
 
     fit_cppls_light(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         n_components;
         gamma = gamma,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
@@ -865,11 +896,12 @@ julia> light.analysis_mode
 ```
 """
 function fit_cppls_light(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractVector{<:Real},
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractVector{<:Real},
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -879,15 +911,17 @@ function fit_cppls_light(
     t_squared_norm_tolerance::Real = 1e-10,
 ) where {T1<:Real,T2<:Real}
 
-    Y_matrix = reshape(Y_responses, :, 1)
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+
+    Y_matrix = reshape(Y_prim, :, 1)
 
     fit_cppls_light(
-        X_predictors,
+        X,
         Y_matrix,
         n_components;
         gamma = gamma,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
@@ -900,105 +934,109 @@ end
 
 function fit_cppls_light(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Real};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
 )
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
     return fit_cppls_light(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         model.n_components;
         _cppls_model_fit_kwargs_with_mode(model)...,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
     )
 end
 
 function fit_cppls_light(
     model::CPPLSSpec,
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractVector{<:Real};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractVector{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
 )
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
     return fit_cppls_light(
-        X_predictors,
-        Y_responses,
+        X,
+        Y_prim,
         model.n_components;
         _cppls_model_fit_kwargs_with_mode(model)...,
         observation_weights = observation_weights,
-        Y_auxiliary = Y_auxiliary,
+        Y_aux = Y_aux,
     )
 end
 
 
 function process_component!(
     i::Integer,
-    X_deflated::AbstractMatrix{<:Real},
-    X_loading_weightsᵢ::AbstractVector{<:Real},
-    Y_responses::AbstractMatrix{<:Real},
-    X_loading_weights::AbstractMatrix{<:Real},
-    X_loadings::AbstractMatrix{<:Real},
-    Y_loadings::AbstractMatrix{<:Real},
-    regression_coefficients::Array{<:Real,3},
-    small_norm_flags::AbstractMatrix{Bool},
+    X_def::AbstractMatrix{<:Real},
+    wᵢ::AbstractVector{<:Real},
+    Y_prim::AbstractMatrix{<:Real},
+    W_comp::AbstractMatrix{<:Real},
+    P::AbstractMatrix{<:Real},
+    C::AbstractMatrix{<:Real},
+    B::Array{<:Real,3},
+    zero_mask::AbstractMatrix{Bool},
     X_tolerance::Real,
     X_loading_weight_tolerance::Real,
     tᵢ_squared_norm_tolerance::Real,
 )
 
-    X_loading_weightsᵢ .= (
-        X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) .*
-        (abs.(X_loading_weightsᵢ) .>= X_loading_weight_tolerance)
+    wᵢ .= (
+        wᵢ ./ norm(wᵢ) .*
+        (abs.(wᵢ) .>= X_loading_weight_tolerance)
     )
 
-    X_scoresᵢ = X_deflated * X_loading_weightsᵢ
-    tᵢ_squared_norm = X_scoresᵢ' * X_scoresᵢ
+    tᵢ = X_def * wᵢ
+    tᵢ_squared_norm = tᵢ' * tᵢ
 
     if isapprox(tᵢ_squared_norm, 0.0)
         tᵢ_squared_norm += tᵢ_squared_norm_tolerance
     end
-    X_loadingsᵢ = (X_deflated' * X_scoresᵢ) / tᵢ_squared_norm
-    Y_loadingsᵢ = (Y_responses' * X_scoresᵢ) / tᵢ_squared_norm
+    pᵢ = (X_def' * tᵢ) / tᵢ_squared_norm
+    cᵢ = (Y_prim' * tᵢ) / tᵢ_squared_norm
 
-    X_deflated .-= X_scoresᵢ * X_loadingsᵢ'
+    X_def .-= tᵢ * pᵢ'
 
-    small_norm_flags[i, :] .= vec(sum(abs.(X_deflated), dims = 1) .< X_tolerance)
-    X_deflated[:, small_norm_flags[i, :]] .= 0
+    zero_mask[i, :] .= vec(sum(abs.(X_def), dims = 1) .< X_tolerance)
+    X_def[:, zero_mask[i, :]] .= 0
 
-    X_loading_weights[:, i] .= X_loading_weightsᵢ
-    X_loadings[:, i] .= X_loadingsᵢ
-    Y_loadings[:, i] .= Y_loadingsᵢ
-    regression_coefficients[:, :, i] .= (
-        X_loading_weights[:, 1:i] *
-        pinv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) *
-        Y_loadings[:, 1:i]'
+    W_comp[:, i] .= wᵢ
+    P[:, i] .= pᵢ
+    C[:, i] .= cᵢ
+    B[:, :, i] .= (
+        W_comp[:, 1:i] *
+        pinv(P[:, 1:i]' * W_comp[:, 1:i]) *
+        C[:, 1:i]'
     )
 
-    X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
+    tᵢ, tᵢ_squared_norm, cᵢ
 end
 
 function fitted(model::CPPLSFit)
-    @views model.fitted_values[:, :, end]
+    @views model.Y_hat[:, :, end]
 end
 
 function fitted(model::CPPLSFit, n_components::Integer)
-    @views model.fitted_values[:, :, n_components]
+    @views model.Y_hat[:, :, n_components]
 end
 
 function residuals(model::CPPLSFit)
-    @views model.residuals[:, :, end]
+    @views model.F[:, :, end]
 end
 
 function residuals(model::CPPLSFit, n_components::Integer)
-    @views model.residuals[:, :, n_components]
+    @views model.F[:, :, n_components]
 end
 
 function coef(model::AbstractCPPLSFit)
-    @views model.regression_coefficients[:, :, end]
+    @views model.B[:, :, end]
 end
 
 function coef(model::AbstractCPPLSFit, n_components::Integer)
-    @views model.regression_coefficients[:, :, n_components]
+    @views model.B[:, :, n_components]
 end

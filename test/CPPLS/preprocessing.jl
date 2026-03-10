@@ -70,43 +70,43 @@ end
 
 @testset "cppls_prepare_data validates shapes and returns deflated matrices" begin
     X = Float32[1 2; 3 4; 5 6; 7 8]
-    Y = Float32[1 0; 0 1; 1 0; 0 1]
+    Y_prim = Float32[1 0; 0 1; 1 0; 0 1]
     Y_aux = Float32[0.1 0.2; 0.2 0.3; 0.3 0.4; 0.4 0.5]
     weights = Float32[1, 2, 1, 2]
 
     X_prep,
-    Y_prep,
-    Y_combined,
+    Y_prim_prep,
+    Y_all,
     obs_weights,
-    X_mean,
-    Y_mean,
-    X_deflated,
-    X_loading_weights,
-    X_loadings,
-    Y_loadings,
-    small_norm_flags,
-    regression_coeffs,
+    X_bar,
+    Y_bar,
+    X_def,
+    W_comp,
+    P,
+    C,
+    zero_mask,
+    B,
     n_samples,
-    n_targets = CPPLS.cppls_prepare_data(X, Y, 2, Y_aux, weights, true)
+    n_targets = CPPLS.cppls_prepare_data(X, Y_prim, 2, Y_aux, weights, true)
 
     @test X_prep isa Matrix{Float64}
-    @test Y_prep isa Matrix{Float64}
-    @test Y_combined == hcat(Y_prep, Float64.(Y_aux))
+    @test Y_prim_prep isa Matrix{Float64}
+    @test Y_all == hcat(Y_prim_prep, Float64.(Y_aux))
     @test obs_weights === weights
-    @test size(X_mean) == (1, size(X, 2))
-    @test size(Y_mean) == (1, size(Y, 2))
-    @test size(X_deflated) == size(X_prep)
-    @test size(X_loading_weights) == (size(X, 2), 2)
-    @test size(X_loadings) == (size(X, 2), 2)
-    @test size(Y_loadings) == (size(Y, 2), 2)
-    @test size(small_norm_flags) == (2, size(X, 2))
-    @test size(regression_coeffs) == (size(X, 2), size(Y, 2), 2)
+    @test size(X_bar) == (1, size(X, 2))
+    @test size(Y_bar) == (1, size(Y_prim, 2))
+    @test size(X_def) == size(X_prep)
+    @test size(W_comp) == (size(X, 2), 2)
+    @test size(P) == (size(X, 2), 2)
+    @test size(C) == (size(Y_prim, 2), 2)
+    @test size(zero_mask) == (2, size(X, 2))
+    @test size(B) == (size(X, 2), size(Y_prim, 2), 2)
     @test n_samples == size(X, 1)
-    @test n_targets == size(Y, 2)
+    @test n_targets == size(Y_prim, 2)
 
     @test_throws DimensionMismatch CPPLS.cppls_prepare_data(
         X,
-        Y[1:3, :],
+        Y_prim[1:3, :],
         2,
         nothing,
         nothing,
@@ -114,7 +114,7 @@ end
     )
     @test_throws DimensionMismatch CPPLS.cppls_prepare_data(
         X,
-        Y,
+        Y_prim,
         2,
         nothing,
         [1, 2, 3],

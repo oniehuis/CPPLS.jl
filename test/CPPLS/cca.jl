@@ -82,11 +82,11 @@ end
 @testset "compute_cppls_weights handles gamma shortcuts" begin
     X = rand(5, 3)
     Y = rand(5, 2)
-    Y_combined = hcat(Y, rand(5, 1))
+    Y = hcat(Y, rand(5, 1))
 
     weights = CPPLS.compute_cppls_weights(
         X,
-        Y_combined,
+        Y,
         Y,
         nothing,
         0.5,
@@ -97,7 +97,7 @@ end
 
     weights_bounds = CPPLS.compute_cppls_weights(
         X,
-        Y_combined,
+        Y,
         Y,
         nothing,
         (0.1, 0.9),
@@ -108,7 +108,7 @@ end
 
     scalar_gamma = CPPLS.compute_cppls_weights(
         X,
-        Y_combined,
+        Y,
         Y,
         nothing,
         0.3,
@@ -117,7 +117,7 @@ end
     )
     tuple_gamma = CPPLS.compute_cppls_weights(
         X,
-        Y_combined,
+        Y,
         Y,
         nothing,
         (0.3, 0.3),
@@ -132,7 +132,7 @@ end
     loadings_one, corr_one, coeffs_one, coeffs_one_y, gamma_one, _ =
         CPPLS.compute_cppls_weights(
             X,
-            Y_combined,
+            Y,
             Y,
             nothing,
             (1.0, 1.0),
@@ -211,50 +211,50 @@ end
     @test size(general_weights) == size(correlations)
     @test all(isfinite.(general_weights))
 
-    X_deflated = [
+    X_def = [
         1.0 0.5
         0.0 1.0
         1.5 1.0
         2.0 0.2
     ]
-    Y_responses = [
+    Y_prim = [
         1 0
         0 1
         1 0
         0 1
     ]
-    X_Y_corr, X_std = CPPLS.correlation(X_deflated, Y_responses)
+    X_Y_corr, X_std = CPPLS.correlation(X_def, Y_prim)
     corr_signs = sign.(X_Y_corr)
     X_Y_corr = abs.(X_Y_corr) ./ maximum(abs.(X_Y_corr))
     X_std ./= maximum(X_std)
 
     val0 = CPPLS.evaluate_canonical_correlation(
         0.0,
-        X_deflated,
+        X_def,
         X_std,
         X_Y_corr,
         corr_signs,
-        Y_responses,
+        Y_prim,
         nothing,
     )
     val1 = CPPLS.evaluate_canonical_correlation(
         1.0,
-        X_deflated,
+        X_def,
         X_std,
         X_Y_corr,
         corr_signs,
-        Y_responses,
+        Y_prim,
         nothing,
     )
     @test val0 ≤ 0
     @test val1 ≤ 0
 
     γ_tuple, corr_tuple = CPPLS.compute_best_gamma(
-        X_deflated,
+        X_def,
         X_std,
         X_Y_corr,
         corr_signs,
-        Y_responses,
+        Y_prim,
         nothing,
         (0.0, 1.0),
         1e-6,
@@ -265,11 +265,11 @@ end
 
     gamma_choices = Union{Float64,NTuple{2,Float64}}[0.0, 0.5, (0.2, 0.8), (0.3, 0.3)]
     γ_vec, corr_vec = CPPLS.compute_best_gamma(
-        X_deflated,
+        X_def,
         X_std,
         X_Y_corr,
         corr_signs,
-        Y_responses,
+        Y_prim,
         nothing,
         gamma_choices,
         1e-6,
@@ -280,39 +280,39 @@ end
 
     loadings_zero, corr_zero, coeffs_zero, coeffs_zero_y, γ_zero, _ =
         CPPLS.compute_best_loadings(
-            X_deflated,
+            X_def,
             X_std,
             X_Y_corr,
             corr_signs,
-            Y_responses,
+            Y_prim,
             nothing,
             (0.0, 0.0),
             1e-6,
             1e-12,
-            size(Y_responses, 2),
+            size(Y_prim, 2),
         )
     @test γ_zero == 0.0
     @test all(isnan, coeffs_zero)
     @test all(isnan, coeffs_zero_y)
-    @test size(loadings_zero) == (size(X_deflated, 2),)
+    @test size(loadings_zero) == (size(X_def, 2),)
     @test 0.0 ≤ corr_zero ≤ 1.0
 
     loadings_general, corr_general, coeffs_general, coeffs_general_y, γ_general, _ =
         CPPLS.compute_best_loadings(
-            X_deflated,
+            X_def,
             X_std,
             X_Y_corr,
             corr_signs,
-            Y_responses,
+            Y_prim,
             nothing,
             (0.2, 0.8),
             1e-6,
             1e-12,
-            size(Y_responses, 2),
+            size(Y_prim, 2),
         )
     @test 0.2 ≤ γ_general ≤ 0.8
     @test all(isfinite.(coeffs_general))
     @test all(isfinite.(coeffs_general_y))
-    @test length(loadings_general) == size(X_deflated, 2)
+    @test length(loadings_general) == size(X_def, 2)
     @test 0.0 ≤ corr_general ≤ 1.0
 end

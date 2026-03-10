@@ -12,62 +12,62 @@
         ),
     ]
 
-    for (T, Tmask, dims) in configs
+    for (T_el, Tmask, dims) in configs
         n_samples = dims.n_samples
         n_predictors = dims.n_predictors
         n_responses = dims.n_responses
         n_components = dims.n_components
 
-        regression_coefficients = reshape(
-            T.(1:(n_predictors*n_responses*n_components)),
+        B = reshape(
+            T_el.(1:(n_predictors*n_responses*n_components)),
             n_predictors,
             n_responses,
             n_components,
         )
-        X_scores = reshape(T.(1:(n_samples*n_components)), n_samples, n_components)
-        X_loadings = reshape(T.(1:(n_predictors*n_components)), n_predictors, n_components)
-        X_loading_weights =
-            reshape(T.(101:(100+n_predictors*n_components)), n_predictors, n_components)
-        Y_scores = reshape(T.(1:(n_samples*n_components)), n_samples, n_components)
-        Y_loadings =
-            reshape(T.(51:(50+n_responses*n_components)), n_responses, n_components)
-        projection =
-            reshape(T.(11:(10+n_predictors*n_components)), n_predictors, n_components)
-        X_means = reshape(T.(1:n_predictors), 1, n_predictors)
-        Y_means = reshape(T.(1:n_responses), 1, n_responses)
-        fitted_values = reshape(
-            T.(1:(n_samples*n_responses*n_components)),
+        T_scores = reshape(T_el.(1:(n_samples*n_components)), n_samples, n_components)
+        P = reshape(T_el.(1:(n_predictors*n_components)), n_predictors, n_components)
+        W_comp =
+            reshape(T_el.(101:(100+n_predictors*n_components)), n_predictors, n_components)
+        U = reshape(T_el.(1:(n_samples*n_components)), n_samples, n_components)
+        C =
+            reshape(T_el.(51:(50+n_responses*n_components)), n_responses, n_components)
+        R =
+            reshape(T_el.(11:(10+n_predictors*n_components)), n_predictors, n_components)
+        X_bar = reshape(T_el.(1:n_predictors), 1, n_predictors)
+        Y_bar = reshape(T_el.(1:n_responses), 1, n_responses)
+        Y_hat = reshape(
+            T_el.(1:(n_samples*n_responses*n_components)),
             n_samples,
             n_responses,
             n_components,
         )
-        residuals = reshape(
-            T.(401:(400+n_samples*n_responses*n_components)),
+        F = reshape(
+            T_el.(401:(400+n_samples*n_responses*n_components)),
             n_samples,
             n_responses,
             n_components,
         )
-        X_variance = T.(1:n_components) ./ T(n_components + 1)
-        X_total_variance = T(5.0)
-        gammas = T.(reverse(1:n_components)) ./ T(n_components + 2)
-        canonical_correlations = T.(1:n_components) ./ T(n_components + 3)
-        small_norm_indices =
+        X_var = T_el.(1:n_components) ./ T_el(n_components + 1)
+        X_var_total = T_el(5.0)
+        gamma = T_el.(reverse(1:n_components)) ./ T_el(n_components + 2)
+        rho = T_el.(1:n_components) ./ T_el(n_components + 3)
+        zero_mask =
             reshape(Tmask.(0:(n_components*n_predictors-1)), n_components, n_predictors)
-        canonical_coefficients =
-            reshape(T.(21:(20+n_responses*n_components)), n_responses, n_components)
-        canonical_coefficients_y = reshape(
-            T.(301:(300+n_responses*n_components)),
+        a =
+            reshape(T_el.(21:(20+n_responses*n_components)), n_responses, n_components)
+        b = reshape(
+            T_el.(301:(300+n_responses*n_components)),
             n_responses,
             n_components,
         )
-        W0_weights = reshape(
-            T.(701:(700+n_predictors*n_responses*n_components)),
+        W0 = reshape(
+            T_el.(701:(700+n_predictors*n_responses*n_components)),
             n_predictors,
             n_responses,
             n_components,
         )
         Z = reshape(
-            T.(901:(900+n_samples*n_responses*n_components)),
+            T_el.(901:(900+n_samples*n_responses*n_components)),
             n_samples,
             n_responses,
             n_components,
@@ -78,25 +78,25 @@
         da_categories = ["class_$(1 + (i % 2))" for i = 1:n_samples]
 
         cppls = CPPLS.CPPLSFit(
-            regression_coefficients,
-            X_scores,
-            X_loadings,
-            X_loading_weights,
-            Y_scores,
-            Y_loadings,
-            projection,
-            X_means,
-            Y_means,
-            fitted_values,
-            residuals,
-            X_variance,
-            X_total_variance,
-            gammas,
-            canonical_correlations,
-            small_norm_indices,
-            canonical_coefficients,
-            canonical_coefficients_y,
-            W0_weights,
+            B,
+            T_scores,
+            P,
+            W_comp,
+            U,
+            C,
+            R,
+            X_bar,
+            Y_bar,
+            Y_hat,
+            F,
+            X_var,
+            X_var_total,
+            gamma,
+            rho,
+            zero_mask,
+            a,
+            b,
+            W0,
             Z;
             sample_labels = sample_labels,
             predictor_labels = predictor_labels,
@@ -107,68 +107,68 @@
 
         @test cppls isa CPPLS.AbstractCPPLSFit
         @test cppls isa CPPLS.CPPLSFit{
-            T,
+            T_el,
             Tmask,
             typeof(sample_labels),
             typeof(predictor_labels),
             typeof(response_labels),
             Nothing,
         }
-        @test cppls.regression_coefficients === regression_coefficients
-        @test cppls.X_scores === X_scores
-        @test cppls.X_loadings === X_loadings
-        @test cppls.X_loading_weights === X_loading_weights
-        @test cppls.Y_scores === Y_scores
-        @test cppls.Y_loadings === Y_loadings
-        @test cppls.projection === projection
-        @test cppls.X_means === X_means
-        @test cppls.Y_means === Y_means
-        @test cppls.fitted_values === fitted_values
-        @test cppls.residuals === residuals
-        @test cppls.X_variance === X_variance
-        @test cppls.X_total_variance === X_total_variance
-        @test cppls.gammas === gammas
-        @test cppls.canonical_correlations === canonical_correlations
-        @test cppls.small_norm_indices === small_norm_indices
-        @test cppls.canonical_coefficients === canonical_coefficients
-        @test cppls.canonical_coefficients_y === canonical_coefficients_y
-        @test cppls.W0_weights === W0_weights
+        @test cppls.B === B
+        @test cppls.T === T_scores
+        @test cppls.P === P
+        @test cppls.W_comp === W_comp
+        @test cppls.U === U
+        @test cppls.C === C
+        @test cppls.R === R
+        @test cppls.X_bar === X_bar
+        @test cppls.Y_bar === Y_bar
+        @test cppls.Y_hat === Y_hat
+        @test cppls.F === F
+        @test cppls.X_var === X_var
+        @test cppls.X_var_total === X_var_total
+        @test cppls.gamma === gamma
+        @test cppls.rho === rho
+        @test cppls.zero_mask === zero_mask
+        @test cppls.a === a
+        @test cppls.b === b
+        @test cppls.W0 === W0
         @test cppls.Z === Z
         @test cppls.sample_labels === sample_labels
         @test cppls.predictor_labels === predictor_labels
         @test cppls.response_labels === response_labels
         @test cppls.analysis_mode === :regression
         @test cppls.da_categories === nothing
-        @test size(cppls.regression_coefficients) ==
+        @test size(cppls.B) ==
               (n_predictors, n_responses, n_components)
-        @test size(cppls.fitted_values) == (n_samples, n_responses, n_components)
-        @test size(cppls.residuals) == (n_samples, n_responses, n_components)
-        @test size(cppls.X_scores) == (n_samples, n_components)
-        @test size(cppls.Y_scores) == (n_samples, n_components)
-        @test size(cppls.X_means) == (1, n_predictors)
-        @test size(cppls.Y_means) == (1, n_responses)
+        @test size(cppls.Y_hat) == (n_samples, n_responses, n_components)
+        @test size(cppls.F) == (n_samples, n_responses, n_components)
+        @test size(cppls.T) == (n_samples, n_components)
+        @test size(cppls.U) == (n_samples, n_components)
+        @test size(cppls.X_bar) == (1, n_predictors)
+        @test size(cppls.Y_bar) == (1, n_responses)
         @test size(cppls.Z) == (n_samples, n_responses, n_components)
 
         cppls_default = CPPLS.CPPLSFit(
-            regression_coefficients,
-            X_scores,
-            X_loadings,
-            X_loading_weights,
-            Y_scores,
-            Y_loadings,
-            projection,
-            X_means,
-            Y_means,
-            fitted_values,
-            residuals,
-            X_variance,
-            X_total_variance,
-            gammas,
-            canonical_correlations,
-            small_norm_indices,
-            canonical_coefficients,
-            canonical_coefficients_y,
-            W0_weights,
+            B,
+            T_scores,
+            P,
+            W_comp,
+            U,
+            C,
+            R,
+            X_bar,
+            Y_bar,
+            Y_hat,
+            F,
+            X_var,
+            X_var_total,
+            gamma,
+            rho,
+            zero_mask,
+            a,
+            b,
+            W0,
             Z,
         )
         @test isempty(cppls_default.sample_labels)
@@ -178,25 +178,25 @@
         @test cppls_default.da_categories === nothing
 
         cppls_da = CPPLS.CPPLSFit(
-            regression_coefficients,
-            X_scores,
-            X_loadings,
-            X_loading_weights,
-            Y_scores,
-            Y_loadings,
-            projection,
-            X_means,
-            Y_means,
-            fitted_values,
-            residuals,
-            X_variance,
-            X_total_variance,
-            gammas,
-            canonical_correlations,
-            small_norm_indices,
-            canonical_coefficients,
-            canonical_coefficients_y,
-            W0_weights,
+            B,
+            T_scores,
+            P,
+            W_comp,
+            U,
+            C,
+            R,
+            X_bar,
+            Y_bar,
+            Y_hat,
+            F,
+            X_var,
+            X_var_total,
+            gamma,
+            rho,
+            zero_mask,
+            a,
+            b,
+            W0,
             Z;
             sample_labels = sample_labels,
             predictor_labels = predictor_labels,
@@ -220,29 +220,29 @@ end
         n_responses = dims.n_responses
         n_components = dims.n_components
 
-        regression_coefficients = reshape(
+        B = reshape(
             T.(1:(n_predictors*n_responses*n_components)),
             n_predictors,
             n_responses,
             n_components,
         )
-        X_means = reshape(T.(1:n_predictors), 1, n_predictors)
-        Y_means = reshape(T.(1:n_responses) .+ T(100), 1, n_responses)
+        X_bar = reshape(T.(1:n_predictors), 1, n_predictors)
+        Y_bar = reshape(T.(1:n_responses) .+ T(100), 1, n_responses)
 
         light_model =
-            CPPLSFitLight(regression_coefficients, X_means, Y_means, :regression)
+            CPPLSFitLight(B, X_bar, Y_bar, :regression)
 
         @test light_model isa CPPLS.AbstractCPPLSFit
         @test light_model isa CPPLSFitLight{T}
-        @test light_model.regression_coefficients === regression_coefficients
-        @test light_model.X_means === X_means
-        @test light_model.Y_means === Y_means
+        @test light_model.B === B
+        @test light_model.X_bar === X_bar
+        @test light_model.Y_bar === Y_bar
         @test light_model.analysis_mode === :regression
-        @test size(light_model.regression_coefficients) ==
+        @test size(light_model.B) ==
               (n_predictors, n_responses, n_components)
-        @test size(light_model.X_means) == (1, n_predictors)
-        @test size(light_model.Y_means) == (1, n_responses)
-        light_da = CPPLSFitLight(regression_coefficients, X_means, Y_means, :discriminant)
+        @test size(light_model.X_bar) == (1, n_predictors)
+        @test size(light_model.Y_bar) == (1, n_responses)
+        light_da = CPPLSFitLight(B, X_bar, Y_bar, :discriminant)
         @test light_da.analysis_mode === :discriminant
     end
 end

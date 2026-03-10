@@ -54,33 +54,33 @@ end
     n_responses = 2
     n_components = 2
 
-    regression_coefficients = reshape(collect(1.0:(n_predictors*n_responses*n_components)),
+    B = reshape(collect(1.0:(n_predictors*n_responses*n_components)),
         n_predictors, n_responses, n_components)
-    X_scores = reshape(collect(1.0:(n_samples*n_components)), n_samples, n_components)
-    X_loadings = reshape(collect(1.0:(n_predictors*n_components)), n_predictors, n_components)
-    X_loading_weights = reshape(collect(10.0:(9+n_predictors*n_components)),
+    T = reshape(collect(1.0:(n_samples*n_components)), n_samples, n_components)
+    P = reshape(collect(1.0:(n_predictors*n_components)), n_predictors, n_components)
+    W_comp = reshape(collect(10.0:(9+n_predictors*n_components)),
         n_predictors, n_components)
-    Y_scores = reshape(collect(1.0:(n_samples*n_components)), n_samples, n_components)
-    Y_loadings = reshape(collect(5.0:(4+n_responses*n_components)),
+    U = reshape(collect(1.0:(n_samples*n_components)), n_samples, n_components)
+    C = reshape(collect(5.0:(4+n_responses*n_components)),
         n_responses, n_components)
-    projection = reshape(collect(2.0:(1+n_predictors*n_components)),
+    R = reshape(collect(2.0:(1+n_predictors*n_components)),
         n_predictors, n_components)
-    X_means = reshape(collect(1.0:n_predictors), 1, n_predictors)
-    Y_means = reshape(collect(1.0:n_responses), 1, n_responses)
-    fitted_values = reshape(collect(1.0:(n_samples*n_responses*n_components)),
+    X_bar = reshape(collect(1.0:n_predictors), 1, n_predictors)
+    Y_bar = reshape(collect(1.0:n_responses), 1, n_responses)
+    Y_hat = reshape(collect(1.0:(n_samples*n_responses*n_components)),
         n_samples, n_responses, n_components)
-    residuals = reshape(collect(11.0:(10+n_samples*n_responses*n_components)),
+    F = reshape(collect(11.0:(10+n_samples*n_responses*n_components)),
         n_samples, n_responses, n_components)
-    X_variance = [0.5, 0.25]
-    X_total_variance = 1.0
-    gammas = [0.7, 0.6]
-    canonical_correlations = [0.8, 0.75]
-    small_norm_indices = reshape(Bool[false, true, true, false], n_components, n_predictors)
-    canonical_coefficients = reshape(collect(3.0:(2+n_responses*n_components)),
+    X_var = [0.5, 0.25]
+    X_var_total = 1.0
+    gamma = [0.7, 0.6]
+    rho = [0.8, 0.75]
+    zero_mask = reshape(Bool[false, true, true, false], n_components, n_predictors)
+    a = reshape(collect(3.0:(2+n_responses*n_components)),
         n_responses, n_components)
-    canonical_coefficients_y = reshape(collect(6.0:(5+n_responses*n_components)),
+    b = reshape(collect(6.0:(5+n_responses*n_components)),
         n_responses, n_components)
-    W0_weights = reshape(collect(7.0:(6+n_predictors*n_responses*n_components)),
+    W0 = reshape(collect(7.0:(6+n_predictors*n_responses*n_components)),
         n_predictors, n_responses, n_components)
     Z = reshape(collect(9.0:(8+n_samples*n_responses*n_components)),
         n_samples, n_responses, n_components)
@@ -91,25 +91,25 @@ end
     da_categories = categorical(["class1", "class2"])
 
     cppls = CPPLS.CPPLSFit(
-        regression_coefficients,
-        X_scores,
-        X_loadings,
-        X_loading_weights,
-        Y_scores,
-        Y_loadings,
-        projection,
-        X_means,
-        Y_means,
-        fitted_values,
-        residuals,
-        X_variance,
-        X_total_variance,
-        gammas,
-        canonical_correlations,
-        small_norm_indices,
-        canonical_coefficients,
-        canonical_coefficients_y,
-        W0_weights,
+        B,
+        T,
+        P,
+        W_comp,
+        U,
+        C,
+        R,
+        X_bar,
+        Y_bar,
+        Y_hat,
+        F,
+        X_var,
+        X_var_total,
+        gamma,
+        rho,
+        zero_mask,
+        a,
+        b,
+        W0,
         Z;
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
@@ -122,13 +122,13 @@ end
     @test res[1] == :makie
     @test res[2] == cppls.sample_labels
     @test res[3] == cppls.da_categories
-    @test res[4] == cppls.X_scores[:, 1:2]
+    @test res[4] == cppls.T[:, 1:2]
 
     res = CPPLS.scoreplot(cppls; backend = :plotly)
     @test res[1] == :plotly
     @test res[2] == cppls.sample_labels
     @test res[3] == cppls.da_categories
-    @test res[4] == cppls.X_scores[:, 1:2]
+    @test res[4] == cppls.T[:, 1:2]
 
     @test_throws ErrorException CPPLS.scoreplot(cppls; backend = :unknown)
 

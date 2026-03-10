@@ -88,7 +88,7 @@ end
 """
     CPPLS.robustcor(x::AbstractVector, y::AbstractVector)
 
-Robust correlation helper used inside projection diagnostics. Returns the Pearson 
+Robust correlation helper used inside R diagnostics. Returns the Pearson 
 correlation between `x` and `y`, falling back to `0.0` when either input is constant or 
 when the computed value is not finite (e.g. `NaN` or `Inf`).
 

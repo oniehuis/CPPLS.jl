@@ -127,7 +127,7 @@ cv_regression_error(caller::AbstractString) =
         gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}},
         observation_weights::Union{AbstractVector{<:Real},Nothing},
         observation_weights_fn::Union{Function,Nothing},
-        Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
+        Y_aux::Union{AbstractMatrix{<:Real},Nothing},
         center::Bool,
         X_tolerance::Real,
         X_loading_weight_tolerance::Real,
@@ -155,7 +155,7 @@ count. Argument summary:
   full outer-training set; weights are subset per inner split).
 - `observation_weights_fn`: optional function `labels -> weights` recomputed per
   inner split. Provide either `observation_weights` or `observation_weights_fn`.
-- `Y_auxiliary`: optional auxiliary response matrix aligned with `Y_train_full`.
+- `Y_aux`: optional auxiliary response matrix aligned with `Y_train_full`.
 - `center`: `Bool` toggling mean-centering in the inner fits.
 - `X_tolerance`, `X_loading_weight_tolerance`, `t_squared_norm_tolerance`,
   `gamma_rel_tol`, `gamma_abs_tol`: `Real` tolerances passed to the fitter.
@@ -208,7 +208,7 @@ function optimize_num_latent_variables(
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
     observation_weights_fn::Union{Function,Nothing},
-    Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
+    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
     X_loading_weight_tolerance::Real,
@@ -249,8 +249,8 @@ function optimize_num_latent_variables(
             n_samples,
         )
 
-        Y_auxiliary_train =
-            Y_auxiliary !== nothing ? Y_auxiliary[train_indices, :] : Y_auxiliary
+        Y_aux_train =
+            Y_aux !== nothing ? Y_aux[train_indices, :] : Y_aux
 
         misclassification_costs = Vector{Float64}(undef, max_components)
 
@@ -260,7 +260,7 @@ function optimize_num_latent_variables(
             max_components,
             gamma = gamma,
             observation_weights = inner_weights,
-            Y_auxiliary = Y_auxiliary_train,
+            Y_aux = Y_aux_train,
             center = center,
             X_tolerance = X_tolerance,
             X_loading_weight_tolerance = X_loading_weight_tolerance,
@@ -303,7 +303,7 @@ function optimize_num_latent_variables(
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
     observation_weights_fn::Union{Function,Nothing},
-    Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
+    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
     X_loading_weight_tolerance::Real,
@@ -330,7 +330,7 @@ function optimize_num_latent_variables(
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
     observation_weights_fn::Union{Function,Nothing},
-    Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
+    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
     X_loading_weight_tolerance::Real,
@@ -351,7 +351,7 @@ function optimize_num_latent_variables(
         gamma,
         observation_weights,
         observation_weights_fn,
-        Y_auxiliary,
+        Y_aux,
         center,
         X_tolerance,
         X_loading_weight_tolerance,
@@ -377,7 +377,7 @@ function optimize_num_latent_variables(
     },
     observation_weights::Union{AbstractVector{<:Real},Nothing},
     observation_weights_fn::Union{Function,Nothing},
-    Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
+    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
     center::Bool,
     X_tolerance::Real,
     X_loading_weight_tolerance::Real,
@@ -401,7 +401,7 @@ function optimize_num_latent_variables(
         gamma,
         observation_weights,
         observation_weights_fn,
-        Y_auxiliary,
+        Y_aux,
         center,
         X_tolerance,
         X_loading_weight_tolerance,
@@ -416,11 +416,11 @@ function optimize_num_latent_variables(
 end
 
 """
-    nested_cv(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Integer};
+    nested_cv(X::AbstractMatrix{<:Real}, Y_prim::AbstractMatrix{<:Integer};
         gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
         observation_weights_fn::Union{Function,Nothing}=nothing,
-        Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing}=nothing,
+        Y_aux::Union{AbstractMatrix{<:Real},Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
         X_loading_weight_tolerance::Real=eps(Float64),
@@ -438,7 +438,7 @@ end
 
 Top-level nested CV driver for CPPLS. Parameter overview:
 
-- `X_predictors`, `Y_responses`: feature and one-hot response matrices (integer-valued).
+- `X`, `Y_prim`: feature and one-hot response matrices (integer-valued).
   Wrapper methods accept categorical label vectors. Regression responses (real-valued
   vectors or matrices) are currently unsupported because only the NMC metric is
   implemented.
@@ -449,7 +449,7 @@ Top-level nested CV driver for CPPLS. Parameter overview:
 - `observation_weights`: optional sample weights (full-length vectors are subset per
   fold); `observation_weights_fn`: optional function `labels -> weights` recomputed
   per training split (provide one or the other).
-- `Y_auxiliary`: extra response features.
+- `Y_aux`: extra response features.
 - `center`: toggle mean-centering; tolerances control numerical stability inside
   inner fits; `weighted_nmc` chooses between weighted/unweighted misclassification cost.
 - `num_outer_folds`, `num_outer_folds_repeats`: number of outer stratified folds
@@ -499,8 +499,8 @@ true
 ```
 """
 function nested_cv(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Integer};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Integer};
     gamma::Union{
         <:T1,
         <:NTuple{2,T1},
@@ -508,6 +508,7 @@ function nested_cv(
     } = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
     observation_weights_fn::Union{Function,Nothing} = nothing,
+    Y_aux::Union{AbstractMatrix{T3},Nothing} = nothing,
     Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -525,6 +526,8 @@ function nested_cv(
     verbose::Bool = true,
 ) where {T1<:Real,T2<:Real,T3<:Real}
 
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+
     num_outer_folds_repeats ≤ num_outer_folds || throw(
         ArgumentError(
             "The number of outer fold repeats cannot exceed the number of outer folds",
@@ -540,8 +543,8 @@ function nested_cv(
     max_components > 0 ||
         throw(ArgumentError("The number of components must be greater than zero"))
 
-    n_samples = size(X_predictors, 1)
-    class_labels = one_hot_to_labels(Y_responses)
+    n_samples = size(X, 1)
+    class_labels = one_hot_to_labels(Y_prim)
     outer_folds = random_batch_indices(class_labels, num_outer_folds, rng)
 
     outer_fold_accuracies = Vector{Float64}(undef, num_outer_folds_repeats)
@@ -553,12 +556,12 @@ function nested_cv(
 
         verbose && println("Outer fold: ", outer_fold_idx, " / ", num_outer_folds_repeats)
 
-        @views X_test = X_predictors[test_indices, :]
-        @views Y_test = Y_responses[test_indices, :]
+        @views X_test = X[test_indices, :]
+        @views Y_test = Y_prim[test_indices, :]
 
         train_indices = setdiff(1:n_samples, test_indices)
-        @views X_train = X_predictors[train_indices, :]
-        @views Y_train = Y_responses[train_indices, :]
+        @views X_train = X[train_indices, :]
+        @views Y_train = Y_prim[train_indices, :]
 
         labels_train = one_hot_to_labels(Y_train)
         outer_weights = resolve_observation_weights(
@@ -570,8 +573,8 @@ function nested_cv(
         )
         inner_weights = observation_weights_fn === nothing ? outer_weights : nothing
 
-        Y_auxiliary_train =
-            Y_auxiliary !== nothing ? Y_auxiliary[train_indices, :] : Y_auxiliary
+        Y_aux_train =
+            Y_aux !== nothing ? Y_aux[train_indices, :] : Y_aux
 
         optimal_num_latent_variables[outer_fold_idx] = optimize_num_latent_variables(
             X_train,
@@ -582,7 +585,7 @@ function nested_cv(
             gamma,
             inner_weights,
             observation_weights_fn,
-            Y_auxiliary_train,
+            Y_aux_train,
             center,
             X_tolerance,
             X_loading_weight_tolerance,
@@ -600,7 +603,7 @@ function nested_cv(
             optimal_num_latent_variables[outer_fold_idx],
             gamma = gamma,
             observation_weights = outer_weights,
-            Y_auxiliary = Y_auxiliary_train,
+            Y_aux = Y_aux_train,
             center = center,
             X_tolerance = X_tolerance,
             X_loading_weight_tolerance = X_loading_weight_tolerance,
@@ -625,37 +628,37 @@ function nested_cv(
 end
 
 function nested_cv(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Real};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Real};
     kwargs...,
 )
     cv_regression_error("nested_cv")
 end
 
 function nested_cv(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
 ) where {T,R,V,C,U}
-    Y_responses, _ = labels_to_one_hot(labels)
-    nested_cv(X_predictors, Y_responses; kwargs...)
+    Y_prim, _ = labels_to_one_hot(labels)
+    nested_cv(X, Y_prim; kwargs...)
 end
 
-function nested_cv(X_predictors::AbstractMatrix{<:Real}, labels::AbstractVector; kwargs...)
+function nested_cv(X::AbstractMatrix{<:Real}, labels::AbstractVector; kwargs...)
     if eltype(labels) <: Real
         cv_regression_error("nested_cv")
     else
-        Y_responses, _ = labels_to_one_hot(labels)
-        nested_cv(X_predictors, Y_responses; kwargs...)
+        Y_prim, _ = labels_to_one_hot(labels)
+        nested_cv(X, Y_prim; kwargs...)
     end
 end
 
 """
-    nested_cv_permutation(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Integer};
+    nested_cv_permutation(X::AbstractMatrix{<:Real}, Y_prim::AbstractMatrix{<:Integer};
         gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
         observation_weights_fn::Union{Function,Nothing}=nothing,
-        Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing}=nothing,
+        Y_aux::Union{AbstractMatrix{<:Real},Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
         X_loading_weight_tolerance::Real=eps(Float64),
@@ -676,7 +679,7 @@ Permutation-based significance test for the nested CV pipeline. Keywords mirror
 `nested_cv` but with explicit defaults suited for permutation tests. Parameter
 summary:
 
-- `gamma`, `observation_weights`, `observation_weights_fn`, `Y_auxiliary`, `center`, tolerances,
+- `gamma`, `observation_weights`, `observation_weights_fn`, `Y_aux`, `center`, tolerances,
   `weighted_nmc`: forwarded directly into each nested CV call. Only discriminant
   responses (integer one-hot matrices or categorical vectors) are supported because
   the scoring metric is classification-specific.
@@ -686,7 +689,7 @@ summary:
 - `num_permutations`: number of label shuffles (≥ 1).
 - `rng`: governs shuffling of both labels and folds; `verbose`: prints progress.
 
-For each permutation, the rows of `Y_responses` are randomly shuffled, then
+For each permutation, the rows of `Y_prim` are randomly shuffled, then
 `nested_cv` is executed with the same hyperparameters, and the mean outer-fold
 accuracy is recorded. Returns a vector of length `num_permutations` containing
 those mean accuracies so you can compute empirical p-values against the
@@ -734,11 +737,12 @@ true
 ```
 """
 function nested_cv_permutation(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Integer};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Integer};
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
     observation_weights_fn::Union{Function,Nothing} = nothing,
+    Y_aux::Union{AbstractMatrix{T3},Nothing} = nothing,
     Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
@@ -757,6 +761,8 @@ function nested_cv_permutation(
     verbose::Bool = true,
 ) where {T1<:Real,T2<:Real,T3<:Real}
 
+    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+
     num_outer_folds_repeats ≤ num_outer_folds || throw(
         ArgumentError(
             "The number of outer fold repeats cannot exceed the number of outer folds",
@@ -772,27 +778,27 @@ function nested_cv_permutation(
     max_components > 0 ||
         throw(ArgumentError("The number of components must be greater than zero"))
 
-    n_samples = size(X_predictors, 1)
+    n_samples = size(X, 1)
     permutation_accuracies = Vector{Float64}(undef, num_permutations)
 
     for i = 1:num_permutations
         verbose && println("Permutation: ", i, " / ", num_permutations)
 
         shuffled_indices = shuffle(rng, 1:n_samples)
-        shuffled_Y_responses = @view Y_responses[shuffled_indices, :]
+        Y_prim_shuffled = @view Y_prim[shuffled_indices, :]
 
-        @assert size(shuffled_Y_responses, 1) == n_samples "perm=$i: Y rows mismatch"
-        @assert size(shuffled_Y_responses, 2) == size(Y_responses, 2) "perm=$i: Y cols mismatch"
-        @assert all(isfinite, X_predictors) "perm=$i: X has NaN/Inf"
-        @assert all(isfinite, shuffled_Y_responses) "perm=$i: Y has NaN/Inf"
+        @assert size(Y_prim_shuffled, 1) == n_samples "perm=$i: Y rows mismatch"
+        @assert size(Y_prim_shuffled, 2) == size(Y_prim, 2) "perm=$i: Y cols mismatch"
+        @assert all(isfinite, X) "perm=$i: X has NaN/Inf"
+        @assert all(isfinite, Y_prim_shuffled) "perm=$i: Y has NaN/Inf"
 
         outer_fold_accuracies, _ = nested_cv(
-            X_predictors,
-            shuffled_Y_responses;
+            X,
+            Y_prim_shuffled;
             gamma = gamma,
             observation_weights = observation_weights,
             observation_weights_fn = observation_weights_fn,
-            Y_auxiliary = Y_auxiliary,
+            Y_aux = Y_aux,
             center = center,
             X_tolerance = X_tolerance,
             X_loading_weight_tolerance = X_loading_weight_tolerance,
@@ -815,31 +821,31 @@ function nested_cv_permutation(
 end
 
 function nested_cv_permutation(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Real};
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Real};
     kwargs...,
 )
     cv_regression_error("nested_cv_permutation")
 end
 
 function nested_cv_permutation(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
 ) where {T,R,V,C,U}
-    Y_responses, _ = labels_to_one_hot(labels)
-    nested_cv_permutation(X_predictors, Y_responses; kwargs...)
+    Y_prim, _ = labels_to_one_hot(labels)
+    nested_cv_permutation(X, Y_prim; kwargs...)
 end
 
 function nested_cv_permutation(
-    X_predictors::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
     labels::AbstractVector;
     kwargs...,
 )
     if eltype(labels) <: Real
         cv_regression_error("nested_cv_permutation")
     else
-        Y_responses, _ = labels_to_one_hot(labels)
-        nested_cv_permutation(X_predictors, Y_responses; kwargs...)
+        Y_prim, _ = labels_to_one_hot(labels)
+        nested_cv_permutation(X, Y_prim; kwargs...)
     end
 end

@@ -32,71 +32,71 @@ function convert_auxiliary_to_float64(Y::LinearAlgebra.AbstractVecOrMat)
 end
 
 function convert_auxiliary_to_float64(Y)
-    throw(ArgumentError("Y_auxiliary must be a vector or matrix"))
+    throw(ArgumentError("Y_aux must be a vector or matrix"))
 end
 
 function cppls_prepare_data(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractMatrix{<:Real},
+    X::AbstractMatrix{<:Real},
+    Y_prim::AbstractMatrix{<:Real},
     n_components::Integer,
-    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing},
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing},
     observation_weights::Union{AbstractVector{<:Real},Nothing},
     center::Bool,
 )
 
-    X_predictors = convert_to_float64(X_predictors)
-    Y_responses = convert_to_float64(Y_responses)
+    X = convert_to_float64(X)
+    Y_prim = convert_to_float64(Y_prim)
 
-    if Y_auxiliary !== nothing
-        Y_auxiliary = convert_auxiliary_to_float64(Y_auxiliary)
+    if Y_aux !== nothing
+        Y_aux = convert_auxiliary_to_float64(Y_aux)
     end
 
-    Y_combined = isnothing(Y_auxiliary) ? Y_responses : hcat(Y_responses, Y_auxiliary)
+    Y = isnothing(Y_aux) ? Y_prim : hcat(Y_prim, Y_aux)
 
-    n_samples_X, n_features_X = size(X_predictors)
-    n_samples_Y, n_targets_Y = size(Y_responses)
+    n_samples_X, n_features_X = size(X)
+    n_samples_Y, n_targets_Y = size(Y_prim)
     n_samples_X ≠ n_samples_Y && throw(
-        DimensionMismatch("Number of rows in X_predictors and Y_responses must be equal"),
+        DimensionMismatch("Number of rows in X and Y_prim must be equal"),
     )
     if !isnothing(observation_weights) && length(observation_weights) ≠ n_samples_X
         throw(
             DimensionMismatch(
                 "Length of observation_weights must match the number of " *
-                "rows in X_predictors and Y_responses",
+                "rows in X and Y_prim",
             ),
         )
     end
 
     if center
-        X_predictors, X̄_mean = center_mean(X_predictors, observation_weights)
-        Ȳ_mean = mean(Y_responses, dims = 1)
+        X, X_bar = center_mean(X, observation_weights)
+        Y_bar = mean(Y_prim, dims = 1)
     else
-        X̄_mean = zeros(Float64, (1, n_features_X))
-        Ȳ_mean = zeros(Float64, (1, n_targets_Y))
+        X_bar = zeros(Float64, (1, n_features_X))
+        Y_bar = zeros(Float64, (1, n_targets_Y))
     end
 
-    X_deflated = copy(X_predictors)
-    X_loading_weights = Matrix{Float64}(undef, n_features_X, n_components)
-    X_loadings = Matrix{Float64}(undef, n_features_X, n_components)
-    Y_loadings = Matrix{Float64}(undef, n_targets_Y, n_components)
-    small_norm_flags = Matrix{Bool}(undef, (n_components, n_features_X))
-    regression_coefficients =
+    X_def = copy(X)
+    W_comp = Matrix{Float64}(undef, n_features_X, n_components)
+    P = Matrix{Float64}(undef, n_features_X, n_components)
+    C = Matrix{Float64}(undef, n_targets_Y, n_components)
+    zero_mask = Matrix{Bool}(undef, (n_components, n_features_X))
+    B =
         Array{Float64}(undef, (n_features_X, n_targets_Y, n_components))
 
 
     (
-        X_predictors,
-        Y_responses,
-        Y_combined,
+        X,
+        Y_prim,
+        Y,
         observation_weights,
-        X̄_mean,
-        Ȳ_mean,
-        X_deflated,
-        X_loading_weights,
-        X_loadings,
-        Y_loadings,
-        small_norm_flags,
-        regression_coefficients,
+        X_bar,
+        Y_bar,
+        X_def,
+        W_comp,
+        P,
+        C,
+        zero_mask,
+        B,
         n_samples_X,
         n_targets_Y,
     )

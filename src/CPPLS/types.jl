@@ -4,9 +4,9 @@
 Common supertype for fitted Canonical Powered Partial Least Squares models. Any subtype
 must expose at least the following fields so shared functions can operate generically:
 
-- `regression_coefficients::Array{<:Real, 3}`
-- `X_means::Matrix{<:Real}`
-- `Y_means::Matrix{<:Real}`
+- `B::Array{<:Real, 3}`
+- `X_bar::Matrix{<:Real}`
+- `Y_bar::Matrix{<:Real}`
 
 Additionally, subtypes are expected to work with the exported generic helpers
 `predict`, `predictonehot`, and `project`.
@@ -82,27 +82,27 @@ visualisation. `T1` is the floating-point element type used for continuous array
 `T2` is the integer type used for boolean-like masks.
 
 # Fields
-- `regression_coefficients::Array{T1, 3}` — cumulative regression matrices for the
+- `B::Array{T1, 3}` — cumulative regression matrices for the
    first `k = 1 … n_components` latent variables.
-- `X_scores::Matrix{T1}` — predictor scores per component.
-- `X_loadings::Matrix{T1}` — predictor loadings per component.
-- `X_loading_weights::Matrix{T1}` — predictor weight vectors per component.
-- `Y_scores::Matrix{T1}` — response scores derived from the fitted model.
-- `Y_loadings::Matrix{T1}` — response loadings per component.
-- `projection::Matrix{T1}` — mapping from centred predictors to component scores.
-- `X_means::Matrix{T1}` — row vector of predictor means used for centering.
-- `Y_means::Matrix{T1}` — row vector of response means used for centering.
-- `fitted_values::Array{T1,3}` — fitted responses for the first `k` components.
-- `residuals::Array{T1,3}` — residual cubes matching `fitted_values`.
-- `X_variance::Vector{T1}` — variance explained in `X` per component.
-- `X_total_variance::T1` — total variance present in the centred predictors.
-- `gammas::Vector{T1}` — power-parameter selections per component.
-- `canonical_correlations::Vector{T1}` — squared canonical correlations per component.
-- `small_norm_indices::Matrix{T2}` — boolean mask of columns deflated to zero.
-- `canonical_coefficients::Matrix{T1}` — canonical coefficient matrix from CCA.
-- `canonical_coefficients_y::Matrix{T1}` — canonical coefficient matrix in Y-space from CCA.
-- `W0_weights::Array{T1,3}` — initial CPPLS weight matrices per component.
-- `Z::Array{T1,3}` — supervised predictor projections per component (`X_deflated * W0_weights`).
+- `T::Matrix{T1}` — predictor scores per component.
+- `P::Matrix{T1}` — predictor loadings per component.
+- `W_comp::Matrix{T1}` — predictor weight vectors per component.
+- `U::Matrix{T1}` — response scores derived from the fitted model.
+- `C::Matrix{T1}` — response loadings per component.
+- `R::Matrix{T1}` — mapping from centred predictors to component scores.
+- `X_bar::Matrix{T1}` — row vector of predictor means used for centering.
+- `Y_bar::Matrix{T1}` — row vector of response means used for centering.
+- `Y_hat::Array{T1,3}` — fitted responses for the first `k` components.
+- `F::Array{T1,3}` — residual cubes matching `Y_hat`.
+- `X_var::Vector{T1}` — variance explained in `X` per component.
+- `X_var_total::T1` — total variance present in the centred predictors.
+- `gamma::Vector{T1}` — power-parameter selections per component.
+- `rho::Vector{T1}` — squared canonical correlations per component.
+- `zero_mask::Matrix{T2}` — boolean mask of columns deflated to zero.
+- `a::Matrix{T1}` — canonical coefficient matrix from CCA.
+- `b::Matrix{T1}` — canonical coefficient matrix in Y-space from CCA.
+- `W0::Array{T1,3}` — initial CPPLS weight matrices per component.
+- `Z::Array{T1,3}` — supervised predictor projections per component (`X_def * W0`).
 - `sample_labels::AbstractVector` — optional labels describing each observation.
 - `predictor_labels::AbstractVector` — optional labels for predictor columns.
 - `response_labels::AbstractVector` — labels for regression responses or DA classes.
@@ -117,25 +117,25 @@ struct CPPLSFit{
     RL<:AbstractVector,
     DAC,
 } <: AbstractCPPLSFit
-    regression_coefficients::Array{T1,3}
-    X_scores::Matrix{T1}
-    X_loadings::Matrix{T1}
-    X_loading_weights::Matrix{T1}
-    Y_scores::Matrix{T1}
-    Y_loadings::Matrix{T1}
-    projection::Matrix{T1}
-    X_means::Matrix{T1}
-    Y_means::Matrix{T1}
-    fitted_values::Array{T1,3}
-    residuals::Array{T1,3}
-    X_variance::Vector{T1}
-    X_total_variance::T1
-    gammas::Vector{T1}
-    canonical_correlations::Vector{T1}
-    small_norm_indices::Matrix{T2}
-    canonical_coefficients::Matrix{T1}
-    canonical_coefficients_y::Matrix{T1}
-    W0_weights::Array{T1,3}
+    B::Array{T1,3}
+    T::Matrix{T1}
+    P::Matrix{T1}
+    W_comp::Matrix{T1}
+    U::Matrix{T1}
+    C::Matrix{T1}
+    R::Matrix{T1}
+    X_bar::Matrix{T1}
+    Y_bar::Matrix{T1}
+    Y_hat::Array{T1,3}
+    F::Array{T1,3}
+    X_var::Vector{T1}
+    X_var_total::T1
+    gamma::Vector{T1}
+    rho::Vector{T1}
+    zero_mask::Matrix{T2}
+    a::Matrix{T1}
+    b::Matrix{T1}
+    W0::Array{T1,3}
     Z::Array{T1,3}
     sample_labels::SL
     predictor_labels::PL
@@ -145,25 +145,25 @@ struct CPPLSFit{
 end
 
 function CPPLSFit(
-    regression_coefficients::Array{T1,3},
-    X_scores::Matrix{T1},
-    X_loadings::Matrix{T1},
-    X_loading_weights::Matrix{T1},
-    Y_scores::Matrix{T1},
-    Y_loadings::Matrix{T1},
-    projection::Matrix{T1},
-    X_means::Matrix{T1},
-    Y_means::Matrix{T1},
-    fitted_values::Array{T1,3},
-    residuals::Array{T1,3},
-    X_variance::Vector{T1},
-    X_total_variance::T1,
-    gammas::Vector{T1},
-    canonical_correlations::Vector{T1},
-    small_norm_indices::Matrix{T2},
-    canonical_coefficients::Matrix{T1},
-    canonical_coefficients_y::Matrix{T1},
-    W0_weights::Array{T1,3},
+    B::Array{T1,3},
+    T::Matrix{T1},
+    P::Matrix{T1},
+    W_comp::Matrix{T1},
+    U::Matrix{T1},
+    C::Matrix{T1},
+    R::Matrix{T1},
+    X_bar::Matrix{T1},
+    Y_bar::Matrix{T1},
+    Y_hat::Array{T1,3},
+    F::Array{T1,3},
+    X_var::Vector{T1},
+    X_var_total::T1,
+    gamma::Vector{T1},
+    rho::Vector{T1},
+    zero_mask::Matrix{T2},
+    a::Matrix{T1},
+    b::Matrix{T1},
+    W0::Array{T1,3},
     Z::Array{T1,3};
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
@@ -189,25 +189,25 @@ function CPPLSFit(
         typeof(response_labels),
         typeof(da_categories),
     }(
-        regression_coefficients,
-        X_scores,
-        X_loadings,
-        X_loading_weights,
-        Y_scores,
-        Y_loadings,
-        projection,
-        X_means,
-        Y_means,
-        fitted_values,
-        residuals,
-        X_variance,
-        X_total_variance,
-        gammas,
-        canonical_correlations,
-        small_norm_indices,
-        canonical_coefficients,
-        canonical_coefficients_y,
-        W0_weights,
+        B,
+        T,
+        P,
+        W_comp,
+        U,
+        C,
+        R,
+        X_bar,
+        Y_bar,
+        Y_hat,
+        F,
+        X_var,
+        X_var_total,
+        gamma,
+        rho,
+        zero_mask,
+        a,
+        b,
+        W0,
         Z,
         sample_labels,
         predictor_labels,
@@ -225,14 +225,14 @@ Memory-lean CPPLS variant retaining only the pieces needed for prediction. `T`
 is the floating-point element type shared by all stored matrices.
 
 # Fields
-- `regression_coefficients::Array{T, 3}` — stacked regression matrices.
-- `X_means::Matrix{T}` — predictor means copied from the training data.
-- `Y_means::Matrix{T}` — response means copied from the training data.
+- `B::Array{T, 3}` — stacked regression matrices.
+- `X_bar::Matrix{T}` — predictor means copied from the training data.
+- `Y_bar::Matrix{T}` — response means copied from the training data.
 - `analysis_mode::Symbol` — either `:regression` or `:discriminant`.
 """
 struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
-    regression_coefficients::Array{T,3}
-    X_means::Matrix{T}
-    Y_means::Matrix{T}
+    B::Array{T,3}
+    X_bar::Matrix{T}
+    Y_bar::Matrix{T}
     analysis_mode::Symbol
 end

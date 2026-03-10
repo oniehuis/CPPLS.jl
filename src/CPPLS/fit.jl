@@ -36,31 +36,6 @@ function _cppls_model_fit_kwargs_with_mode(model::CPPLS)
     return merge(_cppls_model_fit_kwargs(model), (analysis_mode = model.analysis_mode,))
 end
 
-const CPPLS_MODEL_KWARGS = Set((
-    :n_components,
-    :gamma,
-    :center,
-    :X_tolerance,
-    :X_loading_weight_tolerance,
-    :t_squared_norm_tolerance,
-    :gamma_rel_tol,
-    :gamma_abs_tol,
-    :analysis_mode,
-))
-
-function _split_cppls_kwargs(kwargs::Base.Pairs)
-    model_pairs = Pair{Symbol,Any}[]
-    fit_pairs = Pair{Symbol,Any}[]
-    for (key, value) in kwargs
-        if key in CPPLS_MODEL_KWARGS
-            push!(model_pairs, key => value)
-        else
-            push!(fit_pairs, key => value)
-        end
-    end
-    return (; model_pairs...), (; fit_pairs...)
-end
-
 """
     fit_cppls(
         X::AbstractMatrix{<:Real},
@@ -366,6 +341,22 @@ function fit_cppls(
     )
 end
 
+"""
+    StatsAPI.fit(model::CPPLS, X, Y; ...)
+
+Fit a CPPLS model using the StatsAPI interface with an explicit model specification.
+You normally call this as `fit(spec, X, Y)` after `using CPPLS`. Use `CPPLS.fit` or
+`StatsAPI.fit` only when you need to disambiguate name conflicts.
+
+# Example
+```
+using CPPLS
+
+spec = CPPLS(n_components=2, gamma=0.5)
+model = fit(spec, X, Y)
+preds = predict(model, X)
+```
+"""
 function fit(
     model::CPPLS,
     X_predictors::AbstractMatrix{<:Real},
@@ -594,32 +585,6 @@ function fit_cppls(
     )
 end
 
-"""
-    StatsAPI.fit(::Type{CPPLS}, X, Y; n_components=2, gamma=0.5, ...)
-
-Fit a CPPLS model using the StatsAPI interface. Keyword arguments are split between
-model-spec settings (`n_components`, `gamma`, tolerances, `analysis_mode`, `center`)
-and data-dependent fit settings (`observation_weights`, `Y_auxiliary`, labels, etc.).
-
-# Example
-```
-using StatsAPI
-using CPPLS
-
-model = fit(CPPLS.CPPLS, X, Y; n_components=2, gamma=0.5)
-preds = StatsAPI.predict(model, X)
-```
-"""
-function fit(
-    ::Type{CPPLS},
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses;
-    kwargs...,
-)
-    model_kwargs, fit_kwargs = _split_cppls_kwargs(kwargs)
-    model = CPPLS(; model_kwargs...)
-    fit_cppls(model, X_predictors, Y_responses; fit_kwargs...)
-end
 
 """
     fit_cppls_light(
@@ -954,22 +919,6 @@ function fit_cppls_light(
     )
 end
 
-"""
-    StatsAPI.fit(::Type{CPPLSFitLight}, X, Y; n_components=2, gamma=0.5, ...)
-
-Fit a lightweight CPPLS model via the StatsAPI interface. Returns a `CPPLSFitLight`
-containing only the parameters needed for prediction.
-"""
-function fit(
-    ::Type{CPPLSFitLight},
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses;
-    kwargs...,
-)
-    model_kwargs, fit_kwargs = _split_cppls_kwargs(kwargs)
-    model = CPPLS(; model_kwargs...)
-    fit_cppls_light(model, X_predictors, Y_responses; fit_kwargs...)
-end
 
 function process_component!(
     i::Integer,

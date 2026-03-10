@@ -55,7 +55,8 @@ end
         1 0
     ]
 
-    model = StatsAPI.fit(CPPLS.CPPLS, X, Y; n_components = 2, gamma = 0.5)
+    spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5)
+    model = StatsAPI.fit(spec, X, Y)
     @test model isa CPPLS.CPPLSFit
 
     preds = StatsAPI.predict(model, X)
@@ -70,9 +71,6 @@ end
     resid_vals = StatsAPI.residuals(model)
     @test size(resid_vals) == size(fitted_vals)
 
-    light = StatsAPI.fit(CPPLS.CPPLSFitLight, X, Y; n_components = 2, gamma = 0.5)
-    @test light isa CPPLS.CPPLSFitLight
-    @test size(StatsAPI.coef(light)) == (size(X, 2), size(Y, 2))
 end
 
 @testset "fit_cppls enforces label metadata" begin

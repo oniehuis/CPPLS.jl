@@ -41,7 +41,6 @@ julia> using CPPLS
 using CPPLS
 using Random
 using Statistics
-using StatsAPI
 
 rng = MersenneTwister(1)
 X = randn(rng, 60, 30)                                     # predictors (e.g., spectra)
@@ -57,7 +56,8 @@ accuracies, components = nested_cv(
     verbose=false)
 
 best_components = floor(Int, median(components))           # consensus components across folds
-model = fit(CPPLSFitLight, X, Y; n_components=best_components, gamma=0.5)
+spec = CPPLS(n_components=best_components, gamma=0.5)
+model = fit(spec, X, Y)
 ŷ = predictonehot(model, predict(model, X))                # fitted class indicators
 
 permutation_scores = nested_cv_permutation(

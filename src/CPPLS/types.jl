@@ -17,7 +17,7 @@ abstract type AbstractCPPLSFit end
     CPPLS(; kwargs...)
 
 Model specification for CPPLS fits. Stores hyperparameters and numerical tolerances
-but no data-dependent quantities. Use with `fit_cppls`/`fit_cppls_light`.
+but no data-dependent quantities. Use with `fit`.
 
 Keywords mirror the CPPLS fitting defaults:
 - `n_components::Integer=2`

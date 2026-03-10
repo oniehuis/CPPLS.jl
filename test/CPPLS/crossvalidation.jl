@@ -45,44 +45,6 @@ const CROSSVAL_Y = [
     0 1
 ]
 
-const CROSSVAL_LABELS = categorical([
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-])
-
-const CROSSVAL_LABELS_PLAIN = [
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-    "class1",
-    "class2",
-]
-
 @testset "random_batch_indices builds stratified folds" begin
     strata = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]
     folds = CPPLS.random_batch_indices(
@@ -167,203 +129,106 @@ end
     )
 end
 
+@testset "cv_classification builds default functions" begin
+    cfg = CPPLS.cv_classification()
+    @test haskey(cfg, :score_fn)
+    @test haskey(cfg, :predict_fn)
+    @test haskey(cfg, :select_fn)
+    @test haskey(cfg, :flag_fn)
+
+    Y_true = [1 0; 0 1]
+    Y_pred = [1 0; 1 0]
+    score = cfg.score_fn(Y_true, Y_pred)
+    @test 0.0 ≤ score ≤ 1.0
+    @test cfg.flag_fn(Y_true, Y_pred) == [false, true]
+    @test cfg.select_fn([0.1, 0.2]) == 2
+end
+
 @testset "optimize_num_latent_variables selects component count" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
+    cfg = CPPLS.cv_classification()
     selected = CPPLS.optimize_num_latent_variables(
         CROSSVAL_X,
         CROSSVAL_Y,
         1,
         2,
         2,
-        0.5,
-        nothing,
-        nothing,
-        nothing,
-        true,
-        1e-12,
-        eps(Float64),
-        1e-10,
-        1e-6,
-        1e-12,
-        true,
+        spec,
+        (;),
+        cfg.score_fn,
+        cfg.predict_fn,
+        cfg.select_fn,
         CPPLS.MersenneTwister(42),
-        false,
+        false;
+        strata = CPPLS.one_hot_to_labels(CROSSVAL_Y),
     )
     @test selected == 1
-
-    selected_labels = CPPLS.optimize_num_latent_variables(
-        CROSSVAL_X,
-        CROSSVAL_LABELS,
-        1,
-        2,
-        2,
-        0.5,
-        nothing,
-        nothing,
-        nothing,
-        true,
-        1e-12,
-        eps(Float64),
-        1e-10,
-        1e-6,
-        1e-12,
-        true,
-        CPPLS.MersenneTwister(42),
-        false,
-    )
-    @test selected_labels == selected
-
-    selected_plain = CPPLS.optimize_num_latent_variables(
-        CROSSVAL_X,
-        CROSSVAL_LABELS_PLAIN,
-        1,
-        2,
-        2,
-        0.5,
-        nothing,
-        nothing,
-        nothing,
-        true,
-        1e-12,
-        eps(Float64),
-        1e-10,
-        1e-6,
-        1e-12,
-        true,
-        CPPLS.MersenneTwister(42),
-        false,
-    )
-    @test selected_plain == selected
-
-    opt_method = which(
-        CPPLS.optimize_num_latent_variables,
-        Tuple{
-            typeof(CROSSVAL_X),
-            typeof(CROSSVAL_LABELS),
-            Int,
-            Int,
-            Int,
-            Float64,
-            Nothing,
-            Nothing,
-            Nothing,
-            Bool,
-            Float64,
-            Float64,
-            Float64,
-            Float64,
-            Float64,
-            Bool,
-            CPPLS.MersenneTwister,
-            Bool,
-        },
-    )
-    opt_sig = Base.unwrap_unionall(opt_method.sig)
-    @test opt_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
-
-    reg_matrix = Float64.(CROSSVAL_Y)
-    @test_throws ArgumentError CPPLS.optimize_num_latent_variables(
-        CROSSVAL_X,
-        reg_matrix,
-        1,
-        2,
-        2,
-        0.5,
-        nothing,
-        nothing,
-        nothing,
-        true,
-        1e-12,
-        eps(Float64),
-        1e-10,
-        1e-6,
-        1e-12,
-        true,
-        CPPLS.MersenneTwister(42),
-        false,
-    )
-
-    reg_vector = randn(size(CROSSVAL_X, 1))
-    @test_throws ArgumentError CPPLS.optimize_num_latent_variables(
-        CROSSVAL_X,
-        reg_vector,
-        1,
-        2,
-        2,
-        0.5,
-        nothing,
-        nothing,
-        nothing,
-        true,
-        1e-12,
-        eps(Float64),
-        1e-10,
-        1e-6,
-        1e-12,
-        true,
-        CPPLS.MersenneTwister(42),
-        false,
-    )
 end
 
-@testset "nested_cv returns accuracies and component choices" begin
-    accuracies, components = suppress_info() do
+@testset "nested_cv returns scores and component choices" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
+    cfg = CPPLS.cv_classification()
+    scores, components = suppress_info() do
         CPPLS.nested_cv(
             CROSSVAL_X,
             CROSSVAL_Y;
-            gamma = 0.5,
+            spec = spec,
+            fit_kwargs = (;),
+            score_fn = cfg.score_fn,
+            predict_fn = cfg.predict_fn,
+            select_fn = cfg.select_fn,
             num_outer_folds = 2,
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
+            strata = CPPLS.one_hot_to_labels(CROSSVAL_Y),
             rng = CPPLS.MersenneTwister(123),
             verbose = false,
         )
     end
 
-    @test length(accuracies) == 2
-    @test all(0.0 ≤ acc ≤ 1.0 for acc in accuracies)
-    @test length(components) == 2
-    @test all(comp == 1 for comp in components)
+    @test length(scores) == 2
+    @test all(0.0 ≤ acc ≤ 1.0 for acc in scores)
+    @test components == [1, 1]
+end
 
-    accuracies_labels, components_labels = suppress_info() do
-        CPPLS.nested_cv(
+@testset "nested_cv_permutation shuffles responses" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
+    cfg = CPPLS.cv_classification()
+    perms = suppress_info() do
+        CPPLS.nested_cv_permutation(
             CROSSVAL_X,
-            CROSSVAL_LABELS;
-            gamma = 0.5,
+            CROSSVAL_Y;
+            spec = spec,
+            fit_kwargs = (;),
+            score_fn = cfg.score_fn,
+            predict_fn = cfg.predict_fn,
+            select_fn = cfg.select_fn,
             num_outer_folds = 2,
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
-            rng = CPPLS.MersenneTwister(1234),
+            num_permutations = 2,
+            strata = CPPLS.one_hot_to_labels(CROSSVAL_Y),
+            rng = CPPLS.MersenneTwister(321),
             verbose = false,
         )
     end
-    @test components_labels == components
 
-    accuracies_plain, components_plain = suppress_info() do
-        CPPLS.nested_cv(
-            CROSSVAL_X,
-            CROSSVAL_LABELS_PLAIN;
-            gamma = 0.5,
-            num_outer_folds = 2,
-            num_outer_folds_repeats = 2,
-            num_inner_folds = 2,
-            num_inner_folds_repeats = 2,
-            max_components = 1,
-            rng = CPPLS.MersenneTwister(4321),
-            verbose = false,
-        )
-    end
-    @test components_plain == components
+    @test length(perms) == 2
+    @test all(0.0 ≤ acc ≤ 1.0 for acc in perms)
+end
 
-    real_vector = randn(size(CROSSVAL_X, 1))
-    @test_throws ArgumentError suppress_info() do
-        CPPLS.nested_cv(
+@testset "cv_outlier_scan returns per-sample counts" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
+    out = suppress_info() do
+        CPPLS.cv_outlier_scan(
             CROSSVAL_X,
-            real_vector;
-            gamma = 0.5,
+            CROSSVAL_Y;
+            spec = spec,
+            fit_kwargs = (;),
             num_outer_folds = 2,
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
@@ -374,121 +239,11 @@ end
         )
     end
 
-    @test_throws ArgumentError suppress_info() do
-        CPPLS.nested_cv(
-            CROSSVAL_X,
-            Float64.(CROSSVAL_Y);
-            gamma = 0.5,
-            num_outer_folds = 2,
-            num_outer_folds_repeats = 2,
-            num_inner_folds = 2,
-            num_inner_folds_repeats = 2,
-            max_components = 1,
-            rng = CPPLS.MersenneTwister(100),
-            verbose = false,
-        )
-    end
+    @test length(out.n_tested) == size(CROSSVAL_X, 1)
+    @test length(out.n_flagged) == size(CROSSVAL_X, 1)
+    @test all(0.0 ≤ r ≤ 1.0 for r in out.rate)
 
-    nested_method = which(
-        CPPLS.nested_cv,
-        Tuple{typeof(CROSSVAL_X),typeof(CROSSVAL_LABELS)},
-    )
-    nested_sig = Base.unwrap_unionall(nested_method.sig)
-    @test nested_sig.parameters[3].name.wrapper ===
-          CategoricalArrays.AbstractCategoricalArray
-end
-
-@testset "nested_cv_permutation shuffles responses" begin
-    perms = suppress_info() do
-        CPPLS.nested_cv_permutation(
-            CROSSVAL_X,
-            CROSSVAL_Y;
-            num_outer_folds = 2,
-            num_outer_folds_repeats = 2,
-            num_inner_folds = 2,
-            num_inner_folds_repeats = 2,
-            max_components = 1,
-            num_permutations = 2,
-            center = false,
-            rng = CPPLS.MersenneTwister(321),
-            verbose = false,
-        )
-    end
-
-    @test length(perms) == 2
-    @test all(0.0 ≤ acc ≤ 1.0 for acc in perms)
-
-    perms_labels = suppress_info() do
-        CPPLS.nested_cv_permutation(
-            CROSSVAL_X,
-            CROSSVAL_LABELS;
-            num_outer_folds = 2,
-            num_outer_folds_repeats = 2,
-            num_inner_folds = 2,
-            num_inner_folds_repeats = 2,
-            max_components = 1,
-            num_permutations = 2,
-            center = false,
-            rng = CPPLS.MersenneTwister(654),
-            verbose = false,
-        )
-    end
-    @test length(perms_labels) == 2
-
-    perms_plain = suppress_info() do
-        CPPLS.nested_cv_permutation(
-            CROSSVAL_X,
-            CROSSVAL_LABELS_PLAIN;
-            num_outer_folds = 2,
-            num_outer_folds_repeats = 2,
-            num_inner_folds = 2,
-            num_inner_folds_repeats = 2,
-            max_components = 1,
-            num_permutations = 2,
-            center = false,
-            rng = CPPLS.MersenneTwister(222),
-            verbose = false,
-        )
-    end
-    @test length(perms_plain) == length(perms_labels)
-
-    real_vector = randn(size(CROSSVAL_X, 1))
-    @test_throws ArgumentError suppress_info() do
-        CPPLS.nested_cv_permutation(
-            CROSSVAL_X,
-            real_vector;
-            num_outer_folds = 2,
-            num_outer_folds_repeats = 2,
-            num_inner_folds = 2,
-            num_inner_folds_repeats = 2,
-            max_components = 1,
-            num_permutations = 2,
-            center = false,
-            rng = CPPLS.MersenneTwister(777),
-            verbose = false,
-        )
-    end
-
-    @test_throws ArgumentError suppress_info() do
-        CPPLS.nested_cv_permutation(
-            CROSSVAL_X,
-            Float64.(CROSSVAL_Y);
-            num_outer_folds = 2,
-            num_outer_folds_repeats = 2,
-            num_inner_folds = 2,
-            num_inner_folds_repeats = 2,
-            max_components = 1,
-            num_permutations = 2,
-            center = false,
-            rng = CPPLS.MersenneTwister(987),
-            verbose = false,
-        )
-    end
-
-    perm_method = which(
-        CPPLS.nested_cv_permutation,
-        Tuple{typeof(CROSSVAL_X),typeof(CROSSVAL_LABELS)},
-    )
-    perm_sig = Base.unwrap_unionall(perm_method.sig)
-    @test perm_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
+    expected = 2 * (size(CROSSVAL_X, 1) ÷ 2)
+    @test sum(out.n_tested) == expected
+    @test all(out.n_flagged .≤ out.n_tested)
 end

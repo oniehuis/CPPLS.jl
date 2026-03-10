@@ -112,126 +112,212 @@ function resolve_observation_weights(
     observation_weights
 end
 
-const CV_REGRESSION_MESSAGE = "CPPLS cross-validation currently supports only discriminant-analysis responses because the evaluation metric (NMC) is classification-specific."
+function with_n_components(spec::CPPLSSpec, n_components::Integer)
+    return CPPLSSpec(
+        n_components = n_components,
+        gamma = spec.gamma,
+        center = spec.center,
+        X_tolerance = spec.X_tolerance,
+        X_loading_weight_tolerance = spec.X_loading_weight_tolerance,
+        t_squared_norm_tolerance = spec.t_squared_norm_tolerance,
+        gamma_rel_tol = spec.gamma_rel_tol,
+        gamma_abs_tol = spec.gamma_abs_tol,
+        analysis_mode = spec.analysis_mode,
+    )
+end
 
-cv_regression_error(caller::AbstractString) =
-    throw(ArgumentError("$caller: $CV_REGRESSION_MESSAGE"))
+function subset_vector_like(
+    values,
+    train_indices::AbstractVector{<:Integer},
+    n_samples::Integer,
+    name::Symbol,
+)
+    values === nothing && return values
+    values isa AbstractVector || return values
+
+    if length(values) == n_samples
+        return values[train_indices]
+    elseif length(values) == length(train_indices)
+        return values
+    end
+
+    throw(
+        DimensionMismatch(
+            "Length of $name must match the total sample count or the number of training samples.",
+        ),
+    )
+end
+
+function subset_matrix_like(
+    values,
+    train_indices::AbstractVector{<:Integer},
+    n_samples::Integer,
+    name::Symbol,
+)
+    values === nothing && return values
+    values isa AbstractVector && return subset_vector_like(values, train_indices, n_samples, name)
+    values isa AbstractMatrix || return values
+
+    if size(values, 1) == n_samples
+        return values[train_indices, :]
+    elseif size(values, 1) == length(train_indices)
+        return values
+    end
+
+    throw(
+        DimensionMismatch(
+            "Row count of $name must match the total sample count or the number of training samples.",
+        ),
+    )
+end
+
+function subset_fit_kwargs(
+    fit_kwargs::NamedTuple,
+    train_indices::AbstractVector{<:Integer},
+    n_samples::Integer,
+)
+    isempty(fit_kwargs) && return fit_kwargs
+
+    out_pairs = Pair{Symbol,Any}[]
+    for (key, value) in Base.pairs(fit_kwargs)
+        adjusted = if key in (:observation_weights, :sample_labels, :da_categories)
+            subset_vector_like(value, train_indices, n_samples, key)
+        elseif key in (:Y_aux, :Y_auxiliary)
+            subset_matrix_like(value, train_indices, n_samples, key)
+        else
+            value
+        end
+        push!(out_pairs, key => adjusted)
+    end
+    return (; out_pairs...)
+end
+
+function ensure_response_labels(
+    fit_kwargs::NamedTuple,
+    Y::AbstractMatrix{<:Real},
+)
+    haskey(fit_kwargs, :response_labels) && return fit_kwargs
+    labels = string.(1:size(Y, 2))
+    return merge(fit_kwargs, (response_labels = labels,))
+end
+
+function build_folds(
+    n_samples::Integer,
+    num_folds::Integer,
+    rng::AbstractRNG;
+    strata::Union{AbstractVector{<:Integer},Nothing} = nothing,
+)
+    if num_folds < 1
+        throw(ArgumentError("Number of folds must be at least 1."))
+    end
+    if num_folds > n_samples
+        throw(
+            ArgumentError(
+                "Number of folds ($num_folds) exceeds number of samples ($n_samples).",
+            ),
+        )
+    end
+
+    if strata === nothing
+        indices = shuffle(rng, collect(1:n_samples))
+        base = fld(n_samples, num_folds)
+        extra = n_samples % num_folds
+        folds = Vector{Vector{Int}}(undef, num_folds)
+        start = 1
+        for i in 1:num_folds
+            n_take = base + (i <= extra ? 1 : 0)
+            stop = start + n_take - 1
+            folds[i] = indices[start:stop]
+            start = stop + 1
+        end
+        return folds
+    end
+
+    length(strata) == n_samples || throw(
+        DimensionMismatch("Length of strata must match the number of samples."),
+    )
+    return random_batch_indices(strata, num_folds, rng)
+end
+
+"""
+    cv_classification(; weighted=true)
+
+Return a named tuple with `score_fn`, `predict_fn`, `select_fn`, and `flag_fn`
+implementations for CPPLS classification (NMC-based scoring). These assume
+one-hot response matrices and CPPLS fits created in `:discriminant` mode.
+"""
+function cv_classification(; weighted::Bool = true)
+    score_fn = (Y_true, Y_pred) -> 1 - nmc(Y_pred, Y_true, weighted)
+    predict_fn = (model, X, k) -> predictonehot(model, predict(model, X, k))
+    select_fn = argmax
+    flag_fn =
+        (Y_true, Y_pred) ->
+            one_hot_to_labels(Y_pred) .!= one_hot_to_labels(Y_true)
+    return (
+        score_fn = score_fn,
+        predict_fn = predict_fn,
+        select_fn = select_fn,
+        flag_fn = flag_fn,
+    )
+end
 
 """
     CPPLS.optimize_num_latent_variables(
         X_train_full::AbstractMatrix{<:Real},
-        Y_train_full::AbstractMatrix{<:Integer},
+        Y_train_full::AbstractMatrix{<:Real},
         max_components::Integer,
         num_inner_folds::Integer,
         num_inner_folds_repeats::Integer,
-        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}},
-        observation_weights::Union{AbstractVector{<:Real},Nothing},
-        observation_weights_fn::Union{Function,Nothing},
-        Y_aux::Union{AbstractMatrix{<:Real},Nothing},
-        center::Bool,
-        X_tolerance::Real,
-        X_loading_weight_tolerance::Real,
-        t_squared_norm_tolerance::Real,
-        gamma_rel_tol::Real,
-        gamma_abs_tol::Real,
-        weighted_nmc::Bool,
+        spec::CPPLSSpec,
+        fit_kwargs::NamedTuple,
+        score_fn::Function,
+        predict_fn::Function,
+        select_fn::Function,
         rng::AbstractRNG,
-        verbose::Bool)
+        verbose::Bool;
+        strata::Union{AbstractVector{<:Integer},Nothing}=nothing)
 
 Repeated inner cross-validation used inside `nested_cv` to pick the component
-count. Argument summary:
-
-- `X_train_full`, `Y_train_full`: numeric training matrices (observations × features/targets).
-  `Y_train_full` must be an integer one-hot matrix for discriminant analysis. Wrapper
-  methods accept categorical label vectors and convert them automatically.
-- `max_components`: `Int` upper bound on components to evaluate (≥ 1).
-- `num_inner_folds`, `num_inner_folds_repeats`: integers controlling stratified
-  folds drawn via `random_batch_indices`.
-- `gamma`: either a scalar γ, a `(lo, hi)` tuple of `Real`s, or a vector mixing
-  both; forwarded to `fit_cppls_light`. Scalars keep γ fixed for every component,
-  while tuples/vectors let each component pick the best γ from the shared
-  candidate set.
-- `observation_weights`: optional weight vector matching the training rows (or the
-  full outer-training set; weights are subset per inner split).
-- `observation_weights_fn`: optional function `labels -> weights` recomputed per
-  inner split. Provide either `observation_weights` or `observation_weights_fn`.
-- `Y_aux`: optional auxiliary response matrix aligned with `Y_train_full`.
-- `center`: `Bool` toggling mean-centering in the inner fits.
-- `X_tolerance`, `X_loading_weight_tolerance`, `t_squared_norm_tolerance`,
-  `gamma_rel_tol`, `gamma_abs_tol`: `Real` tolerances passed to the fitter.
-- `weighted_nmc`: choose class-weighted misclassification cost (`true` by default).
-- `rng`: random-number generator used for shuffling.
-- `verbose`: when `true`, prints per-fold diagnostics.
-# Example
-```
-julia> using Random
-
-julia> X = rand(MersenneTwister(1), 12, 4);
-
-julia> labels = repeat(["red", "blue", "green"], 4);
-
-julia> Y, _ = labels_to_one_hot(labels);
-
-julia> k = CPPLS.optimize_num_latent_variables(
-             X, Y,
-             2,
-             3, 3,
-             0.5,
-             nothing, nothing,
-             true,
-             1e-12, eps(Float64), 1e-10,
-             1e-6, 1e-12,
-             true,
-             MersenneTwister(2),
-             false);
-[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
-julia> k
-1
-```
-For every inner repeat the routine fits a `CPPLSFitLight` with `max_components`,
-scores validation folds for each partial component count using `predict` +
-`predictonehot`, evaluates `nmc`, records the argmin, and finally returns the
-median winning component number (rounded down) across repeats.
+count. `score_fn`, `predict_fn`, and `select_fn` define how models are evaluated.
 """
 function optimize_num_latent_variables(
     X_train_full::AbstractMatrix{<:Real},
-    Y_train_full::AbstractMatrix{<:Integer},
+    Y_train_full::AbstractMatrix{<:Real},
     max_components::Integer,
     num_inner_folds::Integer,
     num_inner_folds_repeats::Integer,
-    gamma::Union{
-        <:Real,
-        <:NTuple{2,<:Real},
-        <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
-    },
-    observation_weights::Union{AbstractVector{<:Real},Nothing},
-    observation_weights_fn::Union{Function,Nothing},
-    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
-    center::Bool,
-    X_tolerance::Real,
-    X_loading_weight_tolerance::Real,
-    t_squared_norm_tolerance::Real,
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
-    weighted_nmc::Bool,
+    spec::CPPLSSpec,
+    fit_kwargs::NamedTuple,
+    score_fn::Function,
+    predict_fn::Function,
+    select_fn::Function,
     rng::AbstractRNG,
-    verbose::Bool,
+    verbose::Bool;
+    strata::Union{AbstractVector{<:Integer},Nothing} = nothing,
 )
 
+    max_components > 0 ||
+        throw(ArgumentError("The number of components must be greater than zero"))
+    num_inner_folds_repeats ≤ num_inner_folds || throw(
+        ArgumentError(
+            "The number of inner fold repeats cannot exceed the number of inner folds",
+        ),
+    )
+
     n_samples = size(X_train_full, 1)
+    size(Y_train_full, 1) == n_samples || throw(
+        DimensionMismatch("Row count mismatch between X_train_full and Y_train_full"),
+    )
 
-    class_labels = one_hot_to_labels(Y_train_full)
-    inner_folds = random_batch_indices(class_labels, num_inner_folds, rng)
+    inner_folds =
+        build_folds(n_samples, num_inner_folds, rng; strata = strata)
 
-    best_num_latent_vars_per_fold = Vector{Int}(undef, num_inner_folds)
+    best_num_latent_vars_per_fold = Vector{Int}(undef, num_inner_folds_repeats)
 
     for inner_fold_idx = 1:num_inner_folds_repeats
-
         test_indices = inner_folds[inner_fold_idx]
 
-        verbose && println("  Inner fold: ", inner_fold_idx, " / ", num_inner_folds)
+        verbose && println("  Inner fold: ", inner_fold_idx, " / ", num_inner_folds_repeats)
 
         @views X_validation = X_train_full[test_indices, :]
         @views Y_validation = Y_train_full[test_indices, :]
@@ -240,297 +326,83 @@ function optimize_num_latent_variables(
         @views X_train = X_train_full[train_indices, :]
         @views Y_train = Y_train_full[train_indices, :]
 
-        labels_train = one_hot_to_labels(Y_train)
-        inner_weights = resolve_observation_weights(
-            observation_weights,
-            observation_weights_fn,
-            labels_train,
-            train_indices,
-            n_samples,
-        )
+        fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        if spec.analysis_mode === :discriminant
+            fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
+        end
+        spec_max = with_n_components(spec, max_components)
+        model = fit(spec_max, X_train, Y_train; fold_kwargs...)
 
-        Y_aux_train =
-            Y_aux !== nothing ? Y_aux[train_indices, :] : Y_aux
-
-        misclassification_costs = Vector{Float64}(undef, max_components)
-
-        model = fit_cppls_light(
-            X_train,
-            Y_train,
-            max_components,
-            gamma = gamma,
-            observation_weights = inner_weights,
-            Y_aux = Y_aux_train,
-            center = center,
-            X_tolerance = X_tolerance,
-            X_loading_weight_tolerance = X_loading_weight_tolerance,
-            t_squared_norm_tolerance = t_squared_norm_tolerance,
-            gamma_rel_tol = gamma_rel_tol,
-            gamma_abs_tol = gamma_abs_tol,
-        )
-
-        for (num_components_idx, num_components) in enumerate(1:max_components)
-            Y_pred = predictonehot(model, predict(model, X_validation, num_components))
-            misclassification_costs[num_components_idx] =
-                nmc(Y_validation, Y_pred, weighted_nmc)
+        scores = Vector{Float64}(undef, max_components)
+        for k in 1:max_components
+            Y_pred = predict_fn(model, X_validation, k)
+            score = score_fn(Y_validation, Y_pred)
+            score isa Real || throw(ArgumentError("score_fn must return a Real"))
+            scores[k] = score
         end
 
-        best_num_latent_vars_per_fold[inner_fold_idx] = argmin(misclassification_costs)
-        verbose && println(
-            "    Best number of latent variables in fold ",
-            inner_fold_idx,
-            ": ",
-            best_num_latent_vars_per_fold[inner_fold_idx],
+        best_k = select_fn(scores)
+        (1 ≤ best_k ≤ max_components) || throw(
+            ArgumentError("select_fn must return an integer between 1 and $max_components"),
         )
+        best_num_latent_vars_per_fold[inner_fold_idx] = best_k
     end
 
-    best_num_latent_vars = floor(Int, median(best_num_latent_vars_per_fold))
-    verbose &&
-        println("Best number of latent variables across folds: ", best_num_latent_vars)
-    best_num_latent_vars
-end
-
-function optimize_num_latent_variables(
-    X_train_full::AbstractMatrix{<:Real},
-    Y_train_full::AbstractMatrix{<:Real},
-    max_components::Integer,
-    num_inner_folds::Integer,
-    num_inner_folds_repeats::Integer,
-    gamma::Union{
-        <:Real,
-        <:NTuple{2,<:Real},
-        <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
-    },
-    observation_weights::Union{AbstractVector{<:Real},Nothing},
-    observation_weights_fn::Union{Function,Nothing},
-    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
-    center::Bool,
-    X_tolerance::Real,
-    X_loading_weight_tolerance::Real,
-    t_squared_norm_tolerance::Real,
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
-    weighted_nmc::Bool,
-    rng::AbstractRNG,
-    verbose::Bool,
-)
-    cv_regression_error("optimize_num_latent_variables")
-end
-
-function optimize_num_latent_variables(
-    X_train_full::AbstractMatrix{<:Real},
-    labels::AbstractCategoricalArray{T,1,R,V,C,U},
-    max_components::Integer,
-    num_inner_folds::Integer,
-    num_inner_folds_repeats::Integer,
-    gamma::Union{
-        <:Real,
-        <:NTuple{2,<:Real},
-        <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
-    },
-    observation_weights::Union{AbstractVector{<:Real},Nothing},
-    observation_weights_fn::Union{Function,Nothing},
-    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
-    center::Bool,
-    X_tolerance::Real,
-    X_loading_weight_tolerance::Real,
-    t_squared_norm_tolerance::Real,
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
-    weighted_nmc::Bool,
-    rng::AbstractRNG,
-    verbose::Bool,
-) where {T,R,V,C,U}
-    Y_train_full, _ = labels_to_one_hot(labels)
-    optimize_num_latent_variables(
-        X_train_full,
-        Y_train_full,
-        max_components,
-        num_inner_folds,
-        num_inner_folds_repeats,
-        gamma,
-        observation_weights,
-        observation_weights_fn,
-        Y_aux,
-        center,
-        X_tolerance,
-        X_loading_weight_tolerance,
-        t_squared_norm_tolerance,
-        gamma_rel_tol,
-        gamma_abs_tol,
-        weighted_nmc,
-        rng,
-        verbose,
-    )
-end
-
-function optimize_num_latent_variables(
-    X_train_full::AbstractMatrix{<:Real},
-    labels::AbstractVector,
-    max_components::Integer,
-    num_inner_folds::Integer,
-    num_inner_folds_repeats::Integer,
-    gamma::Union{
-        <:Real,
-        <:NTuple{2,<:Real},
-        <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
-    },
-    observation_weights::Union{AbstractVector{<:Real},Nothing},
-    observation_weights_fn::Union{Function,Nothing},
-    Y_aux::Union{AbstractMatrix{<:Real},Nothing},
-    center::Bool,
-    X_tolerance::Real,
-    X_loading_weight_tolerance::Real,
-    t_squared_norm_tolerance::Real,
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
-    weighted_nmc::Bool,
-    rng::AbstractRNG,
-    verbose::Bool,
-)
-    if eltype(labels) <: Real
-        cv_regression_error("optimize_num_latent_variables")
-    else
-        Y_train_full, _ = labels_to_one_hot(labels)
-        optimize_num_latent_variables(
-            X_train_full,
-            Y_train_full,
-        max_components,
-        num_inner_folds,
-        num_inner_folds_repeats,
-        gamma,
-        observation_weights,
-        observation_weights_fn,
-        Y_aux,
-        center,
-        X_tolerance,
-        X_loading_weight_tolerance,
-        t_squared_norm_tolerance,
-            gamma_rel_tol,
-            gamma_abs_tol,
-            weighted_nmc,
-            rng,
-            verbose,
-        )
-    end
+    floor(Int, median(best_num_latent_vars_per_fold))
 end
 
 """
-    nested_cv(X::AbstractMatrix{<:Real}, Y_prim::AbstractMatrix{<:Integer};
-        gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2, <:Real}}}}=0.5,
-        observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
-        observation_weights_fn::Union{Function,Nothing}=nothing,
-        Y_aux::Union{AbstractMatrix{<:Real},Nothing}=nothing,
-        center::Bool=true,
-        X_tolerance::Real=1e-12,
-        X_loading_weight_tolerance::Real=eps(Float64),
-        t_squared_norm_tolerance::Real=1e-10,
-        gamma_rel_tol::Real=1e-6,
-        gamma_abs_tol::Real=1e-12,
+    nested_cv(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
+        spec::CPPLSSpec,
+        fit_kwargs::NamedTuple=(;),
+        score_fn::Function,
+        predict_fn::Function,
+        select_fn::Function,
         num_outer_folds::Integer=8,
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=5,
-        weighted_nmc::Bool=true,
+        max_components::Integer=spec.n_components,
+        strata::Union{AbstractVector{<:Integer},Nothing}=nothing,
+        reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true)
 
-Top-level nested CV driver for CPPLS. Parameter overview:
+Explicit nested cross-validation. The caller supplies `score_fn`, `predict_fn`, and
+`select_fn` so the routine is agnostic to regression vs classification. Use
+`spec` + `fit_kwargs` to configure CPPLS fitting.
 
-- `X`, `Y_prim`: feature and one-hot response matrices (integer-valued).
-  Wrapper methods accept categorical label vectors. Regression responses (real-valued
-  vectors or matrices) are currently unsupported because only the NMC metric is
-  implemented.
-- `gamma`: either a scalar γ, a `(lo, hi)` tuple, or a vector of mixed candidates
-  passed to `fit_cppls_light`. Scalars enforce a single γ for all components,
-  whereas tuples/vectors share candidate ranges from which each component selects
-  its own optimum.
-- `observation_weights`: optional sample weights (full-length vectors are subset per
-  fold); `observation_weights_fn`: optional function `labels -> weights` recomputed
-  per training split (provide one or the other).
-- `Y_aux`: extra response features.
-- `center`: toggle mean-centering; tolerances control numerical stability inside
-  inner fits; `weighted_nmc` chooses between weighted/unweighted misclassification cost.
-- `num_outer_folds`, `num_outer_folds_repeats`: number of outer stratified folds
-  and how many to evaluate (≤ `num_outer_folds`).
-- `num_inner_folds`, `num_inner_folds_repeats`: same for inner CV.
-- `max_components`: maximum latent components considered by the inner loop.
-- `rng`: random generator shared across fold shuffles; `verbose`: emit progress.
-
-For every outer fold the data is split into training/test partitions, an inner
-CV loop selects the optimal component count via `optimize_num_latent_variables`,
-the final `CPPLSFitLight` is fit on the outer training data with that count, and
-`accuracy = 1 - nmc` is computed on the outer test split. Returns a tuple
-`(outer_fold_accuracies, optimal_num_latent_variables)`.
-
-# Example
-```
-julia> using Random
-
-julia> X = rand(MersenneTwister(1), 12, 4);
-
-julia> labels = repeat(["red", "blue", "green"], 4);
-
-julia> Y, _ = labels_to_one_hot(labels);
-
-julia> accs, comps = nested_cv(
-           X, Y;
-           gamma=0.5,
-           num_outer_folds=3,
-           num_inner_folds=2,
-           max_components=2,
-           rng=MersenneTwister(2),
-           verbose=false);
-[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-julia> accs ≈ [1.1102230246251565e-16, 0.0, 0.0]
-true
-
-julia> comps ≈ [1, 1, 1]
-true
-```
+If `spec.analysis_mode == :discriminant` and `response_labels` are not provided in
+`fit_kwargs`, default labels `"1"`, `"2"`, … are injected to satisfy the CPPLS
+fit metadata requirements.
 """
 function nested_cv(
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Integer};
-    gamma::Union{
-        <:T1,
-        <:NTuple{2,T1},
-        <:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}},
-    } = 0.5,
-    observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    observation_weights_fn::Union{Function,Nothing} = nothing,
-    Y_aux::Union{AbstractMatrix{T3},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
-    center::Bool = true,
-    X_tolerance::Real = 1e-12,
-    X_loading_weight_tolerance::Real = eps(Float64),
-    t_squared_norm_tolerance::Real = 1e-10,
-    gamma_rel_tol::Real = 1e-6,
-    gamma_abs_tol::Real = 1e-12,
+    Y::AbstractMatrix{<:Real};
+    spec::CPPLSSpec,
+    fit_kwargs::NamedTuple = (;),
+    score_fn::Function,
+    predict_fn::Function,
+    select_fn::Function,
     num_outer_folds::Integer = 8,
     num_outer_folds_repeats::Integer = num_outer_folds,
     num_inner_folds::Integer = 7,
     num_inner_folds_repeats::Integer = num_inner_folds,
-    max_components::Integer = 5,
-    weighted_nmc::Bool = true,
+    max_components::Integer = spec.n_components,
+    strata::Union{AbstractVector{<:Integer},Nothing} = nothing,
+    reshuffle_outer_folds::Bool = false,
     rng::AbstractRNG = Random.GLOBAL_RNG,
     verbose::Bool = true,
-) where {T1<:Real,T2<:Real,T3<:Real}
+)
 
-    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
+    num_outer_folds_repeats > 0 ||
+        throw(ArgumentError("The number of outer folds must be greater than zero"))
+    num_inner_folds_repeats > 0 ||
+        throw(ArgumentError("The number of inner folds must be greater than zero"))
 
-    num_outer_folds_repeats ≤ num_outer_folds || throw(
+    reshuffle_outer_folds || num_outer_folds_repeats ≤ num_outer_folds || throw(
         ArgumentError(
-            "The number of outer fold repeats cannot exceed the number of outer folds",
+            "The number of outer fold repeats cannot exceed the number of outer folds unless reshuffle_outer_folds=true",
         ),
     )
 
@@ -544,37 +416,40 @@ function nested_cv(
         throw(ArgumentError("The number of components must be greater than zero"))
 
     n_samples = size(X, 1)
-    class_labels = one_hot_to_labels(Y_prim)
-    outer_folds = random_batch_indices(class_labels, num_outer_folds, rng)
+    size(Y, 1) == n_samples || throw(
+        DimensionMismatch("Row count mismatch between X and Y"),
+    )
+    strata === nothing || length(strata) == n_samples || throw(
+        DimensionMismatch("Length of strata must match the number of samples."),
+    )
 
-    outer_fold_accuracies = Vector{Float64}(undef, num_outer_folds_repeats)
+    outer_fold_scores = Vector{Float64}(undef, num_outer_folds_repeats)
     optimal_num_latent_variables = Vector{Int}(undef, num_outer_folds_repeats)
 
-    for outer_fold_idx = 1:num_outer_folds_repeats
+    outer_folds = reshuffle_outer_folds ? nothing :
+                  build_folds(n_samples, num_outer_folds, rng; strata = strata)
 
-        test_indices = outer_folds[outer_fold_idx]
+    for outer_fold_idx = 1:num_outer_folds_repeats
+        folds = reshuffle_outer_folds ?
+                build_folds(n_samples, num_outer_folds, rng; strata = strata) :
+                outer_folds
+
+        test_indices = reshuffle_outer_folds ? folds[1] : folds[outer_fold_idx]
 
         verbose && println("Outer fold: ", outer_fold_idx, " / ", num_outer_folds_repeats)
 
         @views X_test = X[test_indices, :]
-        @views Y_test = Y_prim[test_indices, :]
+        @views Y_test = Y[test_indices, :]
 
         train_indices = setdiff(1:n_samples, test_indices)
         @views X_train = X[train_indices, :]
-        @views Y_train = Y_prim[train_indices, :]
+        @views Y_train = Y[train_indices, :]
 
-        labels_train = one_hot_to_labels(Y_train)
-        outer_weights = resolve_observation_weights(
-            observation_weights,
-            observation_weights_fn,
-            labels_train,
-            train_indices,
-            n_samples,
-        )
-        inner_weights = observation_weights_fn === nothing ? outer_weights : nothing
-
-        Y_aux_train =
-            Y_aux !== nothing ? Y_aux[train_indices, :] : Y_aux
+        fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        inner_strata = strata === nothing ? nothing : strata[train_indices]
+        if spec.analysis_mode === :discriminant
+            fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
+        end
 
         optimal_num_latent_variables[outer_fold_idx] = optimize_num_latent_variables(
             X_train,
@@ -582,270 +457,241 @@ function nested_cv(
             max_components,
             num_inner_folds,
             num_inner_folds_repeats,
-            gamma,
-            inner_weights,
-            observation_weights_fn,
-            Y_aux_train,
-            center,
-            X_tolerance,
-            X_loading_weight_tolerance,
-            t_squared_norm_tolerance,
-            gamma_rel_tol,
-            gamma_abs_tol,
-            weighted_nmc,
+            spec,
+            fold_kwargs,
+            score_fn,
+            predict_fn,
+            select_fn,
             rng,
-            verbose,
+            verbose;
+            strata = inner_strata,
         )
 
-        final_model = fit_cppls_light(
-            X_train,
-            Y_train,
-            optimal_num_latent_variables[outer_fold_idx],
-            gamma = gamma,
-            observation_weights = outer_weights,
-            Y_aux = Y_aux_train,
-            center = center,
-            X_tolerance = X_tolerance,
-            X_loading_weight_tolerance = X_loading_weight_tolerance,
-            t_squared_norm_tolerance = t_squared_norm_tolerance,
-            gamma_rel_tol = gamma_rel_tol,
-            gamma_abs_tol = gamma_abs_tol,
-        )
+        spec_k = with_n_components(spec, optimal_num_latent_variables[outer_fold_idx])
+        final_model = fit(spec_k, X_train, Y_train; fold_kwargs...)
 
-        predicted_labels = predictonehot(final_model, predict(final_model, X_test))
+        Y_pred = predict_fn(final_model, X_test, optimal_num_latent_variables[outer_fold_idx])
+        score = score_fn(Y_test, Y_pred)
+        score isa Real || throw(ArgumentError("score_fn must return a Real"))
+        outer_fold_scores[outer_fold_idx] = score
 
-        outer_fold_accuracies[outer_fold_idx] =
-            1 - nmc(predicted_labels, Y_test, weighted_nmc)
-
-        verbose && println(
-            "Accuracy for outer fold: ",
-            outer_fold_accuracies[outer_fold_idx],
-            "\n",
-        )
+        verbose && println("Score for outer fold: ", outer_fold_scores[outer_fold_idx], "\n")
     end
 
-    outer_fold_accuracies, optimal_num_latent_variables
-end
-
-function nested_cv(
-    X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real};
-    kwargs...,
-)
-    cv_regression_error("nested_cv")
-end
-
-function nested_cv(
-    X::AbstractMatrix{<:Real},
-    labels::AbstractCategoricalArray{T,1,R,V,C,U};
-    kwargs...,
-) where {T,R,V,C,U}
-    Y_prim, _ = labels_to_one_hot(labels)
-    nested_cv(X, Y_prim; kwargs...)
-end
-
-function nested_cv(X::AbstractMatrix{<:Real}, labels::AbstractVector; kwargs...)
-    if eltype(labels) <: Real
-        cv_regression_error("nested_cv")
-    else
-        Y_prim, _ = labels_to_one_hot(labels)
-        nested_cv(X, Y_prim; kwargs...)
-    end
+    outer_fold_scores, optimal_num_latent_variables
 end
 
 """
-    nested_cv_permutation(X::AbstractMatrix{<:Real}, Y_prim::AbstractMatrix{<:Integer};
-        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}}=0.5,
-        observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
-        observation_weights_fn::Union{Function,Nothing}=nothing,
-        Y_aux::Union{AbstractMatrix{<:Real},Nothing}=nothing,
-        center::Bool=true,
-        X_tolerance::Real=1e-12,
-        X_loading_weight_tolerance::Real=eps(Float64),
-        t_squared_norm_tolerance::Real=1e-10,
-        gamma_rel_tol::Real=1e-6,
-        gamma_abs_tol::Real=1e-12,
-        num_outer_folds::Integer=9,
-        num_outer_folds_repeats::Integer=num_outer_folds,
-        num_inner_folds::Integer=8,
-        num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=5,
-        weighted_nmc::Bool=true,
+    nested_cv_permutation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
+        spec::CPPLSSpec,
+        fit_kwargs::NamedTuple=(;),
+        score_fn::Function,
+        predict_fn::Function,
+        select_fn::Function,
         num_permutations::Integer=999,
+        num_outer_folds::Integer=8,
+        num_outer_folds_repeats::Integer=num_outer_folds,
+        num_inner_folds::Integer=7,
+        num_inner_folds_repeats::Integer=num_inner_folds,
+        max_components::Integer=spec.n_components,
+        strata::Union{AbstractVector{<:Integer},Nothing}=nothing,
+        reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true)
 
-Permutation-based significance test for the nested CV pipeline. Keywords mirror
-`nested_cv` but with explicit defaults suited for permutation tests. Parameter
-summary:
-
-- `gamma`, `observation_weights`, `observation_weights_fn`, `Y_aux`, `center`, tolerances,
-  `weighted_nmc`: forwarded directly into each nested CV call. Only discriminant
-  responses (integer one-hot matrices or categorical vectors) are supported because
-  the scoring metric is classification-specific.
-- `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
-  `num_inner_folds_repeats`, `max_components`: control the inner/outer fold
-  geometry per permutation.
-- `num_permutations`: number of label shuffles (≥ 1).
-- `rng`: governs shuffling of both labels and folds; `verbose`: prints progress.
-
-For each permutation, the rows of `Y_prim` are randomly shuffled, then
-`nested_cv` is executed with the same hyperparameters, and the mean outer-fold
-accuracy is recorded. Returns a vector of length `num_permutations` containing
-those mean accuracies so you can compute empirical p-values against the
-unpermuted nested-CV accuracy.
-
-# Example
-```
-julia> using Random
-
-julia> X = rand(MersenneTwister(1), 12, 4);
-
-julia> labels = repeat(["red", "blue", "green"], 4);
-
-julia> Y, classes = labels_to_one_hot(labels);
-
-julia> perms = nested_cv_permutation(X, Y;
-                 gamma=0.5,
-                 num_outer_folds=3,
-                 num_inner_folds=2,
-                 max_components=2,
-                 num_permutations=2,
-                 verbose=false,
-                 rng=MersenneTwister(2));
-[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
-[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
-
-julia> perms ≈ [0.3055555555555556, 0.22222222222222224]
-true
-```
+Permutation-based significance test for the nested CV pipeline. Returns a vector
+of mean scores (one per permutation).
 """
 function nested_cv_permutation(
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Integer};
-    gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
-    observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    observation_weights_fn::Union{Function,Nothing} = nothing,
-    Y_aux::Union{AbstractMatrix{T3},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
-    center::Bool = true,
-    X_tolerance::Real = 1e-12,
-    X_loading_weight_tolerance::Real = eps(Float64),
-    t_squared_norm_tolerance::Real = 1e-10,
-    gamma_rel_tol::Real = 1e-6,
-    gamma_abs_tol::Real = 1e-12,
-    num_outer_folds::Integer = 9,
-    num_outer_folds_repeats::Integer = num_outer_folds,
-    num_inner_folds::Integer = 8,
-    num_inner_folds_repeats::Integer = num_inner_folds,
-    max_components::Integer = 5,
-    weighted_nmc::Bool = true,
+    Y::AbstractMatrix{<:Real};
+    spec::CPPLSSpec,
+    fit_kwargs::NamedTuple = (;),
+    score_fn::Function,
+    predict_fn::Function,
+    select_fn::Function,
     num_permutations::Integer = 999,
+    num_outer_folds::Integer = 8,
+    num_outer_folds_repeats::Integer = num_outer_folds,
+    num_inner_folds::Integer = 7,
+    num_inner_folds_repeats::Integer = num_inner_folds,
+    max_components::Integer = spec.n_components,
+    strata::Union{AbstractVector{<:Integer},Nothing} = nothing,
+    reshuffle_outer_folds::Bool = false,
     rng::AbstractRNG = Random.GLOBAL_RNG,
     verbose::Bool = true,
-) where {T1<:Real,T2<:Real,T3<:Real}
+)
 
-    Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
-
-    num_outer_folds_repeats ≤ num_outer_folds || throw(
-        ArgumentError(
-            "The number of outer fold repeats cannot exceed the number of outer folds",
-        ),
-    )
-
-    num_inner_folds_repeats ≤ num_inner_folds || throw(
-        ArgumentError(
-            "The number of inner fold repeats cannot exceed the number of inner folds",
-        ),
-    )
-
-    max_components > 0 ||
-        throw(ArgumentError("The number of components must be greater than zero"))
+    num_permutations > 0 ||
+        throw(ArgumentError("num_permutations must be greater than zero"))
 
     n_samples = size(X, 1)
-    permutation_accuracies = Vector{Float64}(undef, num_permutations)
+    size(Y, 1) == n_samples || throw(
+        DimensionMismatch("Row count mismatch between X and Y"),
+    )
+    strata === nothing || length(strata) == n_samples || throw(
+        DimensionMismatch("Length of strata must match the number of samples."),
+    )
 
-    for i = 1:num_permutations
-        verbose && println("Permutation: ", i, " / ", num_permutations)
+    permutation_scores = Vector{Float64}(undef, num_permutations)
 
-        shuffled_indices = shuffle(rng, 1:n_samples)
-        Y_prim_shuffled = @view Y_prim[shuffled_indices, :]
+    for perm_idx = 1:num_permutations
+        perm = randperm(rng, n_samples)
+        Y_perm = Y[perm, :]
+        strata_perm = strata === nothing ? nothing : strata[perm]
 
-        @assert size(Y_prim_shuffled, 1) == n_samples "perm=$i: Y rows mismatch"
-        @assert size(Y_prim_shuffled, 2) == size(Y_prim, 2) "perm=$i: Y cols mismatch"
-        @assert all(isfinite, X) "perm=$i: X has NaN/Inf"
-        @assert all(isfinite, Y_prim_shuffled) "perm=$i: Y has NaN/Inf"
+        verbose && println("Permutation: ", perm_idx, " / ", num_permutations)
 
-        outer_fold_accuracies, _ = nested_cv(
+        scores, _ = nested_cv(
             X,
-            Y_prim_shuffled;
-            gamma = gamma,
-            observation_weights = observation_weights,
-            observation_weights_fn = observation_weights_fn,
-            Y_aux = Y_aux,
-            center = center,
-            X_tolerance = X_tolerance,
-            X_loading_weight_tolerance = X_loading_weight_tolerance,
-            t_squared_norm_tolerance = t_squared_norm_tolerance,
-            gamma_rel_tol = gamma_rel_tol,
-            gamma_abs_tol = gamma_abs_tol,
+            Y_perm;
+            spec = spec,
+            fit_kwargs = fit_kwargs,
+            score_fn = score_fn,
+            predict_fn = predict_fn,
+            select_fn = select_fn,
             num_outer_folds = num_outer_folds,
             num_outer_folds_repeats = num_outer_folds_repeats,
             num_inner_folds = num_inner_folds,
             num_inner_folds_repeats = num_inner_folds_repeats,
             max_components = max_components,
-            weighted_nmc = weighted_nmc,
+            strata = strata_perm,
+            reshuffle_outer_folds = reshuffle_outer_folds,
             rng = rng,
             verbose = verbose,
         )
 
-        permutation_accuracies[i] = mean(outer_fold_accuracies)
+        permutation_scores[perm_idx] = mean(scores)
     end
-    permutation_accuracies
+
+    permutation_scores
 end
 
-function nested_cv_permutation(
+"""
+    cv_outlier_scan(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
+        spec::CPPLSSpec,
+        fit_kwargs::NamedTuple=(;),
+        num_outer_folds::Integer=8,
+        num_outer_folds_repeats::Integer=10 * num_outer_folds,
+        num_inner_folds::Integer=7,
+        num_inner_folds_repeats::Integer=num_inner_folds,
+        max_components::Integer=spec.n_components,
+        reshuffle_outer_folds::Bool=true,
+        rng::AbstractRNG=Random.GLOBAL_RNG,
+        verbose::Bool=true)
+
+Convenience outlier scan for classification. Returns per-sample test counts and
+misclassification counts plus the rate (`n_flagged ./ n_tested`). By default
+`reshuffle_outer_folds = true` so samples are repeatedly re-tested across random
+outer splits.
+"""
+function cv_outlier_scan(
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real};
-    kwargs...,
+    Y::AbstractMatrix{<:Real};
+    spec::CPPLSSpec,
+    fit_kwargs::NamedTuple = (;),
+    num_outer_folds::Integer = 8,
+    num_outer_folds_repeats::Integer = 10 * num_outer_folds,
+    num_inner_folds::Integer = 7,
+    num_inner_folds_repeats::Integer = num_inner_folds,
+    max_components::Integer = spec.n_components,
+    reshuffle_outer_folds::Bool = true,
+    rng::AbstractRNG = Random.GLOBAL_RNG,
+    verbose::Bool = true,
 )
-    cv_regression_error("nested_cv_permutation")
+    spec.analysis_mode === :discriminant || throw(
+        ArgumentError("cv_outlier_scan expects spec.analysis_mode = :discriminant"),
+    )
+
+    n_samples = size(X, 1)
+    size(Y, 1) == n_samples || throw(
+        DimensionMismatch("Row count mismatch between X and Y"),
+    )
+
+    cfg = cv_classification()
+    strata = one_hot_to_labels(Y)
+
+    n_tested = zeros(Int, n_samples)
+    n_flagged = zeros(Int, n_samples)
+
+    reshuffle_outer_folds || num_outer_folds_repeats ≤ num_outer_folds || throw(
+        ArgumentError(
+            "The number of outer fold repeats cannot exceed the number of outer folds unless reshuffle_outer_folds=true",
+        ),
+    )
+
+    fixed_folds = reshuffle_outer_folds ? nothing :
+                  build_folds(n_samples, num_outer_folds, rng; strata = strata)
+
+    for outer_fold_idx = 1:num_outer_folds_repeats
+        folds = reshuffle_outer_folds ?
+                build_folds(n_samples, num_outer_folds, rng; strata = strata) :
+                fixed_folds
+        test_indices = reshuffle_outer_folds ? folds[1] : folds[outer_fold_idx]
+
+        verbose && println("Outer fold: ", outer_fold_idx, " / ", num_outer_folds_repeats)
+
+        @views X_test = X[test_indices, :]
+        @views Y_test = Y[test_indices, :]
+
+        train_indices = setdiff(1:n_samples, test_indices)
+        @views X_train = X[train_indices, :]
+        @views Y_train = Y[train_indices, :]
+
+        fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
+        inner_strata = strata[train_indices]
+
+        best_k = optimize_num_latent_variables(
+            X_train,
+            Y_train,
+            max_components,
+            num_inner_folds,
+            num_inner_folds_repeats,
+            spec,
+            fold_kwargs,
+            cfg.score_fn,
+            cfg.predict_fn,
+            cfg.select_fn,
+            rng,
+            verbose;
+            strata = inner_strata,
+        )
+
+        spec_k = with_n_components(spec, best_k)
+        final_model = fit(spec_k, X_train, Y_train; fold_kwargs...)
+
+        Y_pred = cfg.predict_fn(final_model, X_test, best_k)
+        flags = cfg.flag_fn(Y_test, Y_pred)
+        length(flags) == length(test_indices) || throw(
+            DimensionMismatch("flag_fn must return one flag per test sample"),
+        )
+
+        n_tested[test_indices] .+= 1
+        n_flagged[test_indices] .+= flags
+    end
+
+    rate = n_flagged ./ max.(1, n_tested)
+    (n_tested = n_tested, n_flagged = n_flagged, rate = rate)
 end
 
-function nested_cv_permutation(
+function cv_outlier_scan(
     X::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
 ) where {T,R,V,C,U}
-    Y_prim, _ = labels_to_one_hot(labels)
-    nested_cv_permutation(X, Y_prim; kwargs...)
+    Y, _ = labels_to_one_hot(labels)
+    cv_outlier_scan(X, Y; kwargs...)
 end
 
-function nested_cv_permutation(
+function cv_outlier_scan(
     X::AbstractMatrix{<:Real},
     labels::AbstractVector;
     kwargs...,
 )
     if eltype(labels) <: Real
-        cv_regression_error("nested_cv_permutation")
-    else
-        Y_prim, _ = labels_to_one_hot(labels)
-        nested_cv_permutation(X, Y_prim; kwargs...)
+        throw(ArgumentError("cv_outlier_scan expects categorical labels or one-hot Y."))
     end
+    Y, _ = labels_to_one_hot(labels)
+    cv_outlier_scan(X, Y; kwargs...)
 end

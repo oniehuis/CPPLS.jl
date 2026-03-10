@@ -31,6 +31,8 @@ export predict
 export predictonehot
 export project
 export scoreplot
+export cv_classification
+export cv_outlier_scan
 export nested_cv_permutation
 export nested_cv
 export calculate_p_value

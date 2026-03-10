@@ -27,9 +27,9 @@ julia> using CPPLS
   Analysis (CPPLS-DA; Indahl et al. 2019, Liland & Indahl 2009) that handles collinear 
   predictors and exports interpretable loadings and scores.
 - Cross-validation utilities (`nested_cv`, `nested_cv_permutation`) for selecting the
-  number of latent components and estimating classification performance or permutation
-  baselines (Smit et al. 2007; currently only validated for discriminant/classification
-  models).
+  number of latent components and estimating performance or permutation baselines
+  (Smit et al. 2007). The evaluation behavior is supplied explicitly via scoring and
+  prediction functions, so the same machinery can support classification or regression.
 - Permutation-based significance testing via `calculate_p_value` to quantify whether
   observed accuracies exceed what would be expected by chance.
 - Optional preprocessing utilities so that scaling, centering, or other chemometric
@@ -45,10 +45,17 @@ using Statistics
 rng = MersenneTwister(1)
 X = randn(rng, 60, 30)                                     # predictors (e.g., spectra)
 labels = repeat(["classA", "classB"], inner=30)
-Y, _ = labels_to_one_hot(labels)
+Y, class_labels = labels_to_one_hot(labels)
 
+helpers = cv_classification()
+spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant)
 accuracies, components = nested_cv(
     X, Y;
+    spec=spec,
+    score_fn=helpers.score_fn,
+    predict_fn=helpers.predict_fn,
+    select_fn=helpers.select_fn,
+    strata=one_hot_to_labels(Y),
     max_components=2,
     num_outer_folds=3,
     num_inner_folds=2,
@@ -56,12 +63,17 @@ accuracies, components = nested_cv(
     verbose=false)
 
 best_components = floor(Int, median(components))           # consensus components across folds
-spec = CPPLSSpec(n_components=best_components, gamma=0.5)
-model = fit(spec, X, Y)
+spec = CPPLSSpec(n_components=best_components, gamma=0.5, analysis_mode=:discriminant)
+model = fit(spec, X, Y; response_labels=class_labels)
 ŷ = predictonehot(model, predict(model, X))                # fitted class indicators
 
 permutation_scores = nested_cv_permutation(
     X, Y;
+    spec=spec,
+    score_fn=helpers.score_fn,
+    predict_fn=helpers.predict_fn,
+    select_fn=helpers.select_fn,
+    strata=one_hot_to_labels(Y),
     max_components=2,
     num_outer_folds=3,
     num_inner_folds=2,

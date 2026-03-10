@@ -75,7 +75,7 @@
         sample_labels = ["sample_$i" for i = 1:n_samples]
         predictor_labels = collect(1:n_predictors)
         response_labels = [Symbol("resp_$i") for i = 1:n_responses]
-        da_categories = ["class_$(1 + (i % 2))" for i = 1:n_samples]
+        sample_classes = ["class_$(1 + (i % 2))" for i = 1:n_samples]
 
         cppls = CPPLS.CPPLSFit(
             B,
@@ -102,7 +102,7 @@
             predictor_labels = predictor_labels,
             response_labels = response_labels,
             analysis_mode = :regression,
-            da_categories = nothing,
+            sample_classes = nothing,
         )
 
         @test cppls isa CPPLS.AbstractCPPLSFit
@@ -138,7 +138,7 @@
         @test cppls.predictor_labels === predictor_labels
         @test cppls.response_labels === response_labels
         @test cppls.analysis_mode === :regression
-        @test cppls.da_categories === nothing
+        @test cppls.sample_classes === nothing
         @test size(cppls.B) ==
               (n_predictors, n_responses, n_components)
         @test size(cppls.Y_hat) == (n_samples, n_responses, n_components)
@@ -175,7 +175,7 @@
         @test isempty(cppls_default.predictor_labels)
         @test isempty(cppls_default.response_labels)
         @test cppls_default.analysis_mode === :regression
-        @test cppls_default.da_categories === nothing
+        @test cppls_default.sample_classes === nothing
 
         cppls_da = CPPLS.CPPLSFit(
             B,
@@ -202,10 +202,10 @@
             predictor_labels = predictor_labels,
             response_labels = response_labels,
             analysis_mode = :discriminant,
-            da_categories = da_categories,
+            sample_classes = sample_classes,
         )
         @test cppls_da.analysis_mode === :discriminant
-        @test cppls_da.da_categories === da_categories
+        @test cppls_da.sample_classes === sample_classes
     end
 end
 

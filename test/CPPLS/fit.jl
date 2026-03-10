@@ -139,7 +139,7 @@ end
         Y,
         1;
         gamma = 0.5,
-        da_categories = ["classA"],
+        sample_classes = ["classA"],
     )
 
     @test_throws ArgumentError CPPLS.fit_cppls(
@@ -211,14 +211,14 @@ end
     model = CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
     @test model.analysis_mode === :discriminant
     @test Set(model.response_labels) == Set(inferred)
-    @test model.da_categories == labels
-    @test !(model.da_categories === labels)
+    @test model.sample_classes == labels
+    @test !(model.sample_classes === labels)
     plain_labels = ["red", "blue", "red", "blue"]
     plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
     @test plain_model.analysis_mode === :discriminant
     @test Set(plain_model.response_labels) == Set(unique(plain_labels))
-    @test plain_model.da_categories == plain_labels
-    @test !(plain_model.da_categories === plain_labels)
+    @test plain_model.sample_classes == plain_labels
+    @test !(plain_model.sample_classes === plain_labels)
     @test plain_model.B ≈ model.B
 
     @test_throws ArgumentError CPPLS.fit_cppls(

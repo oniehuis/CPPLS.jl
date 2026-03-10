@@ -38,7 +38,7 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
     sample_labels = ["sample_$i" for i = 1:n_samples]
     predictor_labels = ["x_$j" for j = 1:n_predictors]
     response_labels = ["class1", "class2"]
-    da_categories = [i ≤ n_samples ÷ 2 ? :a : :b for i = 1:n_samples]
+    sample_classes = [i ≤ n_samples ÷ 2 ? :a : :b for i = 1:n_samples]
 
     return CPPLS.CPPLSFit(
         B,
@@ -65,7 +65,7 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
         predictor_labels = predictor_labels,
         response_labels = response_labels,
         analysis_mode = :discriminant,
-        da_categories = da_categories,
+        sample_classes = sample_classes,
     )
 end
 

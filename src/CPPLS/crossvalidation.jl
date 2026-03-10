@@ -180,7 +180,7 @@ function subset_fit_kwargs(
 
     out_pairs = Pair{Symbol,Any}[]
     for (key, value) in Base.pairs(fit_kwargs)
-        adjusted = if key in (:observation_weights, :sample_labels, :da_categories)
+        adjusted = if key in (:observation_weights, :sample_labels, :sample_classes)
             subset_vector_like(value, train_indices, n_samples, key)
         elseif key in (:Y_aux, :Y_auxiliary)
             subset_matrix_like(value, train_indices, n_samples, key)

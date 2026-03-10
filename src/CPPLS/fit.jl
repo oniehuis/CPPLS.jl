@@ -102,7 +102,7 @@ Fit a Canonical Powered Partial Least Squares (CPPLS) model.
   class labels are inferred automatically.
 - `analysis_mode`: Internal flag distinguishing regression from discriminant analysis.
   Advanced callers can override this, but public wrappers set it automatically.
-- `da_categories`: Original categorical responses for discriminant analysis. This is set
+- `sample_classes`: Original categorical responses for discriminant analysis. This is set
   by the label-based wrapper and must remain `nothing` for regression problems.
 
 # Returns
@@ -136,7 +136,7 @@ A `CPPLSFit` object containing the following fields:
 - `predictor_labels`: The provided predictor labels (or an empty vector).
 - `response_labels`: The provided response labels (or an empty vector).
 - `analysis_mode`: Tracks whether the model was fit for regression or discriminant analysis.
-- `da_categories`: The original categorical responses for discriminant analysis (otherwise
+- `sample_classes`: The original categorical responses for discriminant analysis (otherwise
   `nothing`).
 
 # Notes
@@ -188,7 +188,7 @@ function fit_cppls(
     predictor_labels::AbstractVector = String[],
     response_labels::AbstractVector = String[],
     analysis_mode::Symbol = :regression,
-    da_categories = nothing,
+    sample_classes = nothing,
 ) where {T1<:Real,T2<:Real}
 
     analysis_mode in (:regression, :discriminant) || throw(
@@ -197,8 +197,8 @@ function fit_cppls(
         ),
     )
     analysis_mode === :discriminant ||
-        da_categories === nothing ||
-        throw(ArgumentError("da_categories can only be provided for discriminant analysis"))
+        sample_classes === nothing ||
+        throw(ArgumentError("sample_classes can only be provided for discriminant analysis"))
 
     Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
 
@@ -327,7 +327,7 @@ function fit_cppls(
         predictor_labels = predictor_labels,
         response_labels = response_labels,
         analysis_mode = analysis_mode,
-        da_categories = da_categories,
+        sample_classes = sample_classes,
     )
 end
 
@@ -341,7 +341,7 @@ function fit_cppls(
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
     response_labels::AbstractVector = String[],
-    da_categories = nothing,
+    sample_classes = nothing,
 )
     Y_aux = resolve_Y_aux(Y_aux, Y_auxiliary)
     return fit_cppls(
@@ -354,7 +354,7 @@ function fit_cppls(
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
         response_labels = response_labels,
-        da_categories = da_categories,
+        sample_classes = sample_classes,
     )
 end
 
@@ -377,7 +377,7 @@ Data/metadata settings (passed to `fit`):
 - `Y_aux`: optional auxiliary responses (matrix with n_samples rows). The legacy
   keyword `Y_auxiliary` is accepted as an alias.
 - `sample_labels`, `predictor_labels`, `response_labels`: metadata for diagnostics.
-- `da_categories`: override categorical levels for discriminant analysis.
+- `sample_classes`: override categorical levels for discriminant analysis.
 
 # Example
 ```
@@ -532,7 +532,7 @@ function fit_cppls_from_labels(
         predictor_labels = predictor_labels,
         response_labels = classes,
         analysis_mode = :discriminant,
-        da_categories = copy(labels),
+        sample_classes = copy(labels),
     )
 end
 

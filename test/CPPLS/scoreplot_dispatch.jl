@@ -88,7 +88,7 @@ end
     sample_labels = [SubString("a", 1:1), SubString("b", 1:1)]
     predictor_labels = ["x1", "x2"]
     response_labels = ["class1", "class2"]
-    da_categories = categorical(["class1", "class2"])
+    sample_classes = categorical(["class1", "class2"])
 
     cppls = CPPLS.CPPLSFit(
         B,
@@ -115,19 +115,19 @@ end
         predictor_labels = predictor_labels,
         response_labels = response_labels,
         analysis_mode = :discriminant,
-        da_categories = da_categories,
+        sample_classes = sample_classes,
     )
 
     res = CPPLS.scoreplot(cppls; backend = :makie)
     @test res[1] == :makie
     @test res[2] == cppls.sample_labels
-    @test res[3] == cppls.da_categories
+    @test res[3] == cppls.sample_classes
     @test res[4] == cppls.T[:, 1:2]
 
     res = CPPLS.scoreplot(cppls; backend = :plotly)
     @test res[1] == :plotly
     @test res[2] == cppls.sample_labels
-    @test res[3] == cppls.da_categories
+    @test res[3] == cppls.sample_classes
     @test res[4] == cppls.T[:, 1:2]
 
     @test_throws ErrorException CPPLS.scoreplot(cppls; backend = :unknown)

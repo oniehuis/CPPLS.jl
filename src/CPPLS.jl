@@ -163,7 +163,7 @@ function scoreplot(
     kwargs...,
 )
     samples = cppls.sample_labels
-    groups = cppls.da_categories
+    groups = cppls.sample_classes
     scores = cppls.T[:, 1:2]
     if backend === :plotly
         _require_extension(:PlotlyJSExtension, "PlotlyJS")

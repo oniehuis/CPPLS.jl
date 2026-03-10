@@ -32,7 +32,7 @@ using StatsAPI
     @test length(model.X_variance) == 2
     @test model.X_total_variance > 0
 
-    spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5)
+    spec = CPPLS.CPPLSSpec(n_components = 2, gamma = 0.5)
     model_from_spec = CPPLS.fit_cppls(spec, X, Y)
     @test model_from_spec isa CPPLS.CPPLSFit
     @test size(model_from_spec.regression_coefficients) ==
@@ -55,7 +55,7 @@ end
         1 0
     ]
 
-    spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5)
+    spec = CPPLS.CPPLSSpec(n_components = 2, gamma = 0.5)
     model = StatsAPI.fit(spec, X, Y)
     @test model isa CPPLS.CPPLSFit
 
@@ -152,7 +152,7 @@ end
     )
 end
 
-@testset "fit_cppls with CPPLS spec enforces analysis mode for labels" begin
+@testset "fit_cppls with CPPLSSpec enforces analysis mode for labels" begin
     X = Float64[
         1 0
         0 1
@@ -161,11 +161,11 @@ end
     ]
     labels = categorical(["classA", "classB", "classA", "classB"])
 
-    spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(n_components = 2, gamma = 0.5, analysis_mode = :discriminant)
     model = CPPLS.fit_cppls(spec, X, labels)
     @test model.analysis_mode === :discriminant
 
-    bad_spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5, analysis_mode = :regression)
+    bad_spec = CPPLS.CPPLSSpec(n_components = 2, gamma = 0.5, analysis_mode = :regression)
     @test_throws ArgumentError CPPLS.fit_cppls(bad_spec, X, labels)
 end
 
@@ -192,7 +192,7 @@ end
     @test light.X_means ≈ full.X_means
     @test light.Y_means ≈ full.Y_means
 
-    spec = CPPLS.CPPLS(n_components = 2, gamma = gamma_bounds)
+    spec = CPPLS.CPPLSSpec(n_components = 2, gamma = gamma_bounds)
     light_from_spec = CPPLS.fit_cppls_light(spec, X, Y)
     @test light_from_spec isa CPPLS.CPPLSFitLight
     @test light_from_spec.regression_coefficients ≈ full.regression_coefficients

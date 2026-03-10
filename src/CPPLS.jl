@@ -23,7 +23,7 @@ include("Utils/encoding.jl")
 include("Utils/matrix.jl")
 include("Utils/statistics.jl")
 
-export CPPLS
+export CPPLSSpec
 export CPPLSFit
 export CPPLSFitLight
 export fit

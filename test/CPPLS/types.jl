@@ -247,14 +247,14 @@ end
     end
 end
 
-@testset "CPPLS model specification stores hyperparameters" begin
-    spec = CPPLS.CPPLS()
+@testset "CPPLSSpec stores hyperparameters" begin
+    spec = CPPLS.CPPLSSpec()
     @test spec.n_components == 2
     @test spec.gamma == 0.5
     @test spec.center === true
     @test spec.analysis_mode === :regression
 
-    tuned = CPPLS.CPPLS(
+    tuned = CPPLS.CPPLSSpec(
         n_components = 3,
         gamma = (0.2, 0.8),
         center = false,
@@ -270,6 +270,6 @@ end
     @test tuned.center === false
     @test tuned.analysis_mode === :discriminant
 
-    @test_throws ArgumentError CPPLS.CPPLS(n_components = 0)
-    @test_throws ArgumentError CPPLS.CPPLS(analysis_mode = :unsupported)
+    @test_throws ArgumentError CPPLS.CPPLSSpec(n_components = 0)
+    @test_throws ArgumentError CPPLS.CPPLSSpec(analysis_mode = :unsupported)
 end

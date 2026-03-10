@@ -14,7 +14,7 @@ Additionally, subtypes are expected to work with the exported generic helpers
 abstract type AbstractCPPLSFit end
 
 """
-    CPPLS(; kwargs...)
+    CPPLSSpec(; kwargs...)
 
 Model specification for CPPLS fits. Stores hyperparameters and numerical tolerances
 but no data-dependent quantities. Use with `fit`.
@@ -30,7 +30,7 @@ Keywords mirror the CPPLS fitting defaults:
 - `gamma_abs_tol::Real=1e-12`
 - `analysis_mode::Symbol=:regression`
 """
-struct CPPLS
+struct CPPLSSpec
     n_components::Int
     gamma
     center::Bool
@@ -42,7 +42,7 @@ struct CPPLS
     analysis_mode::Symbol
 end
 
-function CPPLS(;
+function CPPLSSpec(;
     n_components::Integer = 2,
     gamma = 0.5,
     center::Bool = true,
@@ -60,7 +60,7 @@ function CPPLS(;
             "analysis_mode must be :regression or :discriminant, got $analysis_mode",
         ),
     )
-    return CPPLS(
+    return CPPLSSpec(
         Int(n_components),
         gamma,
         center,

@@ -20,7 +20,7 @@ function validate_response_labels(labels::AbstractVector, n_targets::Integer)
     return labels
 end
 
-function _cppls_model_fit_kwargs(model::CPPLS)
+function _cppls_model_fit_kwargs(model::CPPLSSpec)
     return (
         gamma = model.gamma,
         center = model.center,
@@ -32,7 +32,7 @@ function _cppls_model_fit_kwargs(model::CPPLS)
     )
 end
 
-function _cppls_model_fit_kwargs_with_mode(model::CPPLS)
+function _cppls_model_fit_kwargs_with_mode(model::CPPLSSpec)
     return merge(_cppls_model_fit_kwargs(model), (analysis_mode = model.analysis_mode,))
 end
 
@@ -317,7 +317,7 @@ function fit_cppls(
 end
 
 function fit_cppls(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
@@ -342,23 +342,36 @@ function fit_cppls(
 end
 
 """
-    StatsAPI.fit(model::CPPLS, X, Y; ...)
+    StatsAPI.fit(model::CPPLSSpec, X, Y; kwargs...)
 
 Fit a CPPLS model using the StatsAPI interface with an explicit model specification.
 You normally call this as `fit(spec, X, Y)` after `using CPPLS`. Use `CPPLS.fit` or
 `StatsAPI.fit` only when you need to disambiguate name conflicts.
 
+Keywords mirror `fit_cppls` and are split into:
+
+Model-spec settings (already stored in `model`):
+- `n_components`, `gamma`, `center`, `analysis_mode`,
+- `X_tolerance`, `X_loading_weight_tolerance`,
+- `t_squared_norm_tolerance`, `gamma_rel_tol`, `gamma_abs_tol`.
+
+Data/metadata settings (passed to `fit`):
+- `observation_weights`: optional sample weights (vector, length = n_samples).
+- `Y_auxiliary`: optional auxiliary responses (matrix with n_samples rows).
+- `sample_labels`, `predictor_labels`, `response_labels`: metadata for diagnostics.
+- `da_categories`: override categorical levels for discriminant analysis.
+
 # Example
 ```
 using CPPLS
 
-spec = CPPLS(n_components=2, gamma=0.5)
-model = fit(spec, X, Y)
+spec = CPPLSSpec(n_components=2, gamma=0.5)
+model = fit(spec, X, Y; observation_weights=weights, sample_labels=ids)
 preds = predict(model, X)
 ```
 """
 function fit(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     Y_responses;
     kwargs...,
@@ -370,7 +383,7 @@ end
     fit_cppls(X, labels::AbstractCategoricalArray, n_components=2; kwargs...)
     fit_cppls(X, labels::AbstractVector, n_components=2; kwargs...)
 
-Discriminant-analysis variants of [`fit_cppls`](@ref). The first method dispatches
+Discriminant-analysis variants of `fit_cppls`. The first method dispatches
 specifically on `CategoricalVector`/`CategoricalArray` inputs so users can opt into DA
 behaviour through the type signature alone. The second method accepts any other label
 container (e.g. plain `Vector{String}` or `Vector{Symbol}`) but follows the exact same
@@ -417,14 +430,14 @@ function fit_cppls(
 end
 
 function fit_cppls(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
 ) where {T,R,V,C,U}
     model.analysis_mode === :discriminant || throw(
         ArgumentError(
-            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+            "CPPLSSpec must use analysis_mode=:discriminant when fitting from labels.",
         ),
     )
     fit_cppls_from_labels(
@@ -437,14 +450,14 @@ function fit_cppls(
 end
 
 function fit_cppls(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     labels::AbstractVector;
     kwargs...,
 )
     model.analysis_mode === :discriminant || throw(
         ArgumentError(
-            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+            "CPPLSSpec must use analysis_mode=:discriminant when fitting from labels.",
         ),
     )
     fit_cppls_from_labels(
@@ -505,7 +518,7 @@ end
 """
     fit_cppls(X::AbstractMatrix{<:Real}, y::AbstractVector{<:Real}, n_components=2; kwargs...)
 
-Regression-friendly convenience wrapper around [`fit_cppls`](@ref) that accepts a
+Regression-friendly convenience wrapper around `fit_cppls` that accepts a
 single numeric response vector instead of a full response matrix. The vector is reshaped
 to `(n_samples, 1)` internally and all keyword arguments are forwarded to the standard
 matrix-based implementation.
@@ -563,7 +576,7 @@ function fit_cppls(
 end
 
 function fit_cppls(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractVector{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
@@ -714,7 +727,7 @@ end
     fit_cppls_light(X, labels::AbstractCategoricalArray, n_components=2; kwargs...)
     fit_cppls_light(X, labels::AbstractVector, n_components=2; kwargs...)
 
-Discriminant-analysis convenience wrappers for [`fit_cppls_light`](@ref). The first
+Discriminant-analysis convenience wrappers for `fit_cppls_light`. The first
 signature dispatches explicitly on categorical arrays so callers can rely on the method
 table to distinguish regression from DA. The second accepts any other label container
 (e.g. vectors of strings, symbols, or enums) and forwards into the same code path.
@@ -760,14 +773,14 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
 ) where {T,R,V,C,U}
     model.analysis_mode === :discriminant || throw(
         ArgumentError(
-            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+            "CPPLSSpec must use analysis_mode=:discriminant when fitting from labels.",
         ),
     )
     fit_cppls_light_from_labels(
@@ -780,14 +793,14 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     labels::AbstractVector;
     kwargs...,
 )
     model.analysis_mode === :discriminant || throw(
         ArgumentError(
-            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+            "CPPLSSpec must use analysis_mode=:discriminant when fitting from labels.",
         ),
     )
     fit_cppls_light_from_labels(
@@ -835,7 +848,7 @@ end
 """
     fit_cppls_light(X::AbstractMatrix{<:Real}, y::AbstractVector{<:Real}, n_components=2; kwargs...)
 
-Regression convenience wrapper for [`fit_cppls_light`](@ref) that accepts a single
+Regression convenience wrapper for `fit_cppls_light` that accepts a single
 numeric response vector. Internally reshapes `y` to `(n_samples, 1)` and forwards all
 keyword arguments to the matrix-based implementation.
 
@@ -886,7 +899,7 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
@@ -903,7 +916,7 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light(
-    model::CPPLS,
+    model::CPPLSSpec,
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractVector{<:Real};
     observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,

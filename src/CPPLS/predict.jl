@@ -1,11 +1,11 @@
 """
-    predict(cppls::CPPLS, X::AbstractMatrix{<:Real},
+    predict(cppls::AbstractCPPLSFit, X::AbstractMatrix{<:Real},
         n_components::Integer=size(cppls.regression_coefficients, 3)) -> Array{Float64, 3}
 
 Generate predictions from a fitted CPPLS model for a given input matrix `X`.
 
 # Arguments
-- `cppls`: A fitted CPPLS model, containing regression coefficients and mean values of 
+- `cppls`: A fitted CPPLS model, containing regression coefficients and mean values of
   predictors and responses.
 - `X`: A matrix of predictor variables of size `(n_samples_X, n_features)`.
 - `n_components` (optional): Number of CPPLS components to use for prediction. Defaults to 
@@ -24,7 +24,7 @@ julia> coeffs = reshape(Float64[0.5, 1.0], 2, 1, 1);  # two predictors, one targ
 
 julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0], 1, 1);
 
-julia> model = CPPLSLight(coeffs, X_mean, Y_mean, :regression);
+julia> model = CPPLSFitLight(coeffs, X_mean, Y_mean, :regression);
 
 julia> Xnew = [1.0 2.0; 3.0 4.0];
 
@@ -33,7 +33,7 @@ true
 ```
 """
 function predict(
-    cppls::AbstractCPPLS,
+    cppls::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
     n_components::T = size(cppls.regression_coefficients, 3),
 ) where {T<:Integer}
@@ -59,7 +59,7 @@ function predict(
 end
 
 """
-    predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real, 3}) -> Matrix{Int}
+    predictonehot(cppls::AbstractCPPLSFit, predictions::AbstractArray{<:Real, 3}) -> Matrix{Int}
 
 Convert a 3D array of predictions from a CPPLS model into a one-hot encoded 2D matrix, 
 assigning each sample to the class with the highest summed prediction across components, 
@@ -88,7 +88,7 @@ julia> coeffs = reshape(Float64[1, -1, 0.5, -0.5], 2, 2, 1);  # two predictors, 
 
 julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0 0.0], 1, 2);
 
-julia> model = CPPLSLight(coeffs, X_mean, Y_mean, :regression);
+julia> model = CPPLSFitLight(coeffs, X_mean, Y_mean, :regression);
 
 julia> Xnew = [2.0 1.0; 0.5 3.0];
 
@@ -101,7 +101,7 @@ julia> predictonehot(model, raw) ≈ [1 0; 0 1]
 true
 ```
 """
-function predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real,3})
+function predictonehot(cppls::AbstractCPPLSFit, predictions::AbstractArray{<:Real,3})
     n_components = size(predictions, 3)
     n_classes = size(predictions, 2)
 
@@ -114,12 +114,12 @@ function predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real,3
 end
 
 """
-    project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) -> AbstractMatrix
+    project(cppls::AbstractCPPLSFit, X::AbstractMatrix{<:Real}) -> AbstractMatrix
 
 Compute latent component scores by projecting new predictors `X` with a fitted CPPLS model.
 
 # Arguments
-- `cppls`: Any CPPLS model (e.g., `CPPLS` or `CPPLSLight`) providing `X_means` and
+- `cppls`: Any CPPLS model (e.g., `CPPLSFit` or `CPPLSFitLight`) providing `X_means` and
   `projection`.
 - `X`: Predictor matrix shaped like the training data (`n_samples × n_features`).
 
@@ -131,7 +131,7 @@ Compute latent component scores by projecting new predictors `X` with a fitted C
 
 # Example
 ```
-julia> struct DemoCPPLS <: CPPLS.AbstractCPPLS
+julia> struct DemoCPPLS <: CPPLS.AbstractCPPLSFit
            projection::Matrix{Float64}
            X_means::Matrix{Float64}
        end
@@ -146,14 +146,14 @@ julia> demo = DemoCPPLS(proj, reshape([0.5, 0.5], 1, :));
 julia> project(demo, [1.0 2.0; 3.0 4.0]) ≈ [1.25; 4.25]
 true
 ```
-In practice, `demo` would be the `CPPLS` object returned by `fit_cppls`, which already
+In practice, `demo` would be the `CPPLSFit` object returned by `fit_cppls`, which already
 contains the appropriate projection matrix and predictor means.
 """
-project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) =
+project(cppls::AbstractCPPLSFit, X::AbstractMatrix{<:Real}) =
     (X .- cppls.X_means) * cppls.projection
 
 """
-    decision_line(cppls::CPPLS; dims=(1, 2), n_components=maximum(dims))
+    decision_line(cppls::CPPLSFit; dims=(1, 2), n_components=maximum(dims))
 
 Return the discriminant hyperplane restricted to the selected score dimensions as a
 tuple `(xs, ys, intercept, normal)`. Use `xs`/`ys` to draw the line directly on a score
@@ -174,7 +174,7 @@ plot; `intercept` and `normal` describe the underlying equation `normal⋅scores
   margin so the boundary extends slightly beyond the cloud of points.
 """
 function decision_line(
-    cppls::CPPLS;
+    cppls::CPPLSFit;
     dims::NTuple{2,Int} = (1, 2),
     n_components::Integer = maximum(dims),
 )

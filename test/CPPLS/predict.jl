@@ -1,6 +1,6 @@
 using LinearAlgebra: I
 
-struct DummyProjectionModel <: CPPLS.AbstractCPPLS
+struct DummyProjectionModel <: CPPLS.AbstractCPPLSFit
     projection::Matrix{Float64}
     X_means::Matrix{Float64}
 end
@@ -40,7 +40,7 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
     response_labels = ["class1", "class2"]
     da_categories = [i ≤ n_samples ÷ 2 ? :a : :b for i = 1:n_samples]
 
-    return CPPLS.CPPLS(
+    return CPPLS.CPPLSFit(
         regression_coefficients,
         scores,
         X_loadings,
@@ -75,7 +75,7 @@ end
     regression_coefficients[:, :, 2] = [0.5 -0.2; 0.3 0.1]
     X_means = reshape([1.0, 2.0], 1, :)
     Y_means = reshape([0.25, -0.5], 1, :)
-    cppls = CPPLS.CPPLSLight(
+    cppls = CPPLS.CPPLSFitLight(
         regression_coefficients,
         X_means,
         Y_means,
@@ -107,7 +107,7 @@ end
     regression_coefficients = ones(Float64, 1, 2, 1)
     X_means = reshape([0.0], 1, 1)
     Y_means = reshape([0.1, -0.2], 1, :)
-    cppls = CPPLS.CPPLSLight(
+    cppls = CPPLS.CPPLSFitLight(
         regression_coefficients,
         X_means,
         Y_means,

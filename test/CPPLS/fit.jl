@@ -1,4 +1,5 @@
 using CategoricalArrays
+using StatsAPI
 
 @testset "fit_cppls builds diagnostic-rich model" begin
     X = Float64[
@@ -18,7 +19,7 @@ using CategoricalArrays
 
     model = CPPLS.fit_cppls(X, Y, 2; gamma = 0.5)
 
-    @test model isa CPPLS.CPPLS
+    @test model isa CPPLS.CPPLSFit
     @test size(model.regression_coefficients) == (size(X, 2), size(Y, 2), 2)
     @test size(model.fitted_values) == (size(X, 1), size(Y, 2), 2)
     @test size(model.residuals) == size(model.fitted_values)
@@ -30,6 +31,48 @@ using CategoricalArrays
     @test length(model.canonical_correlations) == 2
     @test length(model.X_variance) == 2
     @test model.X_total_variance > 0
+
+    spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5)
+    model_from_spec = CPPLS.fit_cppls(spec, X, Y)
+    @test model_from_spec isa CPPLS.CPPLSFit
+    @test size(model_from_spec.regression_coefficients) ==
+          (size(X, 2), size(Y, 2), 2)
+end
+
+@testset "StatsAPI fit/predict/coefs round-trip" begin
+    X = Float64[
+        1 0 2
+        0 1 2
+        1 1 1
+        2 3 0
+        3 2 1
+    ]
+    Y = Float64[
+        1 0
+        0 1
+        1 1
+        0 1
+        1 0
+    ]
+
+    model = StatsAPI.fit(CPPLS.CPPLS, X, Y; n_components = 2, gamma = 0.5)
+    @test model isa CPPLS.CPPLSFit
+
+    preds = StatsAPI.predict(model, X)
+    @test size(preds) == (size(X, 1), size(Y, 2), 2)
+
+    β = StatsAPI.coef(model)
+    @test size(β) == (size(X, 2), size(Y, 2))
+
+    fitted_vals = StatsAPI.fitted(model)
+    @test size(fitted_vals) == (size(X, 1), size(Y, 2))
+
+    resid_vals = StatsAPI.residuals(model)
+    @test size(resid_vals) == size(fitted_vals)
+
+    light = StatsAPI.fit(CPPLS.CPPLSFitLight, X, Y; n_components = 2, gamma = 0.5)
+    @test light isa CPPLS.CPPLSFitLight
+    @test size(StatsAPI.coef(light)) == (size(X, 2), size(Y, 2))
 end
 
 @testset "fit_cppls enforces label metadata" begin
@@ -111,6 +154,23 @@ end
     )
 end
 
+@testset "fit_cppls with CPPLS spec enforces analysis mode for labels" begin
+    X = Float64[
+        1 0
+        0 1
+        1 1
+        2 3
+    ]
+    labels = categorical(["classA", "classB", "classA", "classB"])
+
+    spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5, analysis_mode = :discriminant)
+    model = CPPLS.fit_cppls(spec, X, labels)
+    @test model.analysis_mode === :discriminant
+
+    bad_spec = CPPLS.CPPLS(n_components = 2, gamma = 0.5, analysis_mode = :regression)
+    @test_throws ArgumentError CPPLS.fit_cppls(bad_spec, X, labels)
+end
+
 @testset "fit_cppls_light matches regression from full model" begin
     X = Float64[
         2 1
@@ -129,10 +189,15 @@ end
     full = CPPLS.fit_cppls(X, Y, 2; gamma = gamma_bounds)
     light = CPPLS.fit_cppls_light(X, Y, 2; gamma = gamma_bounds)
 
-    @test light isa CPPLS.CPPLSLight
+    @test light isa CPPLS.CPPLSFitLight
     @test light.regression_coefficients ≈ full.regression_coefficients
     @test light.X_means ≈ full.X_means
     @test light.Y_means ≈ full.Y_means
+
+    spec = CPPLS.CPPLS(n_components = 2, gamma = gamma_bounds)
+    light_from_spec = CPPLS.fit_cppls_light(spec, X, Y)
+    @test light_from_spec isa CPPLS.CPPLSFitLight
+    @test light_from_spec.regression_coefficients ≈ full.regression_coefficients
 end
 
 @testset "fit_cppls categorical and vector wrappers" begin

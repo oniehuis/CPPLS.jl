@@ -20,6 +20,47 @@ function validate_response_labels(labels::AbstractVector, n_targets::Integer)
     return labels
 end
 
+function _cppls_model_fit_kwargs(model::CPPLS)
+    return (
+        gamma = model.gamma,
+        center = model.center,
+        X_tolerance = model.X_tolerance,
+        X_loading_weight_tolerance = model.X_loading_weight_tolerance,
+        t_squared_norm_tolerance = model.t_squared_norm_tolerance,
+        gamma_rel_tol = model.gamma_rel_tol,
+        gamma_abs_tol = model.gamma_abs_tol,
+    )
+end
+
+function _cppls_model_fit_kwargs_with_mode(model::CPPLS)
+    return merge(_cppls_model_fit_kwargs(model), (analysis_mode = model.analysis_mode,))
+end
+
+const CPPLS_MODEL_KWARGS = Set((
+    :n_components,
+    :gamma,
+    :center,
+    :X_tolerance,
+    :X_loading_weight_tolerance,
+    :t_squared_norm_tolerance,
+    :gamma_rel_tol,
+    :gamma_abs_tol,
+    :analysis_mode,
+))
+
+function _split_cppls_kwargs(kwargs::Base.Pairs)
+    model_pairs = Pair{Symbol,Any}[]
+    fit_pairs = Pair{Symbol,Any}[]
+    for (key, value) in kwargs
+        if key in CPPLS_MODEL_KWARGS
+            push!(model_pairs, key => value)
+        else
+            push!(fit_pairs, key => value)
+        end
+    end
+    return (; model_pairs...), (; fit_pairs...)
+end
+
 """
     fit_cppls(
         X::AbstractMatrix{<:Real},
@@ -78,7 +119,7 @@ Fit a Canonical Powered Partial Least Squares (CPPLS) model.
   by the label-based wrapper and must remain `nothing` for regression problems.
 
 # Returns
-A `CPPLS` object containing the following fields:
+A `CPPLSFit` object containing the following fields:
 - `regression_coefficients`: A 3D array of regression coefficients for 1, ..., 
   `n_components`.
 - `X_scores`: A matrix of scores (latent variables) for the predictor matrix `X`.
@@ -271,7 +312,7 @@ function fit_cppls(
     X_variance_explained = vec(sum(X_loadings .* X_loadings, dims = 1)) .* X_score_norms
     X_total_variance = sum(X_predictors .* X_predictors)
 
-    CPPLS(
+    CPPLSFit(
         regression_coefficients,
         X_scores,
         X_loadings,
@@ -300,6 +341,40 @@ function fit_cppls(
     )
 end
 
+function fit_cppls(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    Y_responses::AbstractMatrix{<:Real};
+    observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
+    sample_labels::AbstractVector = String[],
+    predictor_labels::AbstractVector = String[],
+    response_labels::AbstractVector = String[],
+    da_categories = nothing,
+)
+    return fit_cppls(
+        X_predictors,
+        Y_responses,
+        model.n_components;
+        _cppls_model_fit_kwargs_with_mode(model)...,
+        observation_weights = observation_weights,
+        Y_auxiliary = Y_auxiliary,
+        sample_labels = sample_labels,
+        predictor_labels = predictor_labels,
+        response_labels = response_labels,
+        da_categories = da_categories,
+    )
+end
+
+function fit(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    Y_responses;
+    kwargs...,
+)
+    fit_cppls(model, X_predictors, Y_responses; kwargs...)
+end
+
 """
     fit_cppls(X, labels::AbstractCategoricalArray, n_components=2; kwargs...)
     fit_cppls(X, labels::AbstractVector, n_components=2; kwargs...)
@@ -309,7 +384,7 @@ specifically on `CategoricalVector`/`CategoricalArray` inputs so users can opt i
 behaviour through the type signature alone. The second method accepts any other label
 container (e.g. plain `Vector{String}` or `Vector{Symbol}`) but follows the exact same
 code path. Both convert the labels to a one-hot response matrix internally and store
-the inferred class names inside the returned `CPPLS` model.
+the inferred class names inside the returned `CPPLSFit` model.
 
 # Example
 ```
@@ -348,6 +423,46 @@ function fit_cppls(
     kwargs...,
 )
     fit_cppls_from_labels(X_predictors, labels, n_components; kwargs...)
+end
+
+function fit_cppls(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    labels::AbstractCategoricalArray{T,1,R,V,C,U};
+    kwargs...,
+) where {T,R,V,C,U}
+    model.analysis_mode === :discriminant || throw(
+        ArgumentError(
+            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+        ),
+    )
+    fit_cppls_from_labels(
+        X_predictors,
+        labels,
+        model.n_components;
+        _cppls_model_fit_kwargs(model)...,
+        kwargs...,
+    )
+end
+
+function fit_cppls(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    labels::AbstractVector;
+    kwargs...,
+)
+    model.analysis_mode === :discriminant || throw(
+        ArgumentError(
+            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+        ),
+    )
+    fit_cppls_from_labels(
+        X_predictors,
+        labels,
+        model.n_components;
+        _cppls_model_fit_kwargs(model)...,
+        kwargs...,
+    )
 end
 
 function fit_cppls_from_labels(
@@ -456,6 +571,56 @@ function fit_cppls(
     )
 end
 
+function fit_cppls(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    Y_responses::AbstractVector{<:Real};
+    observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
+    sample_labels::AbstractVector = String[],
+    predictor_labels::AbstractVector = String[],
+    response_labels::AbstractVector = String[],
+)
+    return fit_cppls(
+        X_predictors,
+        Y_responses,
+        model.n_components;
+        _cppls_model_fit_kwargs_with_mode(model)...,
+        observation_weights = observation_weights,
+        Y_auxiliary = Y_auxiliary,
+        sample_labels = sample_labels,
+        predictor_labels = predictor_labels,
+        response_labels = response_labels,
+    )
+end
+
+"""
+    StatsAPI.fit(::Type{CPPLS}, X, Y; n_components=2, gamma=0.5, ...)
+
+Fit a CPPLS model using the StatsAPI interface. Keyword arguments are split between
+model-spec settings (`n_components`, `gamma`, tolerances, `analysis_mode`, `center`)
+and data-dependent fit settings (`observation_weights`, `Y_auxiliary`, labels, etc.).
+
+# Example
+```
+using StatsAPI
+using CPPLS
+
+model = fit(CPPLS.CPPLS, X, Y; n_components=2, gamma=0.5)
+preds = StatsAPI.predict(model, X)
+```
+"""
+function fit(
+    ::Type{CPPLS},
+    X_predictors::AbstractMatrix{<:Real},
+    Y_responses;
+    kwargs...,
+)
+    model_kwargs, fit_kwargs = _split_cppls_kwargs(kwargs)
+    model = CPPLS(; model_kwargs...)
+    fit_cppls(model, X_predictors, Y_responses; fit_kwargs...)
+end
+
 """
     fit_cppls_light(
         X::AbstractMatrix{<:Real},
@@ -472,10 +637,10 @@ end
         t_squared_norm_tolerance::Real=1e-10,
         analysis_mode::Symbol=:regression)
 
-Fit a CPPLS model but retain only the parts needed for prediction (`CPPLSLight`).
+Fit a CPPLS model but retain only the parts needed for prediction (`CPPLSFitLight`).
 
 Arguments mirror `fit_cppls`, including support for scalar γ, `(lo, hi)` bounds, or
-vectors that mix scalars and tuples as candidate sets. The returned `CPPLSLight` stores
+vectors that mix scalars and tuples as candidate sets. The returned `CPPLSFitLight` stores
 only the stacked regression coefficients plus the `X`/`Y` centering means. 
 `analysis_mode` is an internal keyword that tags the resulting object as either a
 regression or discriminant model; most users rely on the wrappers below instead of
@@ -577,7 +742,7 @@ function fit_cppls_light(
         ),
     )
 
-    CPPLSLight(regression_coefficients, X̄_mean, Ȳ_mean, analysis_mode)
+    CPPLSFitLight(regression_coefficients, X̄_mean, Ȳ_mean, analysis_mode)
 end
 
 """
@@ -589,7 +754,7 @@ signature dispatches explicitly on categorical arrays so callers can rely on the
 table to distinguish regression from DA. The second accepts any other label container
 (e.g. vectors of strings, symbols, or enums) and forwards into the same code path.
 Regardless of signature, labels are converted to a one-hot matrix for fitting, class
-names are inferred once, and the returned `CPPLSLight` only retains the components needed
+names are inferred once, and the returned `CPPLSFitLight` only retains the components needed
 for prediction.
 
 # Example
@@ -627,6 +792,46 @@ function fit_cppls_light(
     kwargs...,
 )
     fit_cppls_light_from_labels(X_predictors, labels, n_components; kwargs...)
+end
+
+function fit_cppls_light(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    labels::AbstractCategoricalArray{T,1,R,V,C,U};
+    kwargs...,
+) where {T,R,V,C,U}
+    model.analysis_mode === :discriminant || throw(
+        ArgumentError(
+            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+        ),
+    )
+    fit_cppls_light_from_labels(
+        X_predictors,
+        labels,
+        model.n_components;
+        _cppls_model_fit_kwargs(model)...,
+        kwargs...,
+    )
+end
+
+function fit_cppls_light(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    labels::AbstractVector;
+    kwargs...,
+)
+    model.analysis_mode === :discriminant || throw(
+        ArgumentError(
+            "CPPLS model specification must use analysis_mode=:discriminant when fitting from labels.",
+        ),
+    )
+    fit_cppls_light_from_labels(
+        X_predictors,
+        labels,
+        model.n_components;
+        _cppls_model_fit_kwargs(model)...,
+        kwargs...,
+    )
 end
 
 function fit_cppls_light_from_labels(
@@ -715,6 +920,57 @@ function fit_cppls_light(
     )
 end
 
+function fit_cppls_light(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    Y_responses::AbstractMatrix{<:Real};
+    observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
+)
+    return fit_cppls_light(
+        X_predictors,
+        Y_responses,
+        model.n_components;
+        _cppls_model_fit_kwargs_with_mode(model)...,
+        observation_weights = observation_weights,
+        Y_auxiliary = Y_auxiliary,
+    )
+end
+
+function fit_cppls_light(
+    model::CPPLS,
+    X_predictors::AbstractMatrix{<:Real},
+    Y_responses::AbstractVector{<:Real};
+    observation_weights::Union{AbstractVector{<:Real},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
+)
+    return fit_cppls_light(
+        X_predictors,
+        Y_responses,
+        model.n_components;
+        _cppls_model_fit_kwargs_with_mode(model)...,
+        observation_weights = observation_weights,
+        Y_auxiliary = Y_auxiliary,
+    )
+end
+
+"""
+    StatsAPI.fit(::Type{CPPLSFitLight}, X, Y; n_components=2, gamma=0.5, ...)
+
+Fit a lightweight CPPLS model via the StatsAPI interface. Returns a `CPPLSFitLight`
+containing only the parameters needed for prediction.
+"""
+function fit(
+    ::Type{CPPLSFitLight},
+    X_predictors::AbstractMatrix{<:Real},
+    Y_responses;
+    kwargs...,
+)
+    model_kwargs, fit_kwargs = _split_cppls_kwargs(kwargs)
+    model = CPPLS(; model_kwargs...)
+    fit_cppls_light(model, X_predictors, Y_responses; fit_kwargs...)
+end
+
 function process_component!(
     i::Integer,
     X_deflated::AbstractMatrix{<:Real},
@@ -759,4 +1015,28 @@ function process_component!(
     )
 
     X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
+end
+
+function fitted(model::CPPLSFit)
+    @views model.fitted_values[:, :, end]
+end
+
+function fitted(model::CPPLSFit, n_components::Integer)
+    @views model.fitted_values[:, :, n_components]
+end
+
+function residuals(model::CPPLSFit)
+    @views model.residuals[:, :, end]
+end
+
+function residuals(model::CPPLSFit, n_components::Integer)
+    @views model.residuals[:, :, n_components]
+end
+
+function coef(model::AbstractCPPLSFit)
+    @views model.regression_coefficients[:, :, end]
+end
+
+function coef(model::AbstractCPPLSFit, n_components::Integer)
+    @views model.regression_coefficients[:, :, n_components]
 end

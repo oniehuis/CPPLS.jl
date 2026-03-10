@@ -1,8 +1,8 @@
 """
-    AbstractCPPLS
+    AbstractCPPLSFit
 
-Common supertype for Canonical Powered Partial Least Squares models. Any subtype must
-expose at least the following fields so shared functions can operate generically:
+Common supertype for fitted Canonical Powered Partial Least Squares models. Any subtype
+must expose at least the following fields so shared functions can operate generically:
 
 - `regression_coefficients::Array{<:Real, 3}`
 - `X_means::Matrix{<:Real}`
@@ -11,11 +11,71 @@ expose at least the following fields so shared functions can operate generically
 Additionally, subtypes are expected to work with the exported generic helpers
 `predict`, `predictonehot`, and `project`.
 """
-abstract type AbstractCPPLS end
+abstract type AbstractCPPLSFit end
+
+"""
+    CPPLS(; kwargs...)
+
+Model specification for CPPLS fits. Stores hyperparameters and numerical tolerances
+but no data-dependent quantities. Use with `fit_cppls`/`fit_cppls_light`.
+
+Keywords mirror the CPPLS fitting defaults:
+- `n_components::Integer=2`
+- `gamma=0.5`
+- `center::Bool=true`
+- `X_tolerance::Real=1e-12`
+- `X_loading_weight_tolerance::Real=eps(Float64)`
+- `t_squared_norm_tolerance::Real=1e-10`
+- `gamma_rel_tol::Real=1e-6`
+- `gamma_abs_tol::Real=1e-12`
+- `analysis_mode::Symbol=:regression`
+"""
+struct CPPLS
+    n_components::Int
+    gamma
+    center::Bool
+    X_tolerance::Float64
+    X_loading_weight_tolerance::Float64
+    t_squared_norm_tolerance::Float64
+    gamma_rel_tol::Float64
+    gamma_abs_tol::Float64
+    analysis_mode::Symbol
+end
+
+function CPPLS(;
+    n_components::Integer = 2,
+    gamma = 0.5,
+    center::Bool = true,
+    X_tolerance::Real = 1e-12,
+    X_loading_weight_tolerance::Real = eps(Float64),
+    t_squared_norm_tolerance::Real = 1e-10,
+    gamma_rel_tol::Real = 1e-6,
+    gamma_abs_tol::Real = 1e-12,
+    analysis_mode::Symbol = :regression,
+)
+    n_components > 0 ||
+        throw(ArgumentError("n_components must be greater than zero"))
+    analysis_mode in (:regression, :discriminant) || throw(
+        ArgumentError(
+            "analysis_mode must be :regression or :discriminant, got $analysis_mode",
+        ),
+    )
+    return CPPLS(
+        Int(n_components),
+        gamma,
+        center,
+        Float64(X_tolerance),
+        Float64(X_loading_weight_tolerance),
+        Float64(t_squared_norm_tolerance),
+        Float64(gamma_rel_tol),
+        Float64(gamma_abs_tol),
+        analysis_mode,
+    )
+end
 
 
 """
-    CPPLS{T1, T2}
+    CPPLSFit{T1, T2}
 
 Full CPPLS model storing all intermediate quantities required for diagnostics and
 visualisation. `T1` is the floating-point element type used for continuous arrays,
@@ -49,14 +109,14 @@ visualisation. `T1` is the floating-point element type used for continuous array
 - `analysis_mode::Symbol` — either `:regression` or `:discriminant`.
 - `da_categories` — original categorical responses for DA models (`nothing` otherwise).
 """
-struct CPPLS{
+struct CPPLSFit{
     T1<:Real,
     T2<:Integer,
     SL<:AbstractVector,
     PL<:AbstractVector,
     RL<:AbstractVector,
     DAC,
-} <: AbstractCPPLS
+} <: AbstractCPPLSFit
     regression_coefficients::Array{T1,3}
     X_scores::Matrix{T1}
     X_loadings::Matrix{T1}
@@ -84,7 +144,7 @@ struct CPPLS{
     da_categories::DAC
 end
 
-function CPPLS(
+function CPPLSFit(
     regression_coefficients::Array{T1,3},
     X_scores::Matrix{T1},
     X_loadings::Matrix{T1},
@@ -121,7 +181,7 @@ function CPPLS(
         throw(
             ArgumentError("da_categories are only stored for discriminant analysis models"),
         )
-    return CPPLS{
+    return CPPLSFit{
         T1,
         T2,
         typeof(sample_labels),
@@ -159,7 +219,7 @@ end
 
 
 """
-    CPPLSLight{T}
+    CPPLSFitLight{T}
 
 Memory-lean CPPLS variant retaining only the pieces needed for prediction. `T`
 is the floating-point element type shared by all stored matrices.
@@ -170,7 +230,7 @@ is the floating-point element type shared by all stored matrices.
 - `Y_means::Matrix{T}` — response means copied from the training data.
 - `analysis_mode::Symbol` — either `:regression` or `:discriminant`.
 """
-struct CPPLSLight{T<:Real} <: AbstractCPPLS
+struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
     regression_coefficients::Array{T,3}
     X_means::Matrix{T}
     Y_means::Matrix{T}

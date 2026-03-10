@@ -2,11 +2,12 @@ using Documenter
 using Markdown
 using Makie
 using CPPLS
+using StatsAPI
 
 DocMeta.setdocmeta!(
     CPPLS,
     :DocTestSetup,
-    :(using CPPLS);
+    :(using CPPLS; using StatsAPI);
     recursive = true,
 )
 
@@ -14,6 +15,7 @@ makedocs(
     sitename = "CPPLS",
     format = Documenter.HTML(mathengine = Documenter.MathJax()),
     modules = [CPPLS],
+    checkdocs = :exports,
     authors = "Oliver Niehuis",
     pages = [
         "Home" => "index.md",

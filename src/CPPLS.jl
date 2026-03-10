@@ -3,6 +3,7 @@ module CPPLS
 using LinearAlgebra
 using Optim
 using Random
+import StatsAPI: fit, predict, fitted, coef, residuals
 using Statistics
 using StatsBase
 using CategoricalArrays
@@ -23,9 +24,9 @@ include("Utils/matrix.jl")
 include("Utils/statistics.jl")
 
 export CPPLS
-export CPPLSLight
-export fit_cppls
-export fit_cppls_light
+export CPPLSFit
+export CPPLSFitLight
+export fit
 export predict
 export predictonehot
 export project
@@ -155,7 +156,7 @@ function scoreplot(
 end
 
 function scoreplot(
-    cppls::CPPLS;
+    cppls::CPPLSFit;
     backend::Symbol = :plotly,
     kwargs...,
 )

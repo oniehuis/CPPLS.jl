@@ -1,7 +1,8 @@
 # Types
 
 ```@docs
-CPPLS.AbstractCPPLS
 CPPLS.CPPLS
-CPPLS.CPPLSLight
+CPPLS.AbstractCPPLSFit
+CPPLS.CPPLSFit
+CPPLS.CPPLSFitLight
 ```

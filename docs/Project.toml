@@ -1,7 +1,8 @@
 [deps]
+CPPLS = "165bcf3d-aa04-45f7-b691-acf9bd4168c1"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
-CPPLS = "165bcf3d-aa04-45f7-b691-acf9bd4168c1"
+StatsAPI = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
 
 [sources]
 CPPLS = {path = ".."}
@@ -9,5 +10,6 @@ CPPLS = {path = ".."}
 [compat]
 CPPLS = "0.0.1"
 Documenter = "1"
-julia = "1.12"
 Makie = "0.24"
+StatsAPI = "1"
+julia = "1.12"

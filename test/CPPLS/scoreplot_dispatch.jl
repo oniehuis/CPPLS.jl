@@ -90,7 +90,7 @@ end
     response_labels = ["class1", "class2"]
     da_categories = categorical(["class1", "class2"])
 
-    cppls = CPPLS.CPPLS(
+    cppls = CPPLS.CPPLSFit(
         regression_coefficients,
         X_scores,
         X_loadings,

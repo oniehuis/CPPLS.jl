@@ -190,7 +190,7 @@ julia> k = CPPLS.optimize_num_latent_variables(
 julia> k
 1
 ```
-For every inner repeat the routine fits a `CPPLSLight` with `max_components`,
+For every inner repeat the routine fits a `CPPLSFitLight` with `max_components`,
 scores validation folds for each partial component count using `predict` +
 `predictonehot`, evaluates `nmc`, records the argmin, and finally returns the
 median winning component number (rounded down) across repeats.
@@ -460,7 +460,7 @@ Top-level nested CV driver for CPPLS. Parameter overview:
 
 For every outer fold the data is split into training/test partitions, an inner
 CV loop selects the optimal component count via `optimize_num_latent_variables`,
-the final `CPPLSLight` is fit on the outer training data with that count, and
+the final `CPPLSFitLight` is fit on the outer training data with that count, and
 `accuracy = 1 - nmc` is computed on the outer test split. Returns a tuple
 `(outer_fold_accuracies, optimal_num_latent_variables)`.
 

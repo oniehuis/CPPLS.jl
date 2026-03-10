@@ -1,4 +1,4 @@
-@testset "CPPLS stores selected training artefact" begin
+@testset "CPPLSFit stores selected training artefact" begin
     configs = [
         (
             Float32,
@@ -77,7 +77,7 @@
         response_labels = [Symbol("resp_$i") for i = 1:n_responses]
         da_categories = ["class_$(1 + (i % 2))" for i = 1:n_samples]
 
-        cppls = CPPLS.CPPLS(
+        cppls = CPPLS.CPPLSFit(
             regression_coefficients,
             X_scores,
             X_loadings,
@@ -105,8 +105,8 @@
             da_categories = nothing,
         )
 
-        @test cppls isa CPPLS.AbstractCPPLS
-        @test cppls isa CPPLS.CPPLS{
+        @test cppls isa CPPLS.AbstractCPPLSFit
+        @test cppls isa CPPLS.CPPLSFit{
             T,
             Tmask,
             typeof(sample_labels),
@@ -149,7 +149,7 @@
         @test size(cppls.Y_means) == (1, n_responses)
         @test size(cppls.Z) == (n_samples, n_responses, n_components)
 
-        cppls_default = CPPLS.CPPLS(
+        cppls_default = CPPLS.CPPLSFit(
             regression_coefficients,
             X_scores,
             X_loadings,
@@ -177,7 +177,7 @@
         @test cppls_default.analysis_mode === :regression
         @test cppls_default.da_categories === nothing
 
-        cppls_da = CPPLS.CPPLS(
+        cppls_da = CPPLS.CPPLSFit(
             regression_coefficients,
             X_scores,
             X_loadings,
@@ -209,7 +209,7 @@
     end
 end
 
-@testset "CPPLSLight keeps prediction essentials" begin
+@testset "CPPLSFitLight keeps prediction essentials" begin
     configs = [
         (Float32, (; n_predictors = 3, n_responses = 2, n_components = 1)),
         (Float64, (; n_predictors = 4, n_responses = 3, n_components = 2)),
@@ -229,10 +229,11 @@ end
         X_means = reshape(T.(1:n_predictors), 1, n_predictors)
         Y_means = reshape(T.(1:n_responses) .+ T(100), 1, n_responses)
 
-        light_model = CPPLSLight(regression_coefficients, X_means, Y_means, :regression)
+        light_model =
+            CPPLSFitLight(regression_coefficients, X_means, Y_means, :regression)
 
-        @test light_model isa CPPLS.AbstractCPPLS
-        @test light_model isa CPPLSLight{T}
+        @test light_model isa CPPLS.AbstractCPPLSFit
+        @test light_model isa CPPLSFitLight{T}
         @test light_model.regression_coefficients === regression_coefficients
         @test light_model.X_means === X_means
         @test light_model.Y_means === Y_means
@@ -241,7 +242,34 @@ end
               (n_predictors, n_responses, n_components)
         @test size(light_model.X_means) == (1, n_predictors)
         @test size(light_model.Y_means) == (1, n_responses)
-        light_da = CPPLSLight(regression_coefficients, X_means, Y_means, :discriminant)
+        light_da = CPPLSFitLight(regression_coefficients, X_means, Y_means, :discriminant)
         @test light_da.analysis_mode === :discriminant
     end
+end
+
+@testset "CPPLS model specification stores hyperparameters" begin
+    spec = CPPLS.CPPLS()
+    @test spec.n_components == 2
+    @test spec.gamma == 0.5
+    @test spec.center === true
+    @test spec.analysis_mode === :regression
+
+    tuned = CPPLS.CPPLS(
+        n_components = 3,
+        gamma = (0.2, 0.8),
+        center = false,
+        X_tolerance = 1e-8,
+        X_loading_weight_tolerance = 1e-9,
+        t_squared_norm_tolerance = 1e-7,
+        gamma_rel_tol = 1e-5,
+        gamma_abs_tol = 1e-9,
+        analysis_mode = :discriminant,
+    )
+    @test tuned.n_components == 3
+    @test tuned.gamma == (0.2, 0.8)
+    @test tuned.center === false
+    @test tuned.analysis_mode === :discriminant
+
+    @test_throws ArgumentError CPPLS.CPPLS(n_components = 0)
+    @test_throws ArgumentError CPPLS.CPPLS(analysis_mode = :unsupported)
 end

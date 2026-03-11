@@ -51,9 +51,6 @@ end
     include(joinpath("Utils", "encoding.jl"))
 end
 
-@testset "Utils/matrix" begin
-    include(joinpath("Utils", "matrix.jl"))
-end
 
 @testset "Utils/statistics" begin
     include(joinpath("Utils", "statistics.jl"))

@@ -30,26 +30,22 @@ true
 function nmc(
     Y_true_one_hot::AbstractMatrix{<:Integer},
     Y_pred_one_hot::AbstractMatrix{<:Integer},
-    weighted::Bool,
+    weighted::Bool
 )
 
-    size(Y_true_one_hot) == size(Y_pred_one_hot) ||
-        throw(DimensionMismatch("Input matrices must have the same dimensions"))
+    size(Y_true_one_hot) == size(Y_pred_one_hot) || throw(
+        DimensionMismatch("Input matrices must have the same dimensions"))
 
     n_samples = size(Y_true_one_hot, 1)
-    n_samples > 0 || error("Cannot compute weighted NMC: input has zero samples")
+    n_samples > 0 || throw(ArgumentError(
+        "Cannot compute weighted NMC: input has zero samples"))
 
     !weighted && return mean(Y_true_one_hot .≠ Y_pred_one_hot)
 
     true_labels = one_hot_to_labels(Y_true_one_hot)
     pred_labels = one_hot_to_labels(Y_pred_one_hot)
 
-    class_counts = countmap(true_labels)
-    inv_freqs = Dict(k => n_samples / v for (k, v) in class_counts)
-    total_weight = sum(inv_freqs[k] * class_counts[k] for k in keys(inv_freqs))
-    class_weights = Dict(k => inv_freqs[k] / total_weight for k in keys(inv_freqs))
-
-    sample_weights = getindex.(Ref(class_weights), true_labels)
+    sample_weights = invfreqweights(true_labels)
     errors = true_labels .≠ pred_labels
 
     weighted_error = sum(sample_weights[errors])
@@ -80,8 +76,6 @@ function calculate_p_value(
     model_accuracy::Float64,
 )
 
-    (
-        count(x -> x ≤ model_accuracy || x ≈ model_accuracy, permutation_accuracies) /
+    count(x -> x ≤ model_accuracy || x ≈ model_accuracy, permutation_accuracies) /
         (length(permutation_accuracies) + 1)
-    )
 end

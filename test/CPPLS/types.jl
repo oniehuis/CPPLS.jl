@@ -273,3 +273,68 @@ end
     @test_throws ArgumentError CPPLS.CPPLSSpec(n_components = 0)
     @test_throws ArgumentError CPPLS.CPPLSSpec(analysis_mode = :unsupported)
 end
+
+@testset "custom show methods summarize CPPLS types" begin
+    spec = CPPLS.CPPLSSpec(n_components = 3, gamma = (0.2, 0.8), analysis_mode = :discriminant)
+    spec_inline = sprint(show, spec)
+    spec_plain = sprint(io -> show(io, MIME"text/plain"(), spec))
+    @test occursin("CPPLSSpec(", spec_inline)
+    @test occursin("n_components=3", spec_inline)
+    @test occursin("analysis_mode=discriminant", spec_inline)
+    @test occursin("CPPLSSpec", spec_plain)
+    @test occursin("n_components: 3", spec_plain)
+    @test occursin("analysis_mode: discriminant", spec_plain)
+
+    B = reshape(Float64.(1:8), 2, 2, 2)
+    T_scores = reshape(Float64.(1:6), 3, 2)
+    P = reshape(Float64.(1:4), 2, 2)
+    W_comp = reshape(Float64.(11:14), 2, 2)
+    U = reshape(Float64.(21:26), 3, 2)
+    C = reshape(Float64.(31:34), 2, 2)
+    R = reshape(Float64.(41:44), 2, 2)
+    X_bar = reshape([0.5, 1.5], 1, :)
+    Y_bar = reshape([2.5, 3.5], 1, :)
+    Y_hat = reshape(Float64.(51:62), 3, 2, 2)
+    F = reshape(Float64.(71:82), 3, 2, 2)
+    X_var = [0.1, 0.2]
+    X_var_total = 1.0
+    gamma = [0.5, 0.5]
+    rho = [0.9, 0.8]
+    zero_mask = zeros(Int, 2, 2)
+    a = reshape(Float64.(91:94), 2, 2)
+    b = reshape(Float64.(101:104), 2, 2)
+    W0 = reshape(Float64.(111:118), 2, 2, 2)
+    Z = reshape(Float64.(121:132), 3, 2, 2)
+    sample_labels = String[]
+    predictor_labels = String[]
+    response_labels = String[]
+    sample_classes = nothing
+
+    model = CPPLS.CPPLSFit(
+        B, T_scores, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
+        gamma, rho, zero_mask, a, b, W0, Z, sample_labels, predictor_labels,
+        response_labels, :regression, sample_classes,
+    )
+    model_inline = sprint(show, model)
+    model_plain = sprint(io -> show(io, MIME"text/plain"(), model))
+    @test occursin("CPPLSFit(", model_inline)
+    @test occursin("mode=regression", model_inline)
+    @test occursin("samples=3", model_inline)
+    @test occursin("predictors=2", model_inline)
+    @test occursin("responses=2", model_inline)
+    @test occursin("components=2", model_inline)
+    @test occursin("CPPLSFit", model_plain)
+    @test occursin("mode: regression", model_plain)
+    @test occursin("samples: 3", model_plain)
+
+    light = CPPLS.CPPLSFitLight(B, X_bar, Y_bar, :discriminant)
+    light_inline = sprint(show, light)
+    light_plain = sprint(io -> show(io, MIME"text/plain"(), light))
+    @test occursin("CPPLSFitLight(", light_inline)
+    @test occursin("mode=discriminant", light_inline)
+    @test occursin("predictors=2", light_inline)
+    @test occursin("responses=2", light_inline)
+    @test occursin("components=2", light_inline)
+    @test occursin("CPPLSFitLight", light_plain)
+    @test occursin("mode: discriminant", light_plain)
+end

@@ -1,26 +1,26 @@
 """
     AbstractCPPLSFit
 
-Common supertype for fitted Canonical Powered Partial Least Squares models. Any subtype
-must expose at least the following fields so shared functions can operate generically:
-`B::Array{<:Real,3}`, `X_bar::Matrix{<:Real}`, and `Y_bar::Matrix{<:Real}`. Additionally,
-subtypes are expected to work with the exported generic helpers `predict`, `predictonehot`,
-and `project`.
+Common supertype for fitted CPPLS models. Most users will work with concrete fitted
+models such as `CPPLSFit` or `CPPLSFitLight` instead of using this type directly.
 """
 abstract type AbstractCPPLSFit end
 
+"""
+    coef(model::AbstractCPPLSFit)
+    coef(model::AbstractCPPLSFit, n_components::Integer)
+
+Return the regression coefficient matrix for the final (or requested) number of components.
+"""
+coef(model::AbstractCPPLSFit) = @views model.B[:, :, end]
+coef(model::AbstractCPPLSFit, n_components::Integer) = @views model.B[:, :, n_components]
 
 """
     CPPLSSpec{T}
 
-Model specification for CPPLS fits. Stores hyperparameters and numerical tolerances but no 
-data-dependent quantities. `T` is the element type of `gamma`, which can be a fixed value, 
-a `(lo, hi)` bounds tuple, a range (e.g., 0.01:0.01:1.0), or a vector mixing these forms. 
-The fields are the number of components (`n_components`), power settings (`gamma`), 
-centering flag (`center`), tolerances for deflation and weights (`X_tolerance`, 
-`X_loading_weight_tolerance`), stabilization for score norms (`t_squared_norm_tolerance`), o
-ptimizer tolerances (`gamma_rel_tol`, `gamma_abs_tol`), and the analysis mode 
-(`analysis_mode`), which is either `:regression` or `:discriminant`.
+Model specification passed to `fit`. A `CPPLSSpec` stores the user-controlled settings
+for CPPLS fitting, most importantly `n_components`, `gamma`, `center`, and
+`analysis_mode`.
 """
 struct CPPLSSpec{T}
     n_components::Int
@@ -34,15 +34,36 @@ struct CPPLSSpec{T}
     analysis_mode::Symbol
 end
 
+"""
+    n_components(spec::CPPLSSpec)
+
+Return the number of components requested in the specification.
+"""
 n_components(spec::CPPLSSpec) = spec.n_components
-gamma(spec::CPPLSSpec) = spec.gamma
-center(spec::CPPLSSpec) = spec.center
-X_tolerance(spec::CPPLSSpec) = spec.X_tolerance
-X_loading_weight_tolerance(spec::CPPLSSpec) = spec.X_loading_weight_tolerance
-t_squared_norm_tolerance(spec::CPPLSSpec) = spec.t_squared_norm_tolerance
-gamma_rel_tol(spec::CPPLSSpec) = spec.gamma_rel_tol
-gamma_abs_tol(spec::CPPLSSpec) = spec.gamma_abs_tol
+
+"""
+    analysis_mode(spec::CPPLSSpec)
+
+Return the analysis mode requested in the specification.
+"""
 analysis_mode(spec::CPPLSSpec) = spec.analysis_mode
+
+function Base.show(io::IO, spec::CPPLSSpec)
+    print(io, "CPPLSSpec(",
+        "n_components=", spec.n_components,
+        ", gamma=", repr(spec.gamma),
+        ", center=", spec.center,
+        ", analysis_mode=", spec.analysis_mode,
+        ")")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSSpec)
+    println(io, "CPPLSSpec")
+    println(io, "  n_components: ", spec.n_components)
+    println(io, "  gamma: ", repr(spec.gamma))
+    println(io, "  center: ", spec.center)
+    print(io, "  analysis_mode: ", spec.analysis_mode)
+end
 
 """
     CPPLSSpec(; 
@@ -57,8 +78,9 @@ analysis_mode(spec::CPPLSSpec) = spec.analysis_mode
         analysis_mode::Symbol=:regression
     )
 
-Model specification for CPPLS fits. Stores hyperparameters and numerical tolerances but no 
-data-dependent quantities. Use with `fit`.
+Construct a model specification for `fit`. The most commonly adjusted settings are
+`n_components`, `gamma`, `center`, and `analysis_mode`. `gamma` may be a fixed value, a
+`(lo, hi)` interval, or a collection of such candidates used during fitting.
 """
 function CPPLSSpec(;
     n_components::T1=2,
@@ -70,7 +92,7 @@ function CPPLSSpec(;
     gamma_rel_tol::T5=1e-6,
     gamma_abs_tol::T6=1e-12,
     analysis_mode::Symbol=:regression
-    ) where {
+) where {
         T1<:Integer, 
         T2<:Real, 
         T3<:Real, 
@@ -96,41 +118,16 @@ function CPPLSSpec(;
     )
 end
 
-
 """
     CPPLSFit{T1, T2}
 
-Full CPPLS model storing all intermediate quantities required for diagnostics and
-visualisation. `T1` is the floating-point element type used for continuous arrays,
-`T2` is the integer type used for boolean-like masks.
+Full fitted CPPLS model returned by `fit`. This type stores regression coefficients
+together with the intermediate quantities needed for diagnostics, projections, and
+plotting.
 
-# Fields
-- `B::Array{T1,3}` — cumulative regression matrices for the
-   first `k = 1 … n_components` latent variables.
-- `T::Matrix{T1}` — predictor scores per component.
-- `P::Matrix{T1}` — predictor loadings per component.
-- `W_comp::Matrix{T1}` — predictor weight vectors per component.
-- `U::Matrix{T1}` — response scores derived from the fitted model.
-- `C::Matrix{T1}` — response loadings per component.
-- `R::Matrix{T1}` — mapping from centred predictors to component scores.
-- `X_bar::Matrix{T1}` — row vector of predictor means used for centering.
-- `Y_bar::Matrix{T1}` — row vector of response means used for centering.
-- `Y_hat::Array{T1,3}` — fitted responses for the first `k` components.
-- `F::Array{T1,3}` — residual cubes matching `Y_hat`.
-- `X_var::Vector{T1}` — variance explained in `X` per component.
-- `X_var_total::T1` — total variance present in the centred predictors.
-- `gamma::Vector{T1}` — power-parameter selections per component.
-- `rho::Vector{T1}` — squared canonical correlations per component.
-- `zero_mask::Matrix{T2}` — boolean mask of columns deflated to zero.
-- `a::Matrix{T1}` — canonical coefficient matrix from CCA.
-- `b::Matrix{T1}` — canonical coefficient matrix in Y-space from CCA.
-- `W0::Array{T1,3}` — initial CPPLS weight matrices per component.
-- `Z::Array{T1,3}` — supervised predictor projections per component (`X_def * W0`).
-- `sample_labels::AbstractVector` — optional labels describing each observation.
-- `predictor_labels::AbstractVector` — optional labels for predictor columns.
-- `response_labels::AbstractVector` — labels for regression responses or DA classes.
-- `analysis_mode::Symbol` — either `:regression` or `:discriminant`.
-- `sample_classes` — original categorical responses for DA models (`nothing` otherwise).
+Most users will work with a `CPPLSFit` through `predict`, `project`, `coef`, `fitted`,
+`residuals`, `X_scores`, and the various label getters rather than by accessing fields
+directly.
 """
 struct CPPLSFit{
     T1<:Real,
@@ -138,8 +135,8 @@ struct CPPLSFit{
     T3<:AbstractVector,
     T4<:AbstractVector,
     T5<:AbstractVector,
-    T6<:Union{AbstractVector,Nothing}
-    } <: AbstractCPPLSFit
+    T6<:Union{AbstractVector, Nothing}
+} <: AbstractCPPLSFit
 
     B::Array{T1,3}
     T::Matrix{T1}
@@ -189,57 +186,48 @@ function CPPLSFit(
     b::Matrix{T1},
     W0::Array{T1,3},
     Z::Array{T1,3};
-    sample_labels::AbstractVector=String[],
-    predictor_labels::AbstractVector=String[],
-    response_labels::AbstractVector=String[],
+    sample_labels::T3=String[],
+    predictor_labels::T4=String[],
+    response_labels::T5=String[],
     analysis_mode::Symbol=:regression,
-    sample_classes=nothing
-    ) where {
+    sample_classes::T6=nothing
+) where {
         T1<:Real,
-        T2<:Integer
+        T2<:Integer,
+        T3<:AbstractVector,
+        T4<:AbstractVector,
+        T5<:AbstractVector,
+        T6<:Union{AbstractVector, Nothing}
     }
 
     analysis_mode in (:regression, :discriminant) || throw(ArgumentError(
             "analysis_mode must be :regression or :discriminant, got $analysis_mode"))
 
-    analysis_mode === :discriminant || sample_classes === nothing || throw(ArgumentError(
+    analysis_mode ≡ :discriminant || isnothing(sample_classes) || throw(ArgumentError(
         "sample_classes are only stored for discriminant analysis models"))
 
-    CPPLSFit{
-        T1,
-        T2,
-        typeof(sample_labels),
-        typeof(predictor_labels),
-        typeof(response_labels),
-        typeof(sample_classes),
-    }(
-        B,
-        T,
-        P,
-        W_comp,
-        U,
-        C,
-        R,
-        X_bar,
-        Y_bar,
-        Y_hat,
-        F,
-        X_var,
-        X_var_total,
-        gamma,
-        rho,
-        zero_mask,
-        a,
-        b,
-        W0,
-        Z,
-        sample_labels,
-        predictor_labels,
-        response_labels,
-        analysis_mode,
-        sample_classes,
-    )
+    CPPLSFit{T1, T2, T3, T4, T5, T6}(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, 
+        X_var, X_var_total, gamma, rho, zero_mask, a, b, W0, Z, sample_labels,
+        predictor_labels, response_labels, analysis_mode, sample_classes)
 end
+
+"""
+    fitted(model::CPPLSFit)
+    fitted(model::CPPLSFit, n_components::Integer)
+
+Return the fitted response matrix for the final (or requested) number of components.
+"""
+fitted(model::CPPLSFit) = @views model.Y_hat[:, :, end]
+fitted(model::CPPLSFit, n_components::Integer) = @views model.Y_hat[:, :, n_components]
+
+"""
+    residuals(model::CPPLSFit)
+    residuals(model::CPPLSFit, n_components::Integer)
+
+Return the response residual matrix for the final (or requested) number of components.
+"""
+residuals(model::CPPLSFit) = @views model.F[:, :, end]
+residuals(model::CPPLSFit, n_components::Integer) = @views model.F[:, :, n_components]
 
 """
     gamma(cpplsfit::CPPLSFit)
@@ -270,13 +258,6 @@ Return the response labels (response names or class names) for the fitted model.
 response_labels(cpplsfit::CPPLSFit) = cpplsfit.response_labels
 
 """
-    analysis_mode(cpplsfit::CPPLSFit)
-
-Return the analysis mode (`:regression` or `:discriminant`) for the fitted model.
-"""
-analysis_mode(cpplsfit::CPPLSFit) = cpplsfit.analysis_mode
-
-"""
     sample_classes(cpplsfit::CPPLSFit)
 
 Return the per-sample class labels stored for discriminant analysis models, or `nothing`
@@ -291,22 +272,60 @@ Return the predictor score matrix `T` for the fitted model.
 """
 X_scores(cpplsfit::CPPLSFit) = cpplsfit.T
 
+"""
+    analysis_mode(cpplsfit::CPPLSFit)
+
+Return the analysis mode for the fitted model.
+"""
+analysis_mode(cpplsfit::CPPLSFit) = cpplsfit.analysis_mode
+
+function Base.show(io::IO, model::CPPLSFit)
+    print(io, "CPPLSFit(",
+        "mode=", model.analysis_mode,
+        ", samples=", size(model.T, 1),
+        ", predictors=", size(model.B, 1),
+        ", responses=", size(model.B, 2),
+        ", components=", size(model.B, 3),
+        ")")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", model::CPPLSFit)
+    println(io, "CPPLSFit")
+    println(io, "  mode: ", model.analysis_mode)
+    println(io, "  samples: ", size(model.T, 1))
+    println(io, "  predictors: ", size(model.B, 1))
+    println(io, "  responses: ", size(model.B, 2))
+    print(io, "  components: ", size(model.B, 3))
+end
 
 """
     CPPLSFitLight{T}
 
-Memory-lean CPPLS variant retaining only the pieces needed for prediction. `T`
-is the floating-point element type shared by all stored matrices.
+Reduced fitted CPPLS model that retains only the information needed for prediction. This
+type is used mainly for efficient internal prediction during cross-validation.
 
-# Fields
-- `B::Array{T,3}` — stacked regression matrices.
-- `X_bar::Matrix{T}` — predictor means copied from the training data.
-- `Y_bar::Matrix{T}` — response means copied from the training data.
-- `analysis_mode::Symbol` — either `:regression` or `:discriminant`.
+Most users will work with `CPPLSFit` instead.
 """
 struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
     B::Array{T,3}
     X_bar::Matrix{T}
     Y_bar::Matrix{T}
     analysis_mode::Symbol
+end
+
+function Base.show(io::IO, model::CPPLSFitLight)
+    print(io, "CPPLSFitLight(",
+        "mode=", model.analysis_mode,
+        ", predictors=", size(model.B, 1),
+        ", responses=", size(model.B, 2),
+        ", components=", size(model.B, 3),
+        ")")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", model::CPPLSFitLight)
+    println(io, "CPPLSFitLight")
+    println(io, "  mode: ", model.analysis_mode)
+    println(io, "  predictors: ", size(model.B, 1))
+    println(io, "  responses: ", size(model.B, 2))
+    print(io, "  components: ", size(model.B, 3))
 end

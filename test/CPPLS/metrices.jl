@@ -26,7 +26,7 @@ end
     Y_pred = [1 0; 1 0]
 
     @test_throws DimensionMismatch CPPLS.nmc(Y_true, Y_pred[1:1, :], false)
-    @test_throws ErrorException CPPLS.nmc(
+    @test_throws ArgumentError CPPLS.nmc(
         Y_true[1:0, :],
         Y_pred[1:0, :],
         true,

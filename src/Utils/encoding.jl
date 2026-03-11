@@ -1,11 +1,11 @@
 """
     labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
 
-Convert integer label indices (1-based) to a dense one-hot encoded matrix with `n_labels` 
-columns. This variant assumes the set of classes is already known and returns only the 
-encoded array.
+Convert 1-based integer label indices to a dense one-hot encoded matrix with `n_labels`
+columns. This method assumes the set of classes is already known and returns only the
+encoded matrix.
 
-# Example
+# Examples
 ```
 julia> labels_to_one_hot([1, 3, 2], 3)
 3×3 Matrix{Int64}:
@@ -27,11 +27,12 @@ end
 """
     labels_to_one_hot(labels::AbstractVector)
 
-Encode arbitrary labels (e.g., strings, integers, symbols) into a one-hot matrix, 
-automatically determining the unique label ordering. Returns a tuple of the encoded matrix 
-and the ordered list of labels so callers can map predictions back to the original domain.
+Encode arbitrary labels such as strings, integers, or symbols into a one-hot matrix,
+automatically determining the label ordering. The result is a tuple containing the
+encoded matrix and the ordered labels, so predictions can be mapped back to the original
+domain.
 
-# Example
+# Examples
 ```
 julia> matrix, classes = labels_to_one_hot(["cat", "dog", "cat"])
 ([1 0; 0 1; 1 0], ["cat", "dog"])
@@ -57,10 +58,11 @@ end
 """
     one_hot_to_labels(one_hot_matrix::AbstractMatrix{<:Integer})
 
-Decode one-hot rows back into label indices by selecting the column of the maximum entry for
-each row. Works with any integer-valued matrix containing a single positive entry per row.
+Decode one-hot rows back into label indices by selecting the column of the maximum entry
+in each row. This works with integer-valued matrices whose rows encode a single selected
+label.
 
-# Example
+# Examples
 ```
 julia> one_hot_to_labels([1 0 0; 0 1 0; 0 0 1])
 3-element Vector{Int64}:

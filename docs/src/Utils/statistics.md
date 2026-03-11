@@ -4,5 +4,4 @@
 CPPLS.fisherztrack
 CPPLS.invfreqweights
 CPPLS.intervalize
-CPPLS.separationaxis
 ```

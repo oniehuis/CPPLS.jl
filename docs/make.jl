@@ -25,14 +25,11 @@ makedocs(
             "CPPLS/fit.md",
             "CPPLS/predict.md",
             "CPPLS/crossvalidation.md",
-            "CPPLS/visualization.md",
-            "CPPLS/internal.md",
+            "CPPLS/visualization.md"
         ],
         "Utils" => Any[
             "Utils/encoding.md",
-            "Utils/matrix.md",
-            "Utils/statistics.md",
-            "Utils/internal.md",
+            "Utils/statistics.md"
         ],
     ],
 )

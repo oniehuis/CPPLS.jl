@@ -15,12 +15,12 @@ include("CPPLS/types.jl")
 include("CPPLS/preprocessing.jl")
 include("CPPLS/cca.jl")
 include("CPPLS/fit.jl")
+include("CPPLS/fit_light.jl")
 include("CPPLS/predict.jl")
 include("CPPLS/metrics.jl")
 include("CPPLS/crossvalidation.jl")
 
 include("Utils/encoding.jl")
-include("Utils/matrix.jl")
 include("Utils/statistics.jl")
 
 export CPPLSSpec
@@ -29,21 +29,22 @@ export CPPLSFitLight
 export fit
 export predict
 export predictonehot
+export predictsampleclasses
+export predictions_to_onehot
+export predictions_to_sampleclasses
 export project
 export scoreplot
 export cv_classification
+export cv_regression
 export cv_outlier_scan
 export nested_cv_permutation
 export nested_cv
 export calculate_p_value
-export separationaxis
 export fisherztrack
 export invfreqweights
 export intervalize
 export labels_to_one_hot
 export one_hot_to_labels
-export find_invariant_and_variant_columns
-export decision_line
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """

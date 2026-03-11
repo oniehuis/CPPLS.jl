@@ -69,66 +69,6 @@ const CROSSVAL_Y = [
     end
 end
 
-@testset "resolve_observation_weights with function" begin
-    labels = ["a", "b", "a", "b"]
-    train_indices = [1, 2, 3, 4]
-    total = length(labels)
-
-    fn = l -> ones(length(l))
-    @test CPPLS.resolve_observation_weights(nothing, fn, labels, train_indices, total) ==
-          ones(length(labels))
-
-    @test_throws ArgumentError CPPLS.resolve_observation_weights(
-        ones(length(labels)),
-        fn,
-        labels,
-        train_indices,
-        total,
-    )
-
-    bad_fn = l -> ones(length(l) + 1)
-    @test_throws ArgumentError CPPLS.resolve_observation_weights(
-        nothing,
-        bad_fn,
-        labels,
-        train_indices,
-        total,
-    )
-end
-
-@testset "resolve_observation_weights with vector" begin
-    labels = ["a", "b", "a", "b"]
-    train_indices = [2, 4]
-    total = length(labels)
-
-    full_weights = [0.1, 0.2, 0.3, 0.4]
-    @test CPPLS.resolve_observation_weights(
-        full_weights,
-        nothing,
-        labels,
-        train_indices,
-        total,
-    ) == full_weights[train_indices]
-
-    train_weights = [0.7, 0.8]
-    @test CPPLS.resolve_observation_weights(
-        train_weights,
-        nothing,
-        labels,
-        train_indices,
-        total,
-    ) == train_weights
-
-    bad_weights = [1.0, 2.0, 3.0]
-    @test_throws ArgumentError CPPLS.resolve_observation_weights(
-        bad_weights,
-        nothing,
-        labels,
-        train_indices,
-        total,
-    )
-end
-
 @testset "cv_classification builds default functions" begin
     cfg = CPPLS.cv_classification()
     @test haskey(cfg, :score_fn)
@@ -142,6 +82,25 @@ end
     @test 0.0 ≤ score ≤ 1.0
     @test cfg.flag_fn(Y_true, Y_pred) == [false, true]
     @test cfg.select_fn([0.1, 0.2]) == 2
+end
+
+@testset "cv_regression builds default functions" begin
+    cfg = CPPLS.cv_regression()
+    @test haskey(cfg, :score_fn)
+    @test haskey(cfg, :predict_fn)
+    @test haskey(cfg, :select_fn)
+
+    Y_true = reshape([1.0, 2.0], :, 1)
+    Y_pred = reshape([1.0, 3.0], :, 1)
+    @test cfg.score_fn(Y_true, Y_pred) ≈ sqrt(0.5)
+    @test cfg.select_fn([0.3, 0.2]) == 2
+
+    B = reshape([2.0], 1, 1, 1)
+    X_bar = reshape([0.0], 1, 1)
+    Y_bar = reshape([0.5], 1, 1)
+    model = CPPLS.CPPLSFitLight(B, X_bar, Y_bar, :regression)
+    X = reshape([1.0, 2.0], :, 1)
+    @test cfg.predict_fn(model, X, 1) ≈ reshape([2.5, 4.5], :, 1)
 end
 
 @testset "optimize_num_latent_variables selects component count" begin

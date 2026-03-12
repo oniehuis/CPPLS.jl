@@ -178,7 +178,6 @@ nothing # hide
 ```
 
 ![](weighted_aux2.svg)
-```
 
 With `Y_aux` included, the score space can be reorganized so that auxiliary structure is
 represented more explicitly. Depending on the dataset, this may improve interpretation
@@ -198,7 +197,6 @@ nothing # hide
 ```
 
 ![](weighted_aux3.svg)
-```
 
 ```@docs
 StatsAPI.fit

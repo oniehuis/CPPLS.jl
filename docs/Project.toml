@@ -1,15 +1,23 @@
 [deps]
+CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 CPPLS = "165bcf3d-aa04-45f7-b691-acf9bd4168c1"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 Makie = "ee78f7c6-11fb-53f2-987a-cfe4a2b5a57a"
+MultivariateStats = "6f286f6a-111f-5878-ab1e-185364afe411"
 StatsAPI = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
 
 [sources]
 CPPLS = {path = ".."}
 
 [compat]
+CategoricalArrays = "0.10"
+CairoMakie = "0.15"
 CPPLS = "0.0.1"
 Documenter = "1"
+JLD2 = "0.6"
 Makie = "0.24"
+MultivariateStats = "0.10"
 StatsAPI = "1"
 julia = "1.12"

@@ -82,8 +82,8 @@ pca_fig = scoreplot(
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="PCA Scores",
-    xlabel="PC1", 
-    ylabel="PC2"
+    xlabel="Principal Component 1", 
+    ylabel="Principal Component 2"
 )
 save("pca.svg", pca_fig)
 nothing # hide
@@ -124,7 +124,7 @@ fig_1 = scoreplot(
     scores_plain;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="CPPLS-DA without weights or Y_aux"
+    title="CPPLS-DA without weights or auxiliary responses"
 )
 save("cppls_da_plain.svg", fig_1)
 nothing # hide
@@ -132,9 +132,9 @@ nothing # hide
 
 ![](cppls_da_plain.svg)
 
-Fitting CPPLS-DA directly to the class labels yields a more class-oriented score space.
-Because the classes are imbalanced, however, the majority class exerts more influence on 
-the latent variables than the minority class.
+Fitting CPPLS-DA directly to the class labels yields a more class-oriented score
+space. Because the classes are imbalanced, however, the majority class exerts more
+influence on the latent variables than the minority class.
 
 We now add inverse-frequency observation weights. This gives the two classes the same
 total influence on the fitted model and reduces the bias introduced by unequal class
@@ -165,19 +165,20 @@ nothing # hide
 
 ![](cppls_da_weighted.svg)
 
-Applying inverse-frequency weights makes the discriminant structure more symmetric. In this 
-example, the main effect is not a larger distance between the groups, but rather a 
-recentering and slight rotation of the latent space so that the class contrast is less 
-biased by class prevalence.
+Applying inverse-frequency weights makes the discriminant structure more symmetric. In
+this example, the main effect is not a larger distance between the groups, but rather
+a recentering and slight rotation of the latent space so that the class contrast is
+less biased by class prevalence.
 
-At this point, the class separation already looks convincing. In this dataset, however, it 
-is driven not only by class-related variation but also by structured variation associated 
-with `Y_aux`. To address that, we add `Y_aux` in addition to the observation weights. This 
-changes how the latent variables are estimated. Instead of forcing all supervised structure 
-into the class contrast, the model can also represent variation associated with `Y_aux`. As 
-a result, any remaining separation between the classes is more likely to reflect signal 
-that is genuinely related to group membership rather than auxiliary structure that happens 
-to be correlated with it.
+At this point, the class separation already looks convincing. In this dataset,
+however, it is driven not only by class-related variation but also by structured
+variation associated with `Y_aux`. To address that, we add `Y_aux` in addition to the
+observation weights. This changes how the latent variables are estimated. Instead of
+forcing all supervised structure into the class contrast, the model can also
+represent variation associated with `Y_aux`. As a result, any remaining separation
+between the classes is more likely to reflect signal that is genuinely related to
+group membership rather than auxiliary structure that happens to be correlated with
+it.
 
 ```@example fit_da
 m_weighted_yaux = fit(
@@ -197,7 +198,7 @@ fig_3 = scoreplot(
     scores_weighted_yaux;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="CPPLS-DA with weights and Y_aux"
+    title="CPPLS-DA with weights and auxiliary responses"
 )
 save("cppls_da_weighted_aux.svg", fig_3)
 nothing # hide
@@ -205,10 +206,10 @@ nothing # hide
 
 ![](cppls_da_weighted_aux.svg)
 
-The visible class separation may not increase much, but it is now more likely to reflect 
-information that is genuinely related to class membership rather than variation carried by 
-a correlated covariate. To make that difference easier to see, we plot the last two score 
-sets again, now shading each point by its `Y_aux` value.
+The visible class separation may not increase much, but it is now more likely to
+reflect information that is genuinely related to class membership rather than
+variation carried by a correlated covariate. To make that difference easier to see,
+we plot the last two score sets again, now shading each point by its `Y_aux` value.
 
 ```@example fit_da
 aux = vec(Y_aux[:, 1])
@@ -222,7 +223,7 @@ fig_4 = scoreplot(
     scores_weighted;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="Weighted CPPLS-DA with points shaded by auxiliary values",
+    title="Weighted CPPLS-DA shaded by auxiliary values",
     show_legend=false,
     default_scatter=(; color = point_colors),
 )
@@ -234,7 +235,7 @@ fig_5 = scoreplot(
     scores_weighted_yaux;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="Weighted CPPLS-DA + Y_aux with points shaded by auxiliary values",
+    title="Weighted CPPLS-DA with auxiliary responses shaded by auxiliary values",
     show_legend = false,
     default_scatter = (; color = point_colors)
 )

@@ -31,6 +31,7 @@ function CPPLS.scoreplot_makie(
     to_nt(::Nothing) = (;)
 
     groups_vec = collect(groups)
+    n_samples = length(groups_vec)
     order = if !isnothing(group_order)
         group_order
     elseif groups isa CategoricalArray
@@ -41,6 +42,10 @@ function CPPLS.scoreplot_makie(
 
     getkw(d, g) = haskey(d, g) ? d[g] :
                   haskey(d, string(g)) ? d[string(g)] : (;)
+    subset_kw(kw, idx) = (; (
+        key => (value isa AbstractVector && length(value) == n_samples ? value[idx] : value)
+        for (key, value) in pairs(kw)
+    )...)
 
     fig = isnothing(figure) ? Makie.Figure(; to_nt(figure_kwargs)...) : figure
     ax = isnothing(axis) ? Makie.Axis(
@@ -75,6 +80,7 @@ function CPPLS.scoreplot_makie(
             to_nt(getkw(group_trace, g)),
             to_nt(getkw(group_marker, g))
         )
+        kw = subset_kw(kw, idx)
         haskey(kw, :label) || (kw = merge(kw, (label=string(g),)))
 
         if inspector_enabled

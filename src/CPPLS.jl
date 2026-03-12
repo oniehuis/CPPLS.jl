@@ -46,6 +46,7 @@ export invfreqweights
 export intervalize
 export labels_to_one_hot
 export one_hot_to_labels
+export X_scores
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """

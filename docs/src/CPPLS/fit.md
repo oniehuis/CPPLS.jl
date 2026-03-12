@@ -151,22 +151,25 @@ variation associated with `Y_aux`. To make that visible, we plot the same fitted
 scores again, but now color the samples by three coarse bins derived from `Y_aux`.
 
 ```@example fit_da
+using Colors
+
 aux = vec(Y_aux[:, 1])
-aux_bins = categorical(ifelse.(aux .< -0.5, "low", ifelse.(aux .> 0.5, "high", "mid")))
+
+aux_min, aux_max = extrema(aux)
+aux_scaled = (aux .- aux_min) ./ (aux_max - aux_min)
+
+gray_values = 0.1 .+ 0.8 .* aux_scaled
+point_colors = Gray.(gray_values)
 
 weighted_aux_fig2 = scoreplot(
     sample_labels,
     aux_bins,
-    X_scores(m_weighted)[:, 1:2];  # X scores of the first two LV of all samples
-    backend=backend,
-    figure_kwargs=figure_kwargs,
-    title="Weighted CPPLS-DA colored by auxiliary bins",
-    group_order = ["low", "mid", "high"],
-    group_marker = Dict(
-        "low"  => (; color = :lightgray),
-        "mid"  => (; color = :gray),
-        "high" => (; color = :darkgray),
-    )
+    X_scores(m_weighted)[:, 1:2];
+    backend = backend,
+    figure_kwargs = figure_kwargs,
+    title = "Weighted CPPLS-DA colored by auxiliary values",
+    show_legend = false,
+    default_scatter = (; color = point_colors),
 )
 save("cppls_da_weighted_colored.svg", weighted_aux_fig2)
 nothing # hide

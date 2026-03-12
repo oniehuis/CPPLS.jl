@@ -3,9 +3,7 @@
 CPPLS provides a pure-Julia implementation of Canonical Powered Partial Least Squares
 (CPPLS) for both regression and discriminant analysis. The package is intended for
 high-dimensional and collinear predictor settings in which latent-variable models are used
-for supervised dimension reduction, prediction, and interpretation. Its design emphasizes
-transparent model specification, explicit validation workflows, and direct access to the
-quantities needed for interpretation and downstream analysis.
+for supervised dimension reduction, interpretation, and prediction.
 
 ## Installation
 
@@ -68,11 +66,11 @@ in regulated, clinical, or safety-critical contexts.
 
 ## References
 
-- Indahl UG, Liland KH, Naes T (2009) *Canonical partial least squares — a unified PLS 
-  approach to classification and regression problems.* Journal of Chemometrics 23: 495-504. 
+- Indahl UG, Liland KH, Naes T (2009) Canonical partial least squares — a unified PLS 
+  approach to classification and regression problems. *Journal of Chemometrics* 23: 495-504. 
   https://doi.org/10.1002/cem.1243.
-- Liland KH, Indahl UG (2009): *Powered partial least squares discriminant analysis.* 
-  Journal of Chemometrics 23: 7-18. https://doi.org/10.1002/cem.1186.
+- Liland KH, Indahl UG (2009): Powered partial least squares discriminant analysis. 
+  *Journal of Chemometrics* 23: 7-18. https://doi.org/10.1002/cem.1186.
 - Smit S, van Breemen MJ, Hoefsloot HCJ, Smilde AK, Aerts JMFG, de Koster CG (2007): 
-  *Assessing the statistical validity of proteomics based biomarkers.* Analytica Chimica 
-  Acta 592: 210-217. https://doi.org/10.1016/j.aca.2007.04.043.
+  Assessing the statistical validity of proteomics based biomarkers. *Analytica Chimica 
+  Acta* 592: 210-217. https://doi.org/10.1016/j.aca.2007.04.043.

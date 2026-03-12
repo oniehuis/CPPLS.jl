@@ -49,6 +49,7 @@ sample_labels, X, classes, Y_aux = load(
 )
 
 backend = :makie  # use Makie to render all score plots
+figure_kwargs = (; size=(900, 600))  # scoreplot dimensions
 nothing # hide
 ```
 
@@ -65,7 +66,8 @@ pca_fig = scoreplot(
     backend=backend,
     title="PCA Scores",
     xlabel="PC1", 
-    ylabel="PC2"
+    ylabel="PC2",
+    figure_kwargs=figure_kwargs
 )
 save("pca.svg", pca_fig)
 nothing # hide
@@ -101,7 +103,7 @@ plain_fig = scoreplot(
     m_plain;
     backend=backend,
     title="CPPLS-DA without weights or Y_aux",
-    figure_kwargs=(; size=(900, 600))
+    figure_kwargs=figure_kwargs
 )
 save("cppls_da_plain.svg", plain_fig)
 nothing # hide
@@ -123,13 +125,14 @@ m_weighted = fit(
     X,
     classes;
     obs_weights=invfreqweights(classes),
-    sample_labels=sample_labels,
+    sample_labels=sample_labels
 )
 
 weighted_fig = scoreplot(
     m_weighted;
     backend=backend,
     title="CPPLS-DA with inverse-frequency weights",
+    figure_kwargs=figure_kwargs
 )
 save("cppls_da_weighted.svg", weighted_fig)
 nothing # hide
@@ -154,9 +157,10 @@ aux_bins = categorical(ifelse.(aux .< -0.5, "low", ifelse.(aux .> 0.5, "high", "
 weighted_aux_fig2 = scoreplot(
     sample_labels,
     aux_bins,
-    m_weighted.T[:, 1:2];
-    backend = backend,
-    title = "Weighted CPPLS-DA colored by auxiliary bins",
+    X_scores(m_weighted)[:, 1:2];  # X scores of the first two LV of all samples
+    backend=backend,
+    title="Weighted CPPLS-DA colored by auxiliary bins",
+    figure_kwargs=figure_kwargs
 )
 save("cppls_da_weighted_colored.svg", weighted_aux_fig2)
 nothing # hide
@@ -177,15 +181,16 @@ m_weighted_yaux = fit(
     spec,
     X,
     classes;
-    obs_weights = invfreqweights(classes),
-    Y_aux = Y_aux,
-    sample_labels = sample_labels,
+    obs_weights=invfreqweights(classes),
+    Y_aux=Y_aux,
+    sample_labels=sample_labels
 )
 
 weighted_yaux_fig = scoreplot(
     m_weighted_yaux;
-    backend = backend,
-    title = "CPPLS-DA with weights and Y_aux",
+    backend=backend,
+    title="CPPLS-DA with weights and Y_aux",
+    figure_kwargs=figure_kwargs
 )
 save("cppls_da_weighted_aux.svg", weighted_yaux_fig)
 nothing # hide
@@ -200,9 +205,10 @@ auxiliary bins rather than by the class labels.
 weighted_yaux_aux_fig3 = scoreplot(
     sample_labels,
     aux_bins,
-    m_weighted_yaux.T[:, 1:2];
-    backend = backend,
-    title = "Weighted CPPLS-DA + Y_aux colored by auxiliary bins",
+    X_scores(m_weighted_yaux)[:, 1:2];  # X scores of the first two LV of all samples
+    backend=backend,
+    title="Weighted CPPLS-DA + Y_aux colored by auxiliary bins",
+    figure_kwargs=figure_kwargs
 )
 save("cppls_da_weighted_aux_colored.svg", weighted_yaux_aux_fig3)
 nothing # hide

@@ -101,6 +101,7 @@ plain_fig = scoreplot(
     m_plain;
     backend=backend,
     title="CPPLS-DA without weights or Y_aux",
+    figure_kwargs=(; size=(900, 600))
 )
 save("cppls_da_plain.svg", plain_fig)
 nothing # hide

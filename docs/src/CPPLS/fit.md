@@ -10,8 +10,8 @@ analysis, `obs_weights` are especially useful when classes are imbalanced. Toget
 with `gamma`, these arguments are among the main levers for tailoring a CPPLS model to
 the structure of a particular dataset.
 
-The following example illustrates the effect of observation weights and auxiliary responses
-using a discriminant-analysis workflow.
+The following example illustrates the effect of observation weights and auxiliary
+responses in a discriminant-analysis workflow.
 
 ## Example: Discriminant Analysis with Weights and `Y_aux`
 
@@ -29,8 +29,8 @@ dataset combines class imbalance with auxiliary structure that is partly aligned
 class membership, it is well suited for illustrating how weighting and auxiliary
 responses alter the fitted score space. Observation weights reduce the influence of
 the majority class, and `Y_aux` helps show how auxiliary structure is represented in
-the latent space. Besides `CPPLS`, the example uses the packages `JLD2` to load the 
-dataset from disk, `MultivariateStats` to compute the PCA, `CategoricalArrays` to handle 
+the latent space. Besides `CPPLS`, the example uses `JLD2` to load the dataset from
+disk, `MultivariateStats` to compute the PCA, `CategoricalArrays` to handle
 categorical class and bin labels, and `CairoMakie` to render static figures.
 
 ```@example fit_da
@@ -39,6 +39,7 @@ using CategoricalArrays
 using JLD2
 using MultivariateStats
 using CairoMakie
+using Statistics
 
 sample_labels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
@@ -50,6 +51,18 @@ sample_labels, X, classes, Y_aux = load(
 
 backend = :makie  # use Makie to render all score plots
 figure_kwargs = (; size=(900, 600))  # scoreplot dimensions
+
+function orient_scores(scores, classes; reference_class="major")
+    oriented = copy(scores)
+    reference_idx = classes .== reference_class
+    for lv in axes(oriented, 2)
+        if mean(oriented[reference_idx, lv]) < 0
+            oriented[:, lv] .*= -1
+        end
+    end
+    oriented
+end
+
 nothing # hide
 ```
 
@@ -83,7 +96,9 @@ interest.
 We next fit a CPPLS-DA model without observation weights or auxiliary responses. We use a
 fixed `gamma=0.5` throughout this example rather than estimating `gamma`, so that the
 main differences between the fits come from the inclusion or omission of observation
-weights and `Y_aux`.
+weights and `Y_aux`. For visual comparability across plots, we orient each latent
+variable so that the mean score of class `major` is positive; this only fixes the sign
+indeterminacy of the latent variables and does not change the fit itself.
 
 ```@example fit_da
 spec = CPPLSSpec(
@@ -99,8 +114,12 @@ m_plain = fit(
     sample_labels=sample_labels,
 )
 
+scores_plain = orient_scores(X_scores(m_plain)[:, 1:2], classes)
+
 plain_fig = scoreplot(
-    m_plain;
+    sample_labels,
+    classes,
+    scores_plain;
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="CPPLS-DA without weights or Y_aux"
@@ -128,8 +147,12 @@ m_weighted = fit(
     sample_labels=sample_labels
 )
 
+scores_weighted = orient_scores(X_scores(m_weighted)[:, 1:2], classes)
+
 weighted_fig = scoreplot(
-    m_weighted;
+    sample_labels,
+    classes,
+    scores_weighted;
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="CPPLS-DA with inverse-frequency weights"
@@ -142,13 +165,13 @@ nothing # hide
 
 Applying inverse-frequency weights makes the discriminant structure more symmetric. In
 this example, the main effect is not necessarily a larger distance between the groups,
-but rather a recentering and slight rotation of the first latent variable so that the
-class contrast is less biased by class prevalence.
+but rather a recentering and slight rotation of the latent space so that the class
+contrast is less biased by class prevalence.
 
 At this point, the class separation already looks convincing. In this dataset,
 however, it is driven not only by class-related variation but also by structured
 variation associated with `Y_aux`. To make that visible, we plot the same fitted
-scores again, but now color the samples by three coarse bins derived from `Y_aux`.
+scores again, now using grayscale values derived from `Y_aux`.
 
 ```@example fit_da
 using Colors
@@ -165,12 +188,12 @@ point_colors = Gray.(gray_values)
 weighted_aux_fig2 = scoreplot(
     sample_labels,
     aux_bins,
-    X_scores(m_weighted)[:, 1:2];
+    scores_weighted;
     backend = backend,
     figure_kwargs = figure_kwargs,
     title = "Weighted CPPLS-DA colored by auxiliary values",
     show_legend = false,
-    default_scatter = (; color = point_colors),
+    default_scatter = (; color = point_colors)
 )
 save("cppls_da_weighted_colored.svg", weighted_aux_fig2)
 nothing # hide
@@ -178,13 +201,13 @@ nothing # hide
 
 ![](cppls_da_weighted_colored.svg)
 
-The three colors are not randomly distributed across the score plot. Instead, they are
-ordered roughly along the first latent dimension. This indicates that auxiliary signal
-correlated with class membership has leaked into the apparent class separation. To
-counteract that, we next add `Y_aux` in addition to the observation weights. This
-changes the supervised optimization and allows the latent space to represent
-structured auxiliary variation explicitly, rather than forcing all supervised signal
-into the class contrast alone.
+The point intensities are not randomly distributed across the score plot. Instead,
+they are arranged roughly along the first latent dimension. This indicates that
+auxiliary signal correlated with class membership has leaked into the apparent class
+separation. To counteract that, we next add `Y_aux` in addition to the observation
+weights. This changes the supervised optimization and allows the latent space to
+represent structured auxiliary variation explicitly, rather than forcing all
+supervised signal into the class contrast alone.
 
 ```@example fit_da
 m_weighted_yaux = fit(
@@ -196,8 +219,12 @@ m_weighted_yaux = fit(
     sample_labels=sample_labels
 )
 
+scores_weighted_yaux = orient_scores(X_scores(m_weighted_yaux)[:, 1:2], classes)
+
 weighted_yaux_fig = scoreplot(
-    m_weighted_yaux;
+    sample_labels,
+    classes,
+    scores_weighted_yaux;
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="CPPLS-DA with weights and Y_aux"
@@ -208,23 +235,19 @@ nothing # hide
 
 ![](cppls_da_weighted_aux.svg)
 
-To inspect the effect of `Y_aux`, we again color the score plot by the same coarse
-auxiliary bins rather than by the class labels.
+To inspect the effect of including `Y_aux` in the fit, we again plot the scores using
+grayscale values derived from `Y_aux` rather than coloring points by class.
 
 ```@example fit_da
 weighted_yaux_aux_fig3 = scoreplot(
     sample_labels,
     aux_bins,
-    X_scores(m_weighted_yaux)[:, 1:2];  # X scores of the first two LV of all samples
+    scores_weighted_yaux;
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="Weighted CPPLS-DA + Y_aux colored by auxiliary bins",
-    group_order = ["low", "mid", "high"],
-    group_marker = Dict(
-        "low"  => (; color = :lightgray),
-        "mid"  => (; color = :gray),
-        "high" => (; color = :darkgray),
-    )
+    show_legend = false,
+    default_scatter = (; color = point_colors)
 )
 save("cppls_da_weighted_aux_colored.svg", weighted_yaux_aux_fig3)
 nothing # hide
@@ -233,7 +256,7 @@ nothing # hide
 ![](cppls_da_weighted_aux_colored.svg)
 
 With `Y_aux` included, the auxiliary structure is much less pronounced in the fitted
-scores, as indicated by the three `Y_aux` color groups being distributed more evenly
+scores, as indicated by the `Y_aux` gray scales being distributed more evenly
 across the plot. The visible class separation may not increase much, but it is now
 more likely to reflect information that is genuinely related to class membership
 rather than variation carried by a correlated covariate.

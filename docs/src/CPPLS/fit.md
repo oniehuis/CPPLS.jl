@@ -102,11 +102,11 @@ plain_fig = scoreplot(
     backend=backend,
     title="CPPLS-DA without weights or Y_aux",
 )
-save("plain.svg", plain_fig)
+save("cppls_da_plain.svg", plain_fig)
 nothing # hide
 ```
 
-![](plain.svg)
+![](cppls_da_plain.svg)
 
 Fitting CPPLS-DA directly to the class labels yields a more class-oriented score space.
 Because the classes are imbalanced, however, the majority class exerts more influence
@@ -130,11 +130,11 @@ weighted_fig = scoreplot(
     backend=backend,
     title="CPPLS-DA with inverse-frequency weights",
 )
-save("weighted.svg", weighted_fig)
+save("cppls_da_weighted.svg", weighted_fig)
 nothing # hide
 ```
 
-![](weighted.svg)
+![](cppls_da_weighted.svg)
 
 Applying inverse-frequency weights makes the discriminant structure more symmetric. In
 this example, the main effect is not necessarily a larger distance between the groups,
@@ -157,11 +157,11 @@ weighted_aux_fig2 = scoreplot(
     backend = backend,
     title = "Weighted CPPLS-DA colored by auxiliary bins",
 )
-save("weighted_aux2.svg", weighted_aux_fig2)
+save("cppls_da_weighted_colored.svg", weighted_aux_fig2)
 nothing # hide
 ```
 
-![](weighted_aux2.svg)
+![](cppls_da_weighted_colored.svg)
 
 The three colors are not randomly distributed across the score plot. Instead, they are
 ordered roughly along the first latent dimension. This indicates that auxiliary signal
@@ -186,11 +186,11 @@ weighted_yaux_fig = scoreplot(
     backend = backend,
     title = "CPPLS-DA with weights and Y_aux",
 )
-save("weighted_yaux.svg", weighted_yaux_fig)
+save("cppls_da_weighted_aux.svg", weighted_yaux_fig)
 nothing # hide
 ```
 
-![](weighted_yaux.svg)
+![](cppls_da_weighted_aux.svg)
 
 To inspect the effect of `Y_aux`, we again color the score plot by the same coarse
 auxiliary bins rather than by the class labels.
@@ -203,11 +203,11 @@ weighted_yaux_aux_fig3 = scoreplot(
     backend = backend,
     title = "Weighted CPPLS-DA + Y_aux colored by auxiliary bins",
 )
-save("weighted_aux3.svg", weighted_yaux_aux_fig3)
+save("cppls_da_weighted_aux_colored.svg", weighted_yaux_aux_fig3)
 nothing # hide
 ```
 
-![](weighted_aux3.svg)
+![](cppls_da_weighted_aux_colored.svg)
 
 With `Y_aux` included, the auxiliary structure is much less pronounced in the fitted
 scores, as indicated by the three `Y_aux` color groups being distributed more evenly

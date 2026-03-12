@@ -154,6 +154,7 @@ scores again, but now color the samples by three coarse bins derived from `Y_aux
 using Colors
 
 aux = vec(Y_aux[:, 1])
+aux_bins = categorical(ifelse.(aux .< -0.5, "low", ifelse.(aux .> 0.5, "high", "mid")))
 
 aux_min, aux_max = extrema(aux)
 aux_scaled = (aux .- aux_min) ./ (aux_max - aux_min)

@@ -1,0 +1,1 @@
+dataset(name::AbstractString) = joinpath(pkgdir(CPPLS), "examples", name)

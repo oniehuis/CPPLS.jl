@@ -31,12 +31,14 @@ using StatsAPI
     @test length(model.rho) == 2
     @test length(model.X_var) == 2
     @test model.X_var_total > 0
+    @test model.sample_labels == ["1", "2", "3", "4", "5"]
 
     spec = CPPLS.CPPLSSpec(n_components = 2, gamma = 0.5)
     model_from_spec = CPPLS.fit_cppls(spec, X, Y)
     @test model_from_spec isa CPPLS.CPPLSFit
     @test size(model_from_spec.B) ==
           (size(X, 2), size(Y, 2), 2)
+    @test model_from_spec.sample_labels == ["1", "2", "3", "4", "5"]
 end
 
 @testset "StatsAPI fit/predict/coefs round-trip" begin

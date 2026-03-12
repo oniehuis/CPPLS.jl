@@ -21,6 +21,7 @@ include("CPPLS/metrics.jl")
 include("CPPLS/crossvalidation.jl")
 
 include("Utils/encoding.jl")
+include("Utils/paths.jl")
 include("Utils/statistics.jl")
 
 export CPPLSSpec
@@ -163,8 +164,13 @@ function scoreplot(
     backend::Symbol = :plotly,
     kwargs...,
 )
-    samples = cppls.sample_labels
     groups = cppls.sample_classes
+    isnothing(groups) && throw(ArgumentError(
+        "scoreplot(cppls) requires sample_classes in the fitted model. " *
+        "Use discriminant fits from class labels or call scoreplot(samples, groups, scores) directly."
+    ))
+
+    samples = cppls.sample_labels
     scores = cppls.T[:, 1:2]
     if backend === :plotly
         _require_extension(:PlotlyJSExtension, "PlotlyJS")

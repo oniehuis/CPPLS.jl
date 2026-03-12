@@ -135,7 +135,8 @@ function fit_cppls(
         n_samples_X, n_targets_Y) = cppls_prepare_data(X, Y_prim, n_components, Y_aux,
         obs_weights, center)
 
-    sample_labels = validate_label_length(sample_labels, n_samples_X, "sample_labels")
+    sample_labels = default_sample_labels(validate_label_length(sample_labels, n_samples_X,
+        "sample_labels"), n_samples_X)
     predictor_labels = validate_label_length(predictor_labels, n_predictors, 
         "predictor_labels")
     response_labels = validate_response_labels(response_labels, n_targets_Y)
@@ -449,6 +450,17 @@ function validate_label_length(
     isempty(labels) || length(labels) == expected || throw(ArgumentError(
         "`$name` must have length $expected, got $(length(labels))"))
     labels
+end
+
+"""
+    default_sample_labels(labels::AbstractVector, n_samples::Integer)
+
+Return `labels` when provided, otherwise generate default row-index labels `"1"` through
+`string(n_samples)`.
+"""
+function default_sample_labels(labels::AbstractVector, n_samples::Integer)
+    isempty(labels) || return labels
+    string.(1:n_samples)
 end
 
 """

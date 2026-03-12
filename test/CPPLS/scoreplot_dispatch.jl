@@ -14,7 +14,7 @@ end
     @eval CPPLS begin
         _require_extension(extsym::Symbol, pkg::String) = nothing
         function scoreplot_plotly(
-            samples::AbstractVector{SubString{String}},
+            samples::AbstractVector{<:AbstractString},
             groups,
             scores::AbstractMatrix{<:Real};
             kwargs...,
@@ -22,7 +22,7 @@ end
             return (:plotly, samples, groups, scores, kwargs)
         end
         function scoreplot_makie(
-            samples::AbstractVector{SubString{String}},
+            samples::AbstractVector{<:AbstractString},
             groups,
             scores::AbstractMatrix{<:Real};
             kwargs...,
@@ -129,6 +129,36 @@ end
     @test res[2] == cppls.sample_labels
     @test res[3] == cppls.sample_classes
     @test res[4] == cppls.T[:, 1:2]
+
+    cppls_no_groups = CPPLS.CPPLSFit(
+        B,
+        T,
+        P,
+        W_comp,
+        U,
+        C,
+        R,
+        X_bar,
+        Y_bar,
+        Y_hat,
+        F,
+        X_var,
+        X_var_total,
+        gamma,
+        rho,
+        zero_mask,
+        a,
+        b,
+        W0,
+        Z;
+        sample_labels = sample_labels,
+        predictor_labels = predictor_labels,
+        response_labels = String[],
+        analysis_mode = :regression,
+        sample_classes = nothing,
+    )
+
+    @test_throws ArgumentError CPPLS.scoreplot(cppls_no_groups; backend = :plotly)
 
     @test_throws ErrorException CPPLS.scoreplot(cppls; backend = :unknown)
 

@@ -64,10 +64,10 @@ pca_fig = scoreplot(
     classes,
     scores_pca;
     backend=backend,
+    figure_kwargs=figure_kwargs,
     title="PCA Scores",
     xlabel="PC1", 
-    ylabel="PC2",
-    figure_kwargs=figure_kwargs
+    ylabel="PC2"
 )
 save("pca.svg", pca_fig)
 nothing # hide
@@ -102,8 +102,8 @@ m_plain = fit(
 plain_fig = scoreplot(
     m_plain;
     backend=backend,
-    title="CPPLS-DA without weights or Y_aux",
-    figure_kwargs=figure_kwargs
+    figure_kwargs=figure_kwargs,
+    title="CPPLS-DA without weights or Y_aux"
 )
 save("cppls_da_plain.svg", plain_fig)
 nothing # hide
@@ -131,8 +131,8 @@ m_weighted = fit(
 weighted_fig = scoreplot(
     m_weighted;
     backend=backend,
-    title="CPPLS-DA with inverse-frequency weights",
-    figure_kwargs=figure_kwargs
+    figure_kwargs=figure_kwargs,
+    title="CPPLS-DA with inverse-frequency weights"
 )
 save("cppls_da_weighted.svg", weighted_fig)
 nothing # hide
@@ -159,8 +159,14 @@ weighted_aux_fig2 = scoreplot(
     aux_bins,
     X_scores(m_weighted)[:, 1:2];  # X scores of the first two LV of all samples
     backend=backend,
+    figure_kwargs=figure_kwargs,
     title="Weighted CPPLS-DA colored by auxiliary bins",
-    figure_kwargs=figure_kwargs
+    group_order = ["low", "mid", "high"],
+    group_marker = Dict(
+        "low"  => (; color = :lightgray),
+        "mid"  => (; color = :gray),
+        "high" => (; color = :darkgray),
+    )
 )
 save("cppls_da_weighted_colored.svg", weighted_aux_fig2)
 nothing # hide
@@ -189,8 +195,8 @@ m_weighted_yaux = fit(
 weighted_yaux_fig = scoreplot(
     m_weighted_yaux;
     backend=backend,
-    title="CPPLS-DA with weights and Y_aux",
-    figure_kwargs=figure_kwargs
+    figure_kwargs=figure_kwargs,
+    title="CPPLS-DA with weights and Y_aux"
 )
 save("cppls_da_weighted_aux.svg", weighted_yaux_fig)
 nothing # hide
@@ -207,8 +213,14 @@ weighted_yaux_aux_fig3 = scoreplot(
     aux_bins,
     X_scores(m_weighted_yaux)[:, 1:2];  # X scores of the first two LV of all samples
     backend=backend,
+    figure_kwargs=figure_kwargs,
     title="Weighted CPPLS-DA + Y_aux colored by auxiliary bins",
-    figure_kwargs=figure_kwargs
+    group_order = ["low", "mid", "high"],
+    group_marker = Dict(
+        "low"  => (; color = :lightgray),
+        "mid"  => (; color = :gray),
+        "high" => (; color = :darkgray),
+    )
 )
 save("cppls_da_weighted_aux_colored.svg", weighted_yaux_aux_fig3)
 nothing # hide

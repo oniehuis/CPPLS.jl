@@ -1,6 +1,6 @@
-# Canonical Powered Partial Least Squares (CPPLS)
+# Theory
 
-Canonical Powered Partial Least Squares (CPPLS) is a supervised projection method for regression and classification. Its purpose is to extract latent components that summarize the predictor matrix $X \in \mathbb{R}^{n \times p}$ in a way that best reflects the structure in a multivariate response matrix $Y \in \mathbb{R}^{n \times q}$. The method extends standard PLS in three important ways. First, it allows multiple response variables, including both primary responses that one wishes to predict and optional auxiliary responses that guide the extraction of components. Second, it incorporates a power parameter $\gamma$ that controls the balance between predictor variance and predictor–response correlation, giving the user explicit control over how strongly the model should emphasize correlation structure. Third, CPPLS can operate with a vector of non-negative sample weights, allowing some observations to contribute more or less to the fitted model. This is useful when classes are unbalanced, when some samples are more reliable, or when experimental design considerations suggest that certain samples should carry greater influence.
+Canonical Powered Partial Least Squares (CPPLS) is a supervised projection method for regression and classification. Its purpose is to extract latent components that summarize the predictor matrix $X \in \mathbb{R}^{n \times p}$, where $n$ is the number of samples and $p$ the number of predictors, in a way that best reflects the structure in a multivariate response matrix $Y \in \mathbb{R}^{n \times q}$, where $q$ is the number of response variables. The method extends standard PLS in three important ways. First, it allows multiple response variables, including both primary responses that one wishes to predict and optional auxiliary responses that guide the extraction of components. Second, it incorporates a power parameter $\gamma$ that controls the balance between predictor variance and predictor–response correlation, giving the user explicit control over how strongly the model should emphasize correlation structure. Third, CPPLS can operate with a vector of non-negative sample weights, allowing some observations to contribute more or less to the fitted model. This is useful when classes are unbalanced, when some samples are more reliable, or when experimental design considerations suggest that certain samples should carry greater influence.
 
 Each CPPLS component is extracted in two conceptual stages. First, the predictors are projected onto supervised directions, one for each column of $Y$, using the $\gamma$-controlled mixture of weighted predictor variance and weighted predictor–response correlation. Second, a canonical correlation analysis (CCA) determines how these supervised directions should be linearly combined into a single latent variable that is optimally aligned with the primary responses. Auxiliary responses and observation weights enter the computation of supervised directions in the first stage, shaping the latent space that is subsequently analyzed by CCA, while the CCA itself is guided solely by the primary responses under the same weighting structure.
 
@@ -19,10 +19,16 @@ and for two centered variables $x$ and $y$, the weighted covariance is
 \operatorname{Cov}_w(x,y) = \sum_i w_i x_i y_i .
 ```
 Weighted correlations are obtained by normalizing the weighted covariance by the corresponding weighted standard deviations.
+For two centered variables $x$ and $y$, the weighted correlation is
+```math
+\operatorname{corr}_w(x,y) =
+\frac{\operatorname{Cov}_w(x,y)}
+{\sqrt{\operatorname{Var}_w(x)\operatorname{Var}_w(y)}} .
+```
 
 ## Supervised Compression
 
-CPPLS constructs a supervised transformation matrix by combining predictor scale and predictor–response correlation, with the balance controlled by the power parameter $\gamma \in (0,1)$. For each predictor $x_j$ (a column of $X$) and each response $y_k$ (a column of $Y$), CPPLS computes the weighted standard deviation $\operatorname{std}_w(x_j)$ and the weighted correlation $\operatorname{corr}_w(x_j,y_k)$. These quantities are not combined additively, but multiplicatively through $\gamma$-dependent powers.
+CPPLS constructs a supervised transformation matrix by combining predictor scale and predictor–response correlation, with the balance controlled by the power parameter $\gamma \in [0,1]$. The expressions below are written for the interior case $0 < \gamma < 1$; the endpoint values $\gamma = 0$ and $\gamma = 1$ are handled in CPPLS as limiting cases. For each predictor $x_j$ (a column of $X$) and each response $y_k$ (a column of $Y$), CPPLS computes the weighted standard deviation $\operatorname{std}_w(x_j)$ and the weighted correlation $\operatorname{corr}_w(x_j,y_k)$. These quantities are not combined additively, but multiplicatively through $\gamma$-dependent powers.
 
 The resulting supervised weight matrix is
 
@@ -48,7 +54,7 @@ and correlation entries
 C(\gamma)_{jk} = \operatorname{sign}\!\big(\operatorname{corr}_w(x_j,y_k)\big)\, \left|\operatorname{corr}_w(x_j,y_k)\right|^{\frac{\gamma}{1-\gamma}} .
 ```
 
-Thus, each entry of $W_0(\gamma)$ is proportional to a product of a predictor-scale term and a predictor–response correlation term, each raised to a power determined by $\gamma$. When $\gamma$ is small, predictors with large weighted standard deviation are emphasized; when $\gamma$ approaches one, predictors that are strongly correlated with the responses dominate. In traditional PLS workflows, predictor scaling is often used to control whether high-variance variables dominate the model. In CPPLS, the relative influence of predictor scale and predictor–response correlation is instead controlled explicitly through the power parameter $\gamma$ within the weight construction. This reduces the need for separate scaling decisions as a preprocessing step.
+Thus, each entry of $W_0(\gamma)$ is proportional to a product of a predictor standard-deviation term, which serves as a measure of predictor scale, and a predictor–response correlation term, each raised to a power determined by $\gamma$. When $\gamma$ is small, predictors with large weighted standard deviation are emphasized; when $\gamma$ approaches one, predictors that are strongly correlated with the responses dominate. In traditional PLS workflows, predictor scaling is often used to control whether high-variance variables dominate the model. In CPPLS, the relative influence of predictor scale and predictor–response correlation is instead controlled explicitly through the power parameter $\gamma$ within the weight construction, and the model evaluates candidate values of $\gamma$ to identify the supervised representation of $X$ that is best aligned with $Y$. This reduces the need for separate scaling decisions as a preprocessing step while making the variance-correlation trade-off part of the fitted model itself.
 
 Each column of $W_0(\gamma)$ admits a direct geometric interpretation. For each response variable $y_k$, CPPLS constructs a direction in the original predictor space that emphasizes predictors with large weighted variance and predictors that are strongly correlated with that response, with the balance controlled by the power parameter $\gamma$. These directions represent response-specific supervised views of the predictor space.
 
@@ -62,7 +68,7 @@ maps each sample from the original $p$-dimensional predictor space into a $q$-di
 
 ## Choosing the Power Parameter
 
-To choose the power parameter $\gamma$, CPPLS evaluates a grid of candidate values. For each candidate $\gamma$, it constructs the supervised compression
+The power parameter $\gamma$ can either be supplied directly by the user or selected by CPPLS from a user-defined interval or grid of candidate values. When $\gamma$ is selected rather than fixed, CPPLS evaluates each candidate value by constructing the supervised compression
 
 ```math
 Z(\gamma) = X W_0(\gamma), 
@@ -80,7 +86,7 @@ as a score for that value of $\gamma$. The optimal value
 \gamma_{\mathrm{best}} = \arg\max_{\gamma \in \mathcal{G}} \rho_1(\gamma)
 ```
 
-is therefore the $\gamma$ whose variance–correlation–weighted construction of $Z(\gamma)$ yields a representation of $X$ that is maximally aligned, in the canonical correlation sense, with the primary responses. This step does not yet extract latent components or deflate the data; it only compares candidate supervised representations under identical conditions in order to select $\gamma$.
+is therefore the $\gamma$ whose variance–correlation–weighted construction of $Z(\gamma)$ yields a representation of $X$ that is maximally aligned, in the canonical correlation sense, with the primary responses. This step does not yet extract latent components or deflate the data; it only compares candidate supervised representations under identical conditions in order to select $\gamma$. If the user provides a fixed $\gamma$, this selection step is skipped and CPPLS proceeds directly with that value.
 
 ## Component Extraction
 
@@ -104,11 +110,11 @@ The component score $t$ acts as a latent one-dimensional slider: each sample rec
 ```math
 p = \frac{X^\top W t}{t^\top W t},
 ```
-which is the weighted regression of the predictors on the component. It describes how each predictor changes as one moves along $t$. The weighted Y-loading
+which is the weighted regression of the predictors on the component. Each entry of $p$ is therefore a linear coefficient describing how the corresponding predictor changes, on average, as one moves along $t$. The weighted Y-loading
 ```math
 c = \frac{Y^\top W t}{t^\top W t}
 ```
-describes how each response variable—including auxiliary responses when present—varies with the component under the weighting structure.
+likewise contains linear coefficients describing how each response variable, including auxiliary responses when present, varies with the component under the weighting structure.
 
 Deflation removes the part of $X$ and $Y$ that can be explained by this component:
 ```math
@@ -116,7 +122,7 @@ X \leftarrow X - t p^\top,\qquad
 Y \leftarrow Y - t c^\top .
 ```
 
-After this deflation, the dominant structure captured by the current component has been removed from both $X$ and $Y$. Because subsequent components are extracted from the deflated matrices, they often describe remaining structured variation rather than repeating the same dominant signal. In discriminant analysis, for example, the first component may capture most of the class separation, while later components may describe residual within-class structure or additional sources of systematic variation. This does not impair discrimination: removing already-explained structure allows later components to focus on what remains, which can improve stability and interpretability.
+After this deflation, the dominant structure captured by the current component has been removed from both $X$ and $Y$. Because subsequent components are extracted from the deflated matrices, they often describe remaining structured variation rather than repeating the same dominant signal. In discriminant analysis, for example, the first component may capture most of the class separation, while later components may describe residual within-class structure or additional sources of systematic variation.
 
 ## Sample Weights and Auxiliary Responses
 
@@ -124,7 +130,7 @@ Sample weighting becomes particularly important in discriminant analysis (CPPLS-
 
 Weights can also compensate for auxiliary structure that is unevenly distributed across classes. If collection time, instrument batch, or another nuisance factor is associated more strongly with one class than another, that imbalance can distort the estimated correlations used to build $W_0(\gamma)$. Reweighting samples can reduce this distortion by making the weighted covariance structure better reflect the comparison of interest. Similarly, samples known to be noisy or unreliable can be down-weighted, while representative or carefully controlled samples can be up-weighted, improving the robustness of the extracted components.
 
-Auxiliary responses address the same issue from a different angle. Instead of changing how much influence each sample has, they tell CPPLS which additional structured variation should be represented when constructing the supervised space. If a nuisance factor such as collection date, instrument batch, or processing condition explains part of the variation in $X$, adding it as a column in $Y_{\mathrm{aux}}$ gives CPPLS a dedicated supervised direction for that factor. The primary responses are still the only targets used when selecting the final canonical direction and when building the prediction model, but that direction is now chosen in a latent space that has already organized part of the nuisance variation explicitly. This reduces the risk that nuisance structure is absorbed into the primary component simply because it happens to correlate with the target labels in the observed sample.
+Auxiliary responses address the problem of structured variation in $X$ that is not itself the primary target but can still influence the extracted components. Instead of changing how much influence each sample has, they tell CPPLS which additional structured variation should be represented when constructing the supervised space. If a nuisance factor such as collection date, instrument batch, or processing condition explains part of the variation in $X$, adding it as a column in $Y_{\mathrm{aux}}$ gives CPPLS a dedicated supervised direction for that factor. The primary responses are still the only targets used when selecting the final canonical direction and when building the prediction model, but that direction is now chosen in a latent space that has already organized part of the nuisance variation explicitly. This reduces the risk that nuisance structure is absorbed into the primary component simply because it happens to correlate with the target labels in the observed sample.
 
 A concrete example illustrates the benefit of combining auxiliary responses and sample weighting. Suppose two insect species are analyzed by GC-MS to characterize their cuticular hydrocarbons. The primary task is to discriminate species, but chemical profiles also change with season, and the two species may not be collected uniformly throughout the year. In this situation, the largest variation in $X$ may reflect seasonal drift rather than species. If season is omitted from the response structure, peaks that vary with collection date may appear spuriously associated with species because the sampling times differ. Including collection date or season as an auxiliary response gives CPPLS a supervised direction that represents this temporal effect explicitly. If the sampling is also imbalanced, class-balanced weights can prevent one species or one part of the season from dominating the covariance estimates used to build the components. Together, auxiliary responses and sample weights help separate the biological signal of interest from structured sampling effects, producing a more stable and interpretable model.
 
@@ -139,7 +145,7 @@ C_{\mathrm{primary}}^\top ,
 ```
 where $W_{\mathrm{comp}}$ contains the component weight vectors, $P$ the corresponding X-loadings, and $C_{\mathrm{primary}}$ the primary Y-loadings.
 
-Only the primary response block contributes to $C_{\mathrm{primary}}$ and thus to the final coefficient matrix $B$. Auxiliary responses affect the fitted model indirectly, by shaping the supervised compression and therefore the extracted components, but they are not themselves predicted unless they are moved from $Y_{\mathrm{aux}}$ into the primary response block.
+Only the primary response block contributes to $C_{\mathrm{primary}}$ and thus to the final coefficient matrix $B$. Auxiliary responses affect the fitted model indirectly, by shaping the supervised compression and therefore the extracted components, but they are not themselves predicted.
 
 ## Summary
 

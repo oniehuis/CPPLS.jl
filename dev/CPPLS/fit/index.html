@@ -29,7 +29,7 @@ function orient_scores(scores, classes; reference_class=&quot;major&quot;)
 end</code></pre><p>We start with a Principal Component Analysis (PCA) to inspect the separation of the two classes based on variance alone.</p><pre><code class="language-julia hljs">M = fit(PCA, X&#39;; maxoutdim=2)
 scores_pca = permutedims(predict(M, X&#39;))
 
-pca_fig = scoreplot(
+fig_1 = scoreplot(
     sample_labels,
     classes,
     scores_pca;
@@ -40,7 +40,7 @@ pca_fig = scoreplot(
     ylabel=&quot;Principal Component 2&quot;,
     default_marker=(; markersize=14)
 )
-save(&quot;pca.svg&quot;, pca_fig)</code></pre><p><img src="../pca.svg" alt/></p><p>The PCA score plot provides a baseline. In this synthetic dataset, the first two principal  components are not optimized for class discrimination, so a substantial part of the visible  structure reflects nuisance variation rather than the class contrast of interest.</p><p>We next fit a CPPLS-DA model without observation weights or auxiliary responses. We use a fixed <code>gamma=0.5</code> throughout this example rather than estimating <code>gamma</code>, so that the main differences between the fits come from the inclusion or omission of observation  weights and auxiliary responses. For visual comparability across plots, we orient each  latent variable so that the mean score of class <code>major</code> is positive; this only fixes the  sign indeterminacy of the latent variables and does not change the fit itself.</p><pre><code class="language-julia hljs">spec = CPPLSSpec(
+save(&quot;fig_1.svg&quot;, fig_1)</code></pre><p><img src="../fig_1.svg" alt/></p><p>The PCA score plot provides a baseline. In this synthetic dataset, the first two principal  components are not optimized for class discrimination, so a substantial part of the visible  structure reflects nuisance variation rather than the class contrast of interest.</p><p>We next fit a CPPLS-DA model without observation weights or auxiliary responses. We use a fixed <code>gamma=0.5</code> throughout this example rather than estimating <code>gamma</code>, so that the main differences between the fits come from the inclusion or omission of observation  weights and auxiliary responses. For visual comparability across plots, we orient each  latent variable so that the mean score of class <code>major</code> is positive; this only fixes the  sign indeterminacy of the latent variables and does not change the fit itself.</p><pre><code class="language-julia hljs">spec = CPPLSSpec(
     n_components=2,
     gamma=0.5,
     analysis_mode=:discriminant
@@ -55,7 +55,7 @@ m_plain = fit(
 
 scores_plain = orient_scores(X_scores(m_plain)[:, 1:2], classes)
 
-fig_1 = scoreplot(
+fig_2 = scoreplot(
     sample_labels,
     classes,
     scores_plain;
@@ -64,7 +64,7 @@ fig_1 = scoreplot(
     title=&quot;CPPLS-DA scores from an unweighted model without auxiliary responses&quot;,
     default_marker=(; markersize=14)
 )
-save(&quot;fig_1.svg&quot;, fig_1)</code></pre><p><img src="../fig_1.svg" alt/></p><p>Fitting CPPLS-DA directly to the class labels yields a more class-oriented score space. Because the classes are imbalanced, however, the majority class exerts more influence on the latent variables than the minority class.</p><p>We now add inverse-frequency observation weights. This gives the two classes the same total influence on the fitted model and reduces the bias introduced by unequal class sizes.</p><pre><code class="language-julia hljs">m_weighted = fit(
+save(&quot;fig_2.svg&quot;, fig_2)</code></pre><p><img src="../fig_2.svg" alt/></p><p>Fitting CPPLS-DA directly to the class labels yields a more class-oriented score space. Because the classes are imbalanced, however, the majority class exerts more influence on the latent variables than the minority class.</p><p>We now add inverse-frequency observation weights. This gives the two classes the same total influence on the fitted model and reduces the bias introduced by unequal class sizes.</p><pre><code class="language-julia hljs">m_weighted = fit(
     spec,
     X,
     classes;
@@ -74,7 +74,7 @@ save(&quot;fig_1.svg&quot;, fig_1)</code></pre><p><img src="../fig_1.svg" alt/><
 
 scores_weighted = orient_scores(X_scores(m_weighted)[:, 1:2], classes)
 
-fig_2 = scoreplot(
+fig_3 = scoreplot(
     sample_labels,
     classes,
     scores_weighted;
@@ -83,7 +83,7 @@ fig_2 = scoreplot(
     title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model&quot;,
     default_marker=(; markersize=14)
 )
-save(&quot;fig_2.svg&quot;, fig_2)</code></pre><p><img src="../fig_2.svg" alt/></p><p>Applying inverse-frequency weights makes the discriminant structure more symmetric. In this example, the main effect is not a larger distance between the groups, but rather a recentering and slight rotation of the latent space so that the class contrast is less biased by class prevalence.</p><p>At this point, the class separation already looks convincing. In this dataset, however, it is driven not only by class-related variation but also by structured variation associated with auxiliary responses. To address that, we include <code>Y_aux</code> in addition to the observation weights. This changes how the latent variables are estimated. Instead of forcing all supervised structure into the class contrast, the model can also represent variation associated with auxiliary responses.</p><pre><code class="language-julia hljs">m_weighted_yaux = fit(
+save(&quot;fig_3.svg&quot;, fig_3)</code></pre><p><img src="../fig_3.svg" alt/></p><p>Applying inverse-frequency weights makes the discriminant structure more symmetric. In this example, the main effect is not a larger distance between the groups, but rather a recentering and slight rotation of the latent space so that the class contrast is less biased by class prevalence.</p><p>At this point, the class separation already looks convincing. In this dataset, however, it is driven not only by class-related variation but also by structured variation associated with auxiliary responses. To address that, we include <code>Y_aux</code> in addition to the observation weights. This changes how the latent variables are estimated. Instead of forcing all supervised structure into the class contrast, the model can also represent variation associated with auxiliary responses.</p><pre><code class="language-julia hljs">m_weighted_yaux = fit(
     spec,
     X,
     classes;
@@ -94,7 +94,7 @@ save(&quot;fig_2.svg&quot;, fig_2)</code></pre><p><img src="../fig_2.svg" alt/><
 
 scores_weighted_yaux = orient_scores(X_scores(m_weighted_yaux)[:, 1:2], classes)
 
-fig_3 = scoreplot(
+fig_4 = scoreplot(
     sample_labels,
     classes,
     scores_weighted_yaux;
@@ -103,12 +103,12 @@ fig_3 = scoreplot(
     title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses&quot;,
     default_marker=(; markersize=14)
 )
-save(&quot;fig_3.svg&quot;, fig_3)</code></pre><p><img src="../fig_3.svg" alt/></p><p>The visible class separation may not have increased much, but it is now more likely to reflect information that is genuinely related to class membership rather than variation carried by a correlated covariate. To make that difference easier to see, we plot the last two score sets again, now shading each point by its auxiliary response value.</p><pre><code class="language-julia hljs">aux = vec(Y_aux[:, 1])
+save(&quot;fig_4.svg&quot;, fig_4)</code></pre><p><img src="../fig_4.svg" alt/></p><p>The visible class separation may not have increased much, but it is now more likely to reflect information that is genuinely related to class membership rather than variation carried by a correlated covariate. To make that difference easier to see, we plot the last two score sets again, now shading each point by its auxiliary response value.</p><pre><code class="language-julia hljs">aux = vec(Y_aux[:, 1])
 
 aux_min, aux_max = extrema(aux)
 point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
 
-fig_4 = scoreplot(
+fig_5 = scoreplot(
     sample_labels,
     fill(&quot;samples&quot;, length(sample_labels)),
     scores_weighted;
@@ -120,9 +120,9 @@ fig_4 = scoreplot(
     default_scatter=(; color=point_colors),
     default_marker=(; markersize=14)
 )
-save(&quot;fig_4.svg&quot;, fig_4)
+save(&quot;fig_5.svg&quot;, fig_5)
 
-fig_5 = scoreplot(
+fig_6 = scoreplot(
     sample_labels,
     fill(&quot;samples&quot;, length(sample_labels)),
     scores_weighted_yaux;
@@ -134,7 +134,7 @@ fig_5 = scoreplot(
     default_scatter=(; color=point_colors),
     default_marker=(; markersize=14)
 )
-save(&quot;fig_5.svg&quot;, fig_5)</code></pre><p><img src="../fig_4.svg" alt/></p><p><img src="../fig_5.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the grayscale values are not randomly distributed across the score space. Instead, they are arranged roughly along the first latent dimension. This indicates that auxiliary signal correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the grayscale values being more evenly distributed across the plot.</p><p>Overall, the example shows how observation weights can rebalance class influence and how auxiliary responses can help separate auxiliary structure from the signal that is genuinely relevant to group membership.</p><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><p>The example above illustrates a discriminant-analysis workflow, but the same fitting entry point is used more generally throughout <code>CPPLS</code>. The reference below documents the <code>fit</code> interface itself.</p><article><details class="docstring" open="true"><summary id="StatsAPI.fit"><a class="docstring-binding" href="#StatsAPI.fit"><code>StatsAPI.fit</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">fit(
+save(&quot;fig_6.svg&quot;, fig_6)</code></pre><p><img src="../fig_5.svg" alt/></p><p><img src="../fig_6.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the grayscale values are not randomly distributed across the score space. Instead, they are arranged roughly along the first latent dimension. This indicates that auxiliary signal correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the grayscale values being more evenly distributed across the plot.</p><p>Overall, the example shows how observation weights can rebalance class influence and how auxiliary responses can help separate auxiliary structure from the signal that is genuinely relevant to group membership.</p><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><p>The example above illustrates a discriminant-analysis workflow, but the same fitting entry point is used more generally throughout <code>CPPLS</code>. The reference below documents the <code>fit</code> interface itself.</p><article><details class="docstring" open="true"><summary id="StatsAPI.fit"><a class="docstring-binding" href="#StatsAPI.fit"><code>StatsAPI.fit</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">fit(
     model::CPPLSSpec,
     X::AbstractMatrix{&lt;:Real},
     Y_prim::AbstractMatrix{&lt;:Real};
@@ -153,4 +153,4 @@ fit(
     X::AbstractMatrix{&lt;:Real},
     sample_classes::AbstractVector;
     kwargs...
-)</code></pre><p>Fit a CPPLS model using the StatsAPI entry point and an explicit CPPLSSpec. The model specification supplies the number of components, the gamma configuration, centering, the analysis mode, and all numerical tolerances, while the call to <code>fit</code> supplies data, optional weights, auxiliary responses, and label metadata.</p><p>When <code>Y_prim</code> is provided, it is treated as the primary response block. When <code>sample_classes</code> is provided, the labels are converted to a one-hot response matrix, class names are inferred as response labels, and the fit is forced to discriminant analysis; <code>model.analysis_mode</code> must be <code>:discriminant</code> or an ArgumentError is thrown.</p><p>The <code>gamma</code> setting in <code>model</code> may be a fixed scalar, a <code>(lo, hi)</code> tuple, or a vector mixing scalars and tuples. Non-scalar settings trigger per-component selection by choosing the value that yields the largest leading canonical correlation between the supervised projection and the primary responses, and the resulting gamma values are stored in the fitted model.</p><p>Keyword arguments accepted by <code>fit</code> include <code>obs_weights</code> for per-sample weighting, <code>Y_aux</code> for auxiliary response columns, and optional <code>sample_labels</code>, <code>predictor_labels</code>, <code>response_labels</code>, and <code>sample_classes</code> metadata for diagnostics and plotting. <code>Y_aux</code> must have the same number of rows as <code>X</code> and is concatenated to <code>Y_prim</code> internally to build the supervised projection, while prediction targets always remain the primary responses.</p><p>The return value is a <code>CPPLSFit</code> containing scores, loadings, regression coefficients, and the metadata needed for downstream prediction and diagnostics. Use <code>CPPLS.fit</code> or <code>StatsAPI.fit</code> when disambiguation is required in your namespace.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/abc5bd4989ffcf7fc9fa1ced583600dd668450bd/src/CPPLS/fit.jl#L1-L49">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Predict »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 13 March 2026 08:56">Friday 13 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+)</code></pre><p>Fit a CPPLS model using the StatsAPI entry point and an explicit CPPLSSpec. The model specification supplies the number of components, the gamma configuration, centering, the analysis mode, and all numerical tolerances, while the call to <code>fit</code> supplies data, optional weights, auxiliary responses, and label metadata.</p><p>When <code>Y_prim</code> is provided, it is treated as the primary response block. When <code>sample_classes</code> is provided, the labels are converted to a one-hot response matrix, class names are inferred as response labels, and the fit is forced to discriminant analysis; <code>model.analysis_mode</code> must be <code>:discriminant</code> or an ArgumentError is thrown.</p><p>The <code>gamma</code> setting in <code>model</code> may be a fixed scalar, a <code>(lo, hi)</code> tuple, or a vector mixing scalars and tuples. Non-scalar settings trigger per-component selection by choosing the value that yields the largest leading canonical correlation between the supervised projection and the primary responses, and the resulting gamma values are stored in the fitted model.</p><p>Keyword arguments accepted by <code>fit</code> include <code>obs_weights</code> for per-sample weighting, <code>Y_aux</code> for auxiliary response columns, and optional <code>sample_labels</code>, <code>predictor_labels</code>, <code>response_labels</code>, and <code>sample_classes</code> metadata for diagnostics and plotting. <code>Y_aux</code> must have the same number of rows as <code>X</code> and is concatenated to <code>Y_prim</code> internally to build the supervised projection, while prediction targets always remain the primary responses.</p><p>The return value is a <code>CPPLSFit</code> containing scores, loadings, regression coefficients, and the metadata needed for downstream prediction and diagnostics. Use <code>CPPLS.fit</code> or <code>StatsAPI.fit</code> when disambiguation is required in your namespace.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/d5263bc041760c49252fbece1eb8aad5bed99ed9/src/CPPLS/fit.jl#L1-L49">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Predict »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 13 March 2026 09:02">Friday 13 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -89,9 +89,11 @@ fig_1 = scoreplot(
     title="CPPLS-DA scores",
     default_marker=(; markersize=14)
 )
-save("fig_1.svg", fig_1)
+save("projected.svg", fig_1)
 nothing # hide
 ```
+
+![](projected.svg)
 
 The two projected samples fall near the clusters of the classes from which they were
 held out. That visual impression suggests that the model should classify them as

@@ -75,7 +75,7 @@ classes based on variance alone.
 M = fit(PCA, X'; maxoutdim=2)
 scores_pca = permutedims(predict(M, X'))
 
-fig_1 = scoreplot(
+pca_plt = scoreplot(
     sample_labels,
     classes,
     scores_pca;
@@ -86,11 +86,11 @@ fig_1 = scoreplot(
     ylabel="Principal Component 2",
     default_marker=(; markersize=14)
 )
-save("fig_1.svg", fig_1)
+save("pca.svg", pca_plt)
 nothing # hide
 ```
 
-![](fig_1.svg)
+![](pca.svg)
 
 The PCA score plot provides a baseline. In this synthetic dataset, the first two principal 
 components are not optimized for class discrimination, so a substantial part of the visible 
@@ -119,7 +119,7 @@ m_plain = fit(
 
 scores_plain = orient_scores(X_scores(m_plain)[:, 1:2], classes)
 
-fig_2 = scoreplot(
+cppls_plain_plt = scoreplot(
     sample_labels,
     classes,
     scores_plain;
@@ -128,7 +128,7 @@ fig_2 = scoreplot(
     title="CPPLS-DA scores from an unweighted model without auxiliary responses",
     default_marker=(; markersize=14)
 )
-save("fig_2.svg", fig_2)
+save("cppls_plain.svg", cppls_plain_plt)
 nothing # hide
 ```
 
@@ -153,7 +153,7 @@ m_weighted = fit(
 
 scores_weighted = orient_scores(X_scores(m_weighted)[:, 1:2], classes)
 
-fig_3 = scoreplot(
+cppls_weighted_plt = scoreplot(
     sample_labels,
     classes,
     scores_weighted;
@@ -162,11 +162,11 @@ fig_3 = scoreplot(
     title="CPPLS-DA scores from an inverse-frequency-weighted model",
     default_marker=(; markersize=14)
 )
-save("fig_3.svg", fig_3)
+save("cppls_weighted.svg", cppls_weighted_plt)
 nothing # hide
 ```
 
-![](fig_3.svg)
+![](cppls_weighted.svg)
 
 Applying inverse-frequency weights makes the discriminant structure more symmetric. In
 this example, the main effect is not a larger distance between the groups, but rather
@@ -192,7 +192,7 @@ m_weighted_yaux = fit(
 
 scores_weighted_yaux = orient_scores(X_scores(m_weighted_yaux)[:, 1:2], classes)
 
-fig_4 = scoreplot(
+cppls_weighted_yaux_plt = scoreplot(
     sample_labels,
     classes,
     scores_weighted_yaux;
@@ -201,7 +201,7 @@ fig_4 = scoreplot(
     title="CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses",
     default_marker=(; markersize=14)
 )
-save("fig_4.svg", fig_4)
+save("cppls_weighted_yaux.svg", cppls_weighted_yaux_plt)
 nothing # hide
 ```
 
@@ -219,7 +219,7 @@ aux = vec(Y_aux[:, 1])
 aux_min, aux_max = extrema(aux)
 point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
 
-fig_5 = scoreplot(
+cppls_weighted_shaded_plt = scoreplot(
     sample_labels,
     fill("samples", length(sample_labels)),
     scores_weighted;
@@ -231,9 +231,9 @@ fig_5 = scoreplot(
     default_scatter=(; color=point_colors),
     default_marker=(; markersize=14)
 )
-save("fig_5.svg", fig_5)
+save("cppls_weighted_shaded.svg", cppls_weighted_shaded_plt)
 
-fig_6 = scoreplot(
+cppls_weighted_yaux_shaded_plt = scoreplot(
     sample_labels,
     fill("samples", length(sample_labels)),
     scores_weighted_yaux;
@@ -245,13 +245,13 @@ fig_6 = scoreplot(
     default_scatter=(; color=point_colors),
     default_marker=(; markersize=14)
 )
-save("fig_6.svg", fig_6)
+save("cppls_weighted_yaux_shaded.svg", cppls_weighted_yaux_shaded_plt)
 nothing # hide
 ```
 
-![](fig_5.svg)
+![](cppls_weighted_shaded.svg)
 
-![](fig_6.svg)
+![](cppls_weighted_yaux_shaded.svg)
 
 In the first shaded score plot, fitted without auxiliary response information, the
 grayscale values are not randomly distributed across the score space. Instead, they

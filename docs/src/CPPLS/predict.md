@@ -80,7 +80,7 @@ held-out sample and one column per latent component.
 ```@example project
 heldout_scores = project(model, X_holdout)
 
-fig_1 = scoreplot(
+projected_plt = scoreplot(
     vcat(labels_train, labels_holdout),
     vcat(classes_train, plot_classes_holdout),
     vcat(X_scores(model), heldout_scores);
@@ -89,7 +89,7 @@ fig_1 = scoreplot(
     title="CPPLS-DA scores",
     default_marker=(; markersize=14)
 )
-save("projected.svg", fig_1)
+save("projected.svg", projected_plt)
 nothing # hide
 ```
 

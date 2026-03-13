@@ -1,20 +1,15 @@
 """
-    fit(
-        model::CPPLSSpec,
+    fit(model::CPPLSSpec,
         X::AbstractMatrix{<:Real},
         Y_prim::AbstractMatrix{<:Real};
         kwargs...
     )
-    
-    fit(
-        model::CPPLSSpec,
+    fit(model::CPPLSSpec,
         X::AbstractMatrix{<:Real},
         sample_classes::AbstractCategoricalArray{T,1,R,V,C,U};
         kwargs...
     ) where {T,R,V,C,U}
-    
-    fit(
-        model::CPPLSSpec,
+    fit(model::CPPLSSpec,
         X::AbstractMatrix{<:Real},
         sample_classes::AbstractVector;
         kwargs...
@@ -46,6 +41,50 @@ responses.
 The return value is a `CPPLSFit` containing scores, loadings, regression coefficients,
 and the metadata needed for downstream prediction and diagnostics. Use `CPPLS.fit` or
 `StatsAPI.fit` when disambiguation is required in your namespace.
+
+See also
+[`CPPLSFit`](@ref CPPLS.CPPLSFit), 
+[`CPPLSSpec`](@ref CPPLS.CPPLSSpec), 
+[`gamma`](@ref CPPLS.gamma(::CPPLSFit)), 
+[`invfreqweights`](@ref invfreqweights(::AbstractVector))
+[`predictor_labels`](@ref predictor_labels(::CPPLSFit)),
+[`response_labels`](@ref response_labels(::CPPLSFit)),
+[`sample_classes`](@ref sample_classes(::CPPLSFit)),
+[`sample_labels`](@ref sample_labels(::CPPLSFit)),
+[`X_scores`](@ref X_scores(::CPPLSFit))
+
+# Examples
+```jldoctest
+julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
+
+julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
+
+julia> spec = CPPLSSpec(n_components=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant);
+
+julia> model = fit(spec, X, classes; sample_labels=labels)
+CPPLSFit
+  mode: discriminant
+  samples: 100
+  predictors: 14
+  responses: 2
+  components: 2
+
+julia> CPPLS.gamma(model) == [0.84, 0.78]
+true
+
+julia> size(CPPLS.X_scores(model))
+(100, 2)
+
+julia> spec = CPPLSSpec(n_components=2, gamma=0.75, analysis_mode=:discriminant);
+
+julia> model = fit(spec, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
+CPPLSFit
+  mode: discriminant
+  samples: 100
+  predictors: 14
+  responses: 2
+  components: 2
+```
 """
 function fit(
     model::CPPLSSpec,

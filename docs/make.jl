@@ -4,8 +4,12 @@ if Base.active_project() ≠ joinpath(@__DIR__, "Project.toml")
     Pkg.activate(@__DIR__)
 end
 
-empty!(LOAD_PATH)
-append!(LOAD_PATH, ["@", "@stdlib"])
+strict_docs_env = get(ENV, "CPPLS_DOCS_STRICT_ENV", "false") == "true"
+
+if strict_docs_env
+    empty!(LOAD_PATH)
+    append!(LOAD_PATH, ["@", "@stdlib"])
+end
 
 if get(ENV, "CI", "false") == "true"
     Pkg.instantiate()

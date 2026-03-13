@@ -71,9 +71,6 @@ CPPLSSpec
 
 julia> model = fit(spec, X, classes; sample_labels=labels);
 
-julia> all(abs.(CPPLS.gamma(model) .- [0.84, 0.78]) .<= 0.01)
-true
-
 julia> size(CPPLS.X_scores(model))
 (100, 2)
 

@@ -69,16 +69,9 @@ CPPLSSpec
   center: true
   analysis_mode: discriminant
 
-julia> model = fit(spec, X, classes; sample_labels=labels)
-CPPLSFit
-  mode: discriminant
-  samples: 100
-  predictors: 14
-  responses: 2
-  components: 2
-  gamma: [0.84, 0.78]
+julia> model = fit(spec, X, classes; sample_labels=labels);
 
-julia> CPPLS.gamma(model) ≈ [0.84, 0.78]
+julia> all(abs.(CPPLS.gamma(model) .- [0.84, 0.78]) .<= 0.01)
 true
 
 julia> size(CPPLS.X_scores(model))

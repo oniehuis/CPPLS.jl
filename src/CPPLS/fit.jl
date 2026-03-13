@@ -45,10 +45,13 @@ and the metadata needed for downstream prediction and diagnostics. Use `CPPLS.fi
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit), 
 [`CPPLSSpec`](@ref CPPLS.CPPLSSpec), 
+[`coef`](@ref CPPLS.coef(::AbstractCPPLSFit)), 
+[`fitted`](@ref CPPLS.fitted(::CPPLSFit)), 
 [`gamma`](@ref CPPLS.gamma(::CPPLSFit)), 
-[`invfreqweights`](@ref invfreqweights(::AbstractVector))
+[`invfreqweights`](@ref invfreqweights(::AbstractVector)),
 [`predictor_labels`](@ref predictor_labels(::CPPLSFit)),
 [`response_labels`](@ref response_labels(::CPPLSFit)),
+[`residuals`](@ref residuals(::CPPLSFit)),
 [`sample_classes`](@ref sample_classes(::CPPLSFit)),
 [`sample_labels`](@ref sample_labels(::CPPLSFit)),
 [`X_scores`](@ref X_scores(::CPPLSFit))
@@ -59,7 +62,12 @@ julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
 julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(n_components=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
+CPPLSSpec
+  n_components: 2
+  gamma: 0.01:0.01:1.0
+  center: true
+  analysis_mode: discriminant
 
 julia> model = fit(spec, X, classes; sample_labels=labels)
 CPPLSFit
@@ -68,14 +76,20 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
+  gamma: [0.84, 0.78]
 
-julia> CPPLS.gamma(model) == [0.84, 0.78]
+julia> CPPLS.gamma(model) ≈ [0.84, 0.78]
 true
 
 julia> size(CPPLS.X_scores(model))
 (100, 2)
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.75, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(n_components=2, gamma=0.75, analysis_mode=:discriminant)
+CPPLSSpec
+  n_components: 2
+  gamma: 0.75
+  center: true
+  analysis_mode: discriminant
 
 julia> model = fit(spec, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
 CPPLSFit
@@ -84,6 +98,7 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
+  gamma: [0.75, 0.75]
 ```
 """
 function fit(

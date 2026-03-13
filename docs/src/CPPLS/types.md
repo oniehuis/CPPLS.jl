@@ -14,9 +14,9 @@ typically not accessed directly by users.
 The package also provides getters for fields that are commonly useful in downstream
 work. For [`CPPLSSpec`](@ref), the getters are [`analysis_mode`](@ref), [`gamma`](@ref), 
 and [`n_components`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
-[`fitted`](@ref), [`gamma`](@ref), [`predictor_labels`](@ref), [`response_labels`](@ref), 
-[`residuals`](@ref), [`sample_classes`](@ref), [`sample_labels`](@ref), and 
-[`X_scores`](@ref).
+[`analysis_mode`](@ref), [`fitted`](@ref), [`gamma`](@ref), [`predictor_labels`](@ref), 
+[`response_labels`](@ref), [`residuals`](@ref), [`sample_classes`](@ref), 
+[`sample_labels`](@ref), and [`X_scores`](@ref).
 
 Both container types expose additional named fields. You can inspect them with
 `names(spec)` or `names(model)` and access them via dot notation, for example
@@ -43,6 +43,7 @@ StatsAPI.coef(model::AbstractCPPLSFit)
 
 ```@docs
 CPPLS.CPPLSFit
+CPPLS.analysis_mode(::CPPLSFit)
 StatsAPI.fitted(::CPPLSFit)
 CPPLS.gamma(::CPPLSFit)
 CPPLS.predictor_labels(::CPPLSFit)

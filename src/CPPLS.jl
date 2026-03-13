@@ -24,6 +24,7 @@ include("Utils/encoding.jl")
 include("Utils/paths.jl")
 include("Utils/statistics.jl")
 
+export AbstractCPPLSFit
 export CPPLSSpec
 export CPPLSFit
 export CPPLSFitLight
@@ -52,6 +53,11 @@ export response_labels
 export sample_classes
 export sample_labels
 export X_scores
+export analysis_mode
+export n_components
+export coef
+export fitted
+export residuals
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """

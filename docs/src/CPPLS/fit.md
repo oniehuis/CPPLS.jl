@@ -4,32 +4,32 @@ Model fitting in `CPPLS` is performed through `StatsAPI.fit` together with a
 [`CPPLSSpec`](@ref). The same interface is used for both regression and discriminant
 analysis. In both settings, the fit can optionally incorporate `obs_weights` and
 `Y_aux`. Observation weights control how strongly individual samples contribute to the
-model, whereas `Y_aux` supplies auxiliary response information that can shape the
-supervised projection without changing the primary prediction target. In discriminant
-analysis, `obs_weights` are especially useful when classes are imbalanced. Together
-with `gamma`, these arguments are among the main levers for tailoring a CPPLS model to
-the structure of a particular dataset.
+model, whereas auxiliary response information can shape the supervised projection without 
+changing the primary prediction target. In discriminant analysis (DA), observation weights 
+are especially useful when classes are imbalanced. Together with `gamma`, these arguments 
+are among the main levers for tailoring a CPPLS model to the structure of a particular 
+dataset.
 
 The following example illustrates the effect of observation weights and auxiliary
 responses in a discriminant-analysis workflow.
 
-## Example: Discriminant Analysis with Weights and Auxiliary Responses
+## Example: DA with Observation Weights and Auxiliary Responses
 
 In this example, we use a synthetic dataset that ships with the package. The dataset
 contains 100 samples: 10 belong to the minority class `minor` and 90 to the majority
 class `major`. Accordingly, the predictor matrix has 100 rows and 14 columns,
 representing 14 measured traits. The classes differ across these traits, but the data
-also include structured variation captured by `Y_aux`. Because that auxiliary signal
-is partly correlated with class membership, it can influence the orientation of the
+also include structured variation captured by auxiliary responses. Because that auxiliary 
+signal is partly correlated with class membership, it can influence the orientation of the
 latent axes even though it is not itself the primary classification target.
 
 The dataset was constructed so that a plain PCA score plot is dominated by nuisance
 structure, whereas CPPLS-DA recovers the class contrast more clearly. Because the
 dataset combines class imbalance with auxiliary structure that is partly aligned with
-class membership, it is well suited for illustrating how weighting and auxiliary
-responses alter the fitted score space. Observation weights reduce the influence of
-the majority class, and `Y_aux` helps reveal how auxiliary structure is represented in
-the latent space.
+class membership, it is well suited for illustrating how observation weighting and
+auxiliary responses alter the fitted score space. Observation weights reduce the
+influence of the majority class, and auxiliary responses help reveal how auxiliary
+structure is represented in the latent space.
 
 In addition to `CPPLS`, the example uses `JLD2` to load the dataset from disk,
 `MultivariateStats` to compute the PCA baseline, `Colors` to convert the auxiliary
@@ -81,9 +81,10 @@ pca_fig = scoreplot(
     scores_pca;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="PCA Scores",
+    title="PCA scores",
     xlabel="Principal Component 1", 
-    ylabel="Principal Component 2"
+    ylabel="Principal Component 2",
+    default_marker=(; markersize=14)
 )
 save("pca.svg", pca_fig)
 nothing # hide
@@ -98,9 +99,9 @@ structure reflects nuisance variation rather than the class contrast of interest
 We next fit a CPPLS-DA model without observation weights or auxiliary responses. We use a
 fixed `gamma=0.5` throughout this example rather than estimating `gamma`, so that the
 main differences between the fits come from the inclusion or omission of observation 
-weights and `Y_aux`. For visual comparability across plots, we orient each latent
-variable so that the mean score of class `major` is positive; this only fixes the sign
-indeterminacy of the latent variables and does not change the fit itself.
+weights and auxiliary responses. For visual comparability across plots, we orient each 
+latent variable so that the mean score of class `major` is positive; this only fixes the 
+sign indeterminacy of the latent variables and does not change the fit itself.
 
 ```@example fit_da
 spec = CPPLSSpec(
@@ -124,13 +125,14 @@ fig_1 = scoreplot(
     scores_plain;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="CPPLS-DA without weights or auxiliary responses"
+    title="CPPLS-DA scores from an unweighted model without auxiliary responses",
+    default_marker=(; markersize=14)
 )
-save("cppls_da_plain.svg", fig_1)
+save("fig_1.svg", fig_1)
 nothing # hide
 ```
 
-![](cppls_da_plain.svg)
+![](fig_1.svg)
 
 Fitting CPPLS-DA directly to the class labels yields a more class-oriented score
 space. Because the classes are imbalanced, however, the majority class exerts more
@@ -157,13 +159,14 @@ fig_2 = scoreplot(
     scores_weighted;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="CPPLS-DA with inverse-frequency weights"
+    title="CPPLS-DA scores from an inverse-frequency-weighted model",
+    default_marker=(; markersize=14)
 )
-save("cppls_da_weighted.svg", fig_2)
+save("fig_2.svg", fig_2)
 nothing # hide
 ```
 
-![](cppls_da_weighted.svg)
+![](fig_2.svg)
 
 Applying inverse-frequency weights makes the discriminant structure more symmetric. In
 this example, the main effect is not a larger distance between the groups, but rather
@@ -172,13 +175,10 @@ less biased by class prevalence.
 
 At this point, the class separation already looks convincing. In this dataset,
 however, it is driven not only by class-related variation but also by structured
-variation associated with `Y_aux`. To address that, we add `Y_aux` in addition to the
-observation weights. This changes how the latent variables are estimated. Instead of
-forcing all supervised structure into the class contrast, the model can also
-represent variation associated with `Y_aux`. As a result, any remaining separation
-between the classes is more likely to reflect signal that is genuinely related to
-group membership rather than auxiliary structure that happens to be correlated with
-it.
+variation associated with auxiliary responses. To address that, we include `Y_aux`
+in addition to the observation weights. This changes how the latent variables are
+estimated. Instead of forcing all supervised structure into the class contrast, the
+model can also represent variation associated with auxiliary responses.
 
 ```@example fit_da
 m_weighted_yaux = fit(
@@ -198,18 +198,20 @@ fig_3 = scoreplot(
     scores_weighted_yaux;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="CPPLS-DA with weights and auxiliary responses"
+    title="CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses",
+    default_marker=(; markersize=14)
 )
-save("cppls_da_weighted_aux.svg", fig_3)
+save("fig_3.svg", fig_3)
 nothing # hide
 ```
 
-![](cppls_da_weighted_aux.svg)
+![](fig_3.svg)
 
-The visible class separation may not increase much, but it is now more likely to
-reflect information that is genuinely related to class membership rather than
+The visible class separation may not have increased much, but it is now more likely
+to reflect information that is genuinely related to class membership rather than
 variation carried by a correlated covariate. To make that difference easier to see,
-we plot the last two score sets again, now shading each point by its `Y_aux` value.
+we plot the last two score sets again, now shading each point by its auxiliary
+response value.
 
 ```@example fit_da
 aux = vec(Y_aux[:, 1])
@@ -223,11 +225,13 @@ fig_4 = scoreplot(
     scores_weighted;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="Weighted CPPLS-DA shaded by auxiliary values",
+    title="CPPLS-DA scores from an inverse-frequency-weighted model " *
+          "shaded by auxiliary values",
     show_legend=false,
-    default_scatter=(; color = point_colors),
+    default_scatter=(; color=point_colors),
+    default_marker=(; markersize=14)
 )
-save("cppls_da_weighted_shaded.svg", fig_4)
+save("fig_4.svg", fig_4)
 
 fig_5 = scoreplot(
     sample_labels,
@@ -235,30 +239,33 @@ fig_5 = scoreplot(
     scores_weighted_yaux;
     backend=backend,
     figure_kwargs=figure_kwargs,
-    title="Weighted CPPLS-DA with auxiliary responses shaded by auxiliary values",
-    show_legend = false,
-    default_scatter = (; color = point_colors)
+    title="CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses " *
+          "shaded by auxiliary values",
+    show_legend=false,
+    default_scatter=(; color=point_colors),
+    default_marker=(; markersize=14)
 )
-save("cppls_da_weighted_aux_shaded.svg", fig_5)
+save("fig_5.svg", fig_5)
 nothing # hide
 ```
 
-![](cppls_da_weighted_shaded.svg)
+![](fig_4.svg)
 
-![](cppls_da_weighted_aux_shaded.svg)
+![](fig_5.svg)
 
-In the first shaded score plot, fitted without `Y_aux`, the grayscale values are not
-randomly distributed across the score space. Instead, they are arranged roughly along
-the first latent dimension. This indicates that auxiliary signal correlated with class
-membership has leaked into the apparent class separation.
+In the first shaded score plot, fitted without auxiliary response information, the
+grayscale values are not randomly distributed across the score space. Instead, they
+are arranged roughly along the first latent dimension. This indicates that
+auxiliary signal correlated with class membership has leaked into the apparent class
+separation.
 
-With `Y_aux` included, as shown in the second plot, the auxiliary structure is much
-less pronounced in the fitted scores, as indicated by the grayscale values being more
-evenly distributed across the plot.
+With the auxiliary response information included, as shown in the second plot, the
+auxiliary structure is much less pronounced in the fitted scores, as indicated by
+the grayscale values being more evenly distributed across the plot.
 
 Overall, the example shows how observation weights can rebalance class influence and
-how `Y_aux` can help separate auxiliary structure from the signal that is genuinely
-relevant to group membership.
+how auxiliary responses can help separate auxiliary structure from the signal that is
+genuinely relevant to group membership.
 
 ## API
 

@@ -1,3 +1,16 @@
+import Pkg
+
+if Base.active_project() ≠ joinpath(@__DIR__, "Project.toml")
+    Pkg.activate(@__DIR__)
+end
+
+empty!(LOAD_PATH)
+append!(LOAD_PATH, ["@", "@stdlib"])
+
+if get(ENV, "CI", "false") == "true"
+    Pkg.instantiate()
+end
+
 using Documenter
 using Markdown
 using Makie

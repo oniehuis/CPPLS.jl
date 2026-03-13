@@ -1,21 +1,4 @@
 """
-    AbstractCPPLSFit
-
-Common supertype for fitted CPPLS models. Most users will work with concrete fitted
-models such as `CPPLSFit` or `CPPLSFitLight` instead of using this type directly.
-"""
-abstract type AbstractCPPLSFit end
-
-"""
-    coef(model::AbstractCPPLSFit)
-    coef(model::AbstractCPPLSFit, n_components::Integer)
-
-Return the regression coefficient matrix for the final (or requested) number of components.
-"""
-coef(model::AbstractCPPLSFit) = @views model.B[:, :, end]
-coef(model::AbstractCPPLSFit, n_components::Integer) = @views model.B[:, :, n_components]
-
-"""
     CPPLSSpec{T}
 
 Model specification passed to `fit`. A `CPPLSSpec` stores the user-controlled settings
@@ -34,36 +17,6 @@ struct CPPLSSpec{T}
     analysis_mode::Symbol
 end
 
-"""
-    n_components(spec::CPPLSSpec)
-
-Return the number of components requested in the specification.
-"""
-n_components(spec::CPPLSSpec) = spec.n_components
-
-"""
-    analysis_mode(spec::CPPLSSpec)
-
-Return the analysis mode requested in the specification.
-"""
-analysis_mode(spec::CPPLSSpec) = spec.analysis_mode
-
-function Base.show(io::IO, spec::CPPLSSpec)
-    print(io, "CPPLSSpec(",
-        "n_components=", spec.n_components,
-        ", gamma=", repr(spec.gamma),
-        ", center=", spec.center,
-        ", analysis_mode=", spec.analysis_mode,
-        ")")
-end
-
-function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSSpec)
-    println(io, "CPPLSSpec")
-    println(io, "  n_components: ", spec.n_components)
-    println(io, "  gamma: ", repr(spec.gamma))
-    println(io, "  center: ", spec.center)
-    print(io, "  analysis_mode: ", spec.analysis_mode)
-end
 
 """
     CPPLSSpec(; 
@@ -117,6 +70,61 @@ function CPPLSSpec(;
         analysis_mode
     )
 end
+
+function Base.show(io::IO, spec::CPPLSSpec)
+    print(io, "CPPLSSpec(",
+        "n_components=", spec.n_components,
+        ", gamma=", repr(spec.gamma),
+        ", center=", spec.center,
+        ", analysis_mode=", spec.analysis_mode,
+        ")")
+end
+
+function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSSpec)
+    println(io, "CPPLSSpec")
+    println(io, "  n_components: ", spec.n_components)
+    println(io, "  gamma: ", repr(spec.gamma))
+    println(io, "  center: ", spec.center)
+    print(io, "  analysis_mode: ", spec.analysis_mode)
+end
+
+"""
+    gamma(spec::CPPLSSpec)
+
+Return the gamma requested in the specification.
+"""
+gamma(spec::CPPLSSpec) = spec.gamma
+
+"""
+    n_components(spec::CPPLSSpec)
+
+Return the number of components requested in the specification.
+"""
+n_components(spec::CPPLSSpec) = spec.n_components
+
+"""
+    analysis_mode(spec::CPPLSSpec)
+
+Return the analysis mode requested in the specification.
+"""
+analysis_mode(spec::CPPLSSpec) = spec.analysis_mode
+
+"""
+    AbstractCPPLSFit
+
+Common supertype for fitted CPPLS models that share the fields B, X_bar, Y_bar, and 
+analysis_mode.
+"""
+abstract type AbstractCPPLSFit end
+
+"""
+    coef(model::AbstractCPPLSFit)
+    coef(model::AbstractCPPLSFit, n_components::Integer)
+
+Return the regression coefficient matrix for the final (or requested) number of components.
+"""
+coef(model::AbstractCPPLSFit) = @views model.B[:, :, end]
+coef(model::AbstractCPPLSFit, n_components::Integer) = @views model.B[:, :, n_components]
 
 """
     CPPLSFit{T1, T2}
@@ -221,6 +229,13 @@ fitted(model::CPPLSFit) = @views model.Y_hat[:, :, end]
 fitted(model::CPPLSFit, n_components::Integer) = @views model.Y_hat[:, :, n_components]
 
 """
+    gamma(cpplsfit::CPPLSFit)
+
+Return the power-parameter values selected during fitting.
+"""
+gamma(cpplsfit::CPPLSFit) = cpplsfit.gamma
+
+"""
     residuals(model::CPPLSFit)
     residuals(model::CPPLSFit, n_components::Integer)
 
@@ -230,11 +245,11 @@ residuals(model::CPPLSFit) = @views model.F[:, :, end]
 residuals(model::CPPLSFit, n_components::Integer) = @views model.F[:, :, n_components]
 
 """
-    gamma(cpplsfit::CPPLSFit)
+    response_labels(cpplsfit::CPPLSFit)
 
-Return the power-parameter values selected during fitting.
+Return the response labels (response names or class names) for the fitted model.
 """
-gamma(cpplsfit::CPPLSFit) = cpplsfit.gamma
+response_labels(cpplsfit::CPPLSFit) = cpplsfit.response_labels
 
 """
     sample_labels(cpplsfit::CPPLSFit)
@@ -249,13 +264,6 @@ sample_labels(cpplsfit::CPPLSFit) = cpplsfit.sample_labels
 Return the stored predictor labels for the fitted model.
 """
 predictor_labels(cpplsfit::CPPLSFit) = cpplsfit.predictor_labels
-
-"""
-    response_labels(cpplsfit::CPPLSFit)
-
-Return the response labels (response names or class names) for the fitted model.
-"""
-response_labels(cpplsfit::CPPLSFit) = cpplsfit.response_labels
 
 """
     sample_classes(cpplsfit::CPPLSFit)

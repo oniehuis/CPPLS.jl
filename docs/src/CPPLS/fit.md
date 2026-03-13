@@ -132,7 +132,7 @@ save("cppls_plain.svg", cppls_plain_plt)
 nothing # hide
 ```
 
-![](fig_2.svg)
+![](cppls_plain.svg)
 
 Fitting CPPLS-DA directly to the class labels yields a more class-oriented score
 space. Because the classes are imbalanced, however, the majority class exerts more
@@ -205,7 +205,7 @@ save("cppls_weighted_yaux.svg", cppls_weighted_yaux_plt)
 nothing # hide
 ```
 
-![](fig_4.svg)
+![](cppls_weighted_yaux.svg)
 
 The visible class separation may not have increased much, but it is now more likely
 to reflect information that is genuinely related to class membership rather than

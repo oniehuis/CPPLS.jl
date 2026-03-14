@@ -14,43 +14,32 @@ model and reduces optimistic bias.
 
 ## How Nested Cross-Validation Is Implemented in CPPLS
 
-[`nested_cv`](@ref) evaluates a CPPLS workflow in the following way:
+[`nested_cv`](@ref) uses disjoint outer folds for performance assessment and disjoint
+inner folds for model selection. For each outer repeat, one fold is held out as a test
+set and the remaining samples are used for training. Within that outer training set, an
+inner cross-validation determines the number of latent variables. A final model is then
+fitted on the full outer training set with the selected number of components and applied
+to the outer test set.
 
-1. The samples are split into outer folds.
-2. For each outer repeat, one fold is held out as the test set and the remaining samples
-    are used as the training set.
-3. Within that outer training set, an inner cross-validation is run to select the number
-    of latent variables.
-4. A final model is fitted on the full outer training set with the selected number of
-    latent variables.
-5. That model is then applied to the outer test set, and the resulting score is stored.
+For each inner fold, CPPLS evaluates all component counts from `1:max_components` and
+selects the best one with `select_fn`. The final component count for the current outer
+repeat is the median of those inner-fold selections, rounded down to an integer. With the
+default selectors, ties are resolved in favor of the smaller component count.
 
-The implementation is explicit rather than implicit. In particular:
+If `strata` are supplied, fold construction is stratified so that class proportions are
+approximately preserved across folds. Within a given fold construction, the folds are
+non-overlapping. What can change is only whether the outer folds are reused or rebuilt
+between repeats: with `reshuffle_outer_folds=false`, the same outer partition is reused,
+whereas with `reshuffle_outer_folds=true`, a new outer partition is drawn for each repeat.
 
-1. Fold construction is handled by `build_folds`.
-2. If `strata` are supplied, folds are created with `random_batch_indices`, which shuffles
-    the samples within each stratum and then distributes them round-robin across folds.
-    This helps maintain class proportions across folds in discriminant-analysis workflows.
-3. The inner-loop model selection is handled by `optimize_num_latent_variables`.
-4. For each inner fold, CPPLS fits one model with up to `max_components` latent variables,
-    evaluates every component count from `1:max_components`, and reduces those scores to a
-    single best component count by `select_fn`.
-5. The final choice returned by the inner loop is the median of the per-fold best
-    component counts, rounded down to an integer.
+This design matters because it reflects how CPPLS is actually evaluated in practice. The
+outer scores measure prediction on samples excluded from fitting, while the inner loop
+controls model complexity. For classification, [`cv_classification`](@ref) provides an
+accuracy-like score based on one-hot predictions and normalized misclassification cost.
+For regression, [`cv_regression`](@ref) provides the corresponding callbacks, using root
+mean squared error by default.
 
-This design matters because it reflects how CPPLS is actually used in the package. The
-outer score measures prediction on samples excluded from fitting, while the inner loop
-decides how complex the model is allowed to be. For classification, the helper
-[`cv_classification`](@ref) supplies a score function based on one-hot predictions and
-normalized misclassification cost. For regression, [`cv_regression`](@ref) provides the
-corresponding callbacks, using root mean squared error by default.
-
-By default, the outer folds can either be reused or reshuffled between repeats. Reusing
-the outer folds yields a fixed repeated evaluation over a predefined partition. Enabling
-`reshuffle_outer_folds=true` instead rebuilds the outer split on each repeat, which gives
-broader coverage of the samples across repeated assessments.
-
-## Why Use a Permutation Procedure?
+## Permutation-Based Significance Assessment
 
 Even a carefully cross-validated supervised model can appear predictive if the response is
 weakly structured, the sample size is small, or the predictor matrix is high-dimensional.
@@ -72,7 +61,9 @@ inner-loop model selection, and final outer-loop evaluation. If the score from t
 unpermuted data lies well outside what is typical under permutation, the result is more
 consistent with genuine predictive structure than with chance alignment. The helper
 [`calculate_p_value`](@ref) can then be used to summarize the observed score relative to
-the permutation distribution.
+the permutation distribution. This comparison is only valid if the score from the real
+data is aggregated in exactly the same way, that is, as the mean of the outer-fold
+scores.
 
 When `strata` are supplied, the same permutation applied to `Y` is also applied to the
 stratification vector before nested CV is rerun. This keeps the stratified fold generation
@@ -118,15 +109,21 @@ page. The goal here is to estimate predictive performance with nested cross-vali
 compare that performance against a permutation-based null distribution, and then inspect
 which samples are most often misclassified across repeated outer folds.
 
-To keep the documentation example reasonably fast, we use a fixed `gamma=0.5`, allow at
-most two latent variables, and run only a small number of folds and permutations. For a
-real analysis, those settings should be chosen more carefully.
+To keep the documentation example reasonably fast, we use a fixed `gamma=0.5` and allow at
+most two latent variables. For a real analysis, those settings should be chosen more 
+carefully.
 
 In this example, class balancing is applied through `obs_weight_fn`, which is recomputed
 inside each training fold. This is preferable to precomputing inverse-frequency weights on
 the full dataset before cross-validation. If you instead want fixed sample-specific
 weights, pass them through `fit_kwargs=(; obs_weights=...)` and they will simply be
 subsetted to each training split.
+
+The example also uses the encoding helpers [`labels_to_one_hot`](@ref) and
+[`one_hot_to_labels`](@ref). The first converts a vector of class labels into the one-hot
+response matrix expected by the fitting and cross-validation routines, while the second
+converts such a matrix back to ordinary class labels. That back-conversion is used below
+when stratified folds or class-frequency weights need access to the class labels again.
 
 ```@example crossvalidation
 using CPPLS
@@ -153,8 +150,7 @@ spec = CPPLSSpec(
 )
 
 rng = MersenneTwister(12345)
-obs_weight_fn = (X_train, Y_train; kwargs...) ->
-    invfreqweights(one_hot_to_labels(Y_train))
+obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train))
 
 fit_kwargs = (
     Y_aux=Y_aux,
@@ -221,20 +217,28 @@ The `permutation_scores` vector contains the mean outer-fold accuracies for each
 `999` permutations. Let us visualize that distribution.
 
 ```@example crossvalidation
-f = hist(permutation_scores, bins=20)
+f = Figure(; size=(600, 900))
+ax = Axis(
+    f[1, 1], 
+    title="Model accuracy null distribution",
+    xlabel="Mean outer-fold accuracy",
+    ylabel="Count across permutations"
+)
+hist!(ax, permutation_scores, bins=20)
 save("accuracy_hist.svg", f)
 nothing
 ```
 
 ![](accuracy_hist.svg)
 
-As we can see, the permutation accuracies are tightly distributed around `0.5`, with only
-few being as large as or larger than the observed accuracy from the real data. This shows
-that even a modest mean accuracy can still be statistically significant. We can quantify
-that more formally with [`calculate_p_value`](@ref), using the permutation scores and the
-observed accuracy. Because classification uses an accuracy-like score here,
-`calculate_p_value` is called with `tail=:upper` so that large observed scores are treated
-as stronger evidence against the null model.
+As we can see, the permutation accuracies are mostly distributed around and below `0.5`, 
+with only few being as large as or larger than the observed accuracy from the real data. 
+This shows that even a modest mean accuracy can still be statistically significant. We can 
+quantify that more formally with [`calculate_p_value`](@ref), using the permutation scores 
+and the observed accuracy. Because classification uses an accuracy-like score here,
+`calculate_p_value` is called with `tail=:upper`, corresponding to a one-sided
+upper-tail test in which the p-value is the probability, under the null model, of
+observing a score at least as large as the observed one.
 
 ```@example crossvalidation
 p_value = calculate_p_value(permutation_scores, observed_accuracy; tail=:upper)
@@ -243,8 +247,8 @@ p_value = calculate_p_value(permutation_scores, observed_accuracy; tail=:upper)
 In this example, the resulting p-value indicates statistical significance at an
 `alpha = 0.05` threshold.
 
-Note that the assessment above is comparatively inexpensive because `X` is small and we
-use a fixed `gamma` value. With datasets containing hundreds of samples and thousands of
+Note that the assessment above was comparatively inexpensive because `X` is small and we
+used a fixed `gamma` value. With datasets containing hundreds of samples and thousands of
 traits, especially when `gamma` is optimized across a dense grid such as `gamma=0:0.01:1`, 
 the computation becomes much more demanding. In that situation it can make sense to 
 distribute the permutation runs. For example, one could run `20` separate calls to 
@@ -256,6 +260,7 @@ distribute the permutation runs. For example, one could run `20` separate calls 
     be started with a different RNG seed. Reusing the same seed can lead to overlapping
     permutation sequences and therefore to a biased null distribution.
 
+!!! warning
     When running distributed permutations, limit each worker or node to a single thread.
     Using multiple threads per worker can lead to non-deterministic crashes.
 

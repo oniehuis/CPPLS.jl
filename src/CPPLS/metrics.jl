@@ -62,10 +62,10 @@ end
 
 Compute an empirical p-value from permutation scores. With `tail=:upper`, the p-value is
 the fraction of permutation scores greater than or numerically equal to the observed
-score, divided by `length(permutation_scores) + 1` to include the observed model in the
-denominator. This is appropriate for accuracy-like metrics where larger values are better.
-With `tail=:lower`, the comparison is reversed, which is appropriate for error-like
-metrics where smaller values are better.
+score, with a `+1` correction in both numerator and denominator to account for the
+observed model itself. This is appropriate for accuracy-like metrics where larger values
+are better. With `tail=:lower`, the comparison is reversed, which is appropriate for
+error-like metrics where smaller values are better.
 
 Arguments
 - `permutation_scores`: vector of scores from label-shuffled runs.
@@ -74,10 +74,10 @@ Arguments
 
 # Example
 ```
-julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.4
+julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.6
 true
 
-julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58; tail=:lower) ≈ 0.6
+julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58; tail=:lower) ≈ 0.8
 true
 ```
 """
@@ -95,5 +95,5 @@ function calculate_p_value(
         x -> x ≤ observed_score || x ≈ observed_score
     end
 
-    count(count_fn, permutation_scores) / (length(permutation_scores) + 1)
+    (count(count_fn, permutation_scores) + 1) / (length(permutation_scores) + 1)
 end

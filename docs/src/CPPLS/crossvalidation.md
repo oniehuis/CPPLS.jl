@@ -18,25 +18,25 @@ model and reduces optimistic bias.
 
 1. The samples are split into outer folds.
 2. For each outer repeat, one fold is held out as the test set and the remaining samples
-	are used as the training set.
+    are used as the training set.
 3. Within that outer training set, an inner cross-validation is run to select the number
-	of latent variables.
+    of latent variables.
 4. A final model is fitted on the full outer training set with the selected number of
-	latent variables.
+    latent variables.
 5. That model is then applied to the outer test set, and the resulting score is stored.
 
 The implementation is explicit rather than implicit. In particular:
 
 1. Fold construction is handled by `build_folds`.
 2. If `strata` are supplied, folds are created with `random_batch_indices`, which shuffles
-	the samples within each stratum and then distributes them round-robin across folds.
-	This helps maintain class proportions across folds in discriminant-analysis workflows.
+    the samples within each stratum and then distributes them round-robin across folds.
+    This helps maintain class proportions across folds in discriminant-analysis workflows.
 3. The inner-loop model selection is handled by `optimize_num_latent_variables`.
 4. For each inner fold, CPPLS fits one model with up to `max_components` latent variables,
-	evaluates every component count from `1:max_components`, and reduces those scores to a
-	single best component count by `select_fn`.
+    evaluates every component count from `1:max_components`, and reduces those scores to a
+    single best component count by `select_fn`.
 5. The final choice returned by the inner loop is the median of the per-fold best
-	component counts, rounded down to an integer.
+    component counts, rounded down to an integer.
 
 This design matters because it reflects how CPPLS is actually used in the package. The
 outer score measures prediction on samples excluded from fitting, while the inner loop
@@ -64,7 +64,7 @@ permutation:
 1. The same nested CV procedure is rerun.
 2. The mean outer-fold score from that permuted run is stored.
 3. This is repeated many times to build a null distribution of scores expected when the
-	correspondence between `X` and `Y` is random.
+    correspondence between `X` and `Y` is random.
 
 This is useful because it tests the whole modeling pipeline, not just a single fitted
 model. The null distribution therefore includes the effect of repeated fold splitting,

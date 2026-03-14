@@ -37,8 +37,8 @@ end
     perms = [0.4, 0.6, 0.5, 0.55]
     model_acc = 0.5
 
-    @test CPPLS.calculate_p_value(perms, model_acc) == 3 / (length(perms) + 1)
+    @test CPPLS.calculate_p_value(perms, model_acc) == 4 / (length(perms) + 1)
     @test CPPLS.calculate_p_value(perms, model_acc; tail=:lower) ==
-        2 / (length(perms) + 1)
+        3 / (length(perms) + 1)
     @test_throws ArgumentError CPPLS.calculate_p_value(perms, model_acc; tail=:sideways)
 end

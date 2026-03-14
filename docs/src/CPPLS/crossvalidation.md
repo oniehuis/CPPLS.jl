@@ -7,8 +7,8 @@ the model. In CPPLS, cross-validation also serves a second purpose: selecting th
 of latent variables. These two tasks are coupled, because model complexity has a direct
 effect on apparent predictive performance.
 
-The package therefore implements explicit nested cross-validation. The outer loop is used
-for performance assessment, whereas the inner loop is used for model selection. This keeps
+The package implements explicit nested cross-validation. The outer loop is used for 
+performance assessment, whereas the inner loop is used for model selection. This keeps
 the choice of the number of latent variables separated from the final evaluation of the
 model and reduces optimistic bias.
 
@@ -32,12 +32,11 @@ non-overlapping. What can change is only whether the outer folds are reused or r
 between repeats: with `reshuffle_outer_folds=false`, the same outer partition is reused,
 whereas with `reshuffle_outer_folds=true`, a new outer partition is drawn for each repeat.
 
-This design matters because it reflects how CPPLS is actually evaluated in practice. The
-outer scores measure prediction on samples excluded from fitting, while the inner loop
-controls model complexity. For classification, [`cv_classification`](@ref) provides an
-accuracy-like score based on one-hot predictions and normalized misclassification cost.
-For regression, [`cv_regression`](@ref) provides the corresponding callbacks, using root
-mean squared error by default.
+In conclusion, the outer scores measure prediction on samples excluded from fitting, while 
+the inner loop controls model complexity. For classification, [`cv_classification`](@ref) 
+provides an accuracy-like score based on one-hot predictions and normalized 
+misclassification cost. For regression, [`cv_regression`](@ref) provides the corresponding 
+callbacks, using root mean squared error by default.
 
 ## Permutation-Based Significance Assessment
 
@@ -119,7 +118,7 @@ the full dataset before cross-validation. If you instead want fixed sample-speci
 weights, pass them through `fit_kwargs=(; obs_weights=...)` and they will simply be
 subsetted to each training split.
 
-The example also uses the encoding helpers [`labels_to_one_hot`](@ref) and
+The example uses the encoding helpers [`labels_to_one_hot`](@ref) and
 [`one_hot_to_labels`](@ref). The first converts a vector of class labels into the one-hot
 response matrix expected by the fitting and cross-validation routines, while the second
 converts such a matrix back to ordinary class labels. That back-conversion is used below
@@ -268,10 +267,6 @@ distribute the permutation runs. For example, one could run `20` separate calls 
     When permutation runs are distributed across multiple jobs or nodes, each run should
     be started with a different RNG seed. Reusing the same seed can lead to overlapping
     permutation sequences and therefore to a biased null distribution.
-
-!!! warning
-    When running distributed permutations, limit each worker or node to a single thread.
-    Using multiple threads per worker can lead to non-deterministic crashes.
 
 When the focus shifts from global performance to potentially problematic samples,
 [`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic.

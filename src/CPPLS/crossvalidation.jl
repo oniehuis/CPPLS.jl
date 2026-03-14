@@ -116,6 +116,7 @@ end
     nested_cv(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple=(;),
+        obs_weight_fn::Union{Function, Nothing}=nothing,
         score_fn::Function,
         predict_fn::Function,
         select_fn::Function,
@@ -134,6 +135,12 @@ Run explicit nested cross-validation for CPPLS. The caller supplies `score_fn`,
 classification. `spec` and `fit_kwargs` control model fitting, while the return value is
 `(outer_fold_scores, optimal_num_latent_variables)`.
 
+When provided, `obs_weight_fn` is called on each training split as
+`obs_weight_fn(X_train, Y_train; sample_indices=..., fit_kwargs=..., spec=...)`. The
+callback must return fold-local observation weights matching the current training-set
+size, or `nothing`. Any fold-local weights returned by the callback are combined
+elementwise with fixed `obs_weights` supplied through `fit_kwargs`.
+
 For standard use, these callbacks can be obtained from `cv_classification()` or
 `cv_regression()`.
 
@@ -145,6 +152,7 @@ function nested_cv(
     Y::AbstractMatrix{<:Real};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple = (;),
+    obs_weight_fn::Union{Function, Nothing}=nothing,
     score_fn::Function,
     predict_fn::Function,
     select_fn::Function,
@@ -203,7 +211,15 @@ function nested_cv(
         @views X_train = X[train_indices, :]
         @views Y_train = Y[train_indices, :]
 
-        fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        base_fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        fold_kwargs = resolve_obs_weights(
+            base_fold_kwargs,
+            obs_weight_fn,
+            X_train,
+            Y_train,
+            train_indices,
+            spec,
+        )
         inner_strata = isnothing(strata) ? nothing : strata[train_indices]
         if spec.analysis_mode ≡ :discriminant
             fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
@@ -211,8 +227,8 @@ function nested_cv(
 
         optimal_num_latent_variables[outer_fold_idx] = optimize_num_latent_variables(
             X_train, Y_train, max_components, num_inner_folds, num_inner_folds_repeats, 
-            spec, fold_kwargs, score_fn, predict_fn, select_fn, rng, verbose; 
-            strata=inner_strata)
+            spec, base_fold_kwargs, obs_weight_fn, score_fn, predict_fn, select_fn, rng,
+            verbose; strata=inner_strata, sample_indices=train_indices)
 
         spec_k = with_n_components(spec, optimal_num_latent_variables[outer_fold_idx])
         final_model = fit(spec_k, X_train, Y_train; fold_kwargs...)
@@ -234,6 +250,7 @@ end
     nested_cv_permutation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple=(;),
+        obs_weight_fn::Union{Function, Nothing}=nothing,
         score_fn::Function,
         predict_fn::Function,
         select_fn::Function,
@@ -258,6 +275,7 @@ function nested_cv_permutation(
     Y::AbstractMatrix{<:Real};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple = (;),
+    obs_weight_fn::Union{Function, Nothing}=nothing,
     score_fn::Function,
     predict_fn::Function,
     select_fn::Function,
@@ -293,7 +311,8 @@ function nested_cv_permutation(
         verbose && println("Permutation: ", perm_idx, " / ", num_permutations)
 
         scores, _ = nested_cv(X, Y_perm; spec=spec, fit_kwargs=fit_kwargs, 
-            score_fn=score_fn, predict_fn=predict_fn, select_fn=select_fn,
+            obs_weight_fn=obs_weight_fn, score_fn=score_fn, predict_fn=predict_fn,
+            select_fn=select_fn,
             num_outer_folds=num_outer_folds, 
             num_outer_folds_repeats=num_outer_folds_repeats, 
             num_inner_folds=num_inner_folds, 
@@ -311,6 +330,7 @@ end
     cv_outlier_scan(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple=(;),
+        obs_weight_fn::Union{Function, Nothing}=nothing,
         num_outer_folds::Integer=8,
         num_outer_folds_repeats::Integer=10 * num_outer_folds,
         num_inner_folds::Integer=7,
@@ -331,6 +351,7 @@ function cv_outlier_scan(
     Y::AbstractMatrix{<:Real};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple = (;),
+    obs_weight_fn::Union{Function, Nothing}=nothing,
     num_outer_folds::Int=8,
     num_outer_folds_repeats::Int=10 * num_outer_folds,
     num_inner_folds::Int=7,
@@ -375,13 +396,22 @@ function cv_outlier_scan(
         @views X_train = X[train_indices, :]
         @views Y_train = Y[train_indices, :]
 
-        fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        base_fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        fold_kwargs = resolve_obs_weights(
+            base_fold_kwargs,
+            obs_weight_fn,
+            X_train,
+            Y_train,
+            train_indices,
+            spec,
+        )
         fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
         inner_strata = strata[train_indices]
 
         best_k = optimize_num_latent_variables(X_train, Y_train, max_components, 
-            num_inner_folds, num_inner_folds_repeats, spec, fold_kwargs, cfg.score_fn,
-            cfg.predict_fn, cfg.select_fn, rng, verbose; strata=inner_strata)
+            num_inner_folds, num_inner_folds_repeats, spec, base_fold_kwargs,
+            obs_weight_fn, cfg.score_fn, cfg.predict_fn, cfg.select_fn, rng, verbose;
+            strata=inner_strata, sample_indices=train_indices)
 
         spec_k = with_n_components(spec, best_k)
         final_model = fit(spec_k, X_train, Y_train; fold_kwargs...)
@@ -455,12 +485,14 @@ end
         num_inner_folds_repeats::Int,
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple,
+        obs_weight_fn::Union{Function, Nothing},
         score_fn::Function,
         predict_fn::Function,
         select_fn::Function,
         rng::AbstractRNG,
         verbose::Bool;
-        strata::Union{AbstractVector{<:Int}, Nothing}=nothing)
+        strata::Union{AbstractVector{<:Int}, Nothing}=nothing,
+        sample_indices::AbstractVector{<:Int}=collect(1:size(X_train_full, 1)))
 
 Run repeated inner cross-validation to select the number of latent variables. For each
 inner split, a model is fit with up to `max_components` components, evaluated with
@@ -475,12 +507,14 @@ function optimize_num_latent_variables(
     num_inner_folds_repeats::Int,
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple,
+    obs_weight_fn::Union{Function, Nothing},
     score_fn::Function,
     predict_fn::Function,
     select_fn::Function,
     rng::AbstractRNG,
     verbose::Bool;
     strata::T1=nothing,
+    sample_indices::AbstractVector{<:Int}=collect(1:size(X_train_full, 1)),
 ) where {
     T1<:Union{AbstractVector{<:Int}, Nothing}
 }
@@ -492,6 +526,8 @@ function optimize_num_latent_variables(
     n_samples = size(X_train_full, 1)
     size(Y_train_full, 1) == n_samples || throw(DimensionMismatch(
         "Row count mismatch between X_train_full and Y_train_full"))
+    length(sample_indices) == n_samples || throw(DimensionMismatch(
+        "Length of sample_indices must match the number of training samples."))
 
     inner_folds = build_folds(n_samples, num_inner_folds, rng; strata=strata)
 
@@ -508,8 +544,17 @@ function optimize_num_latent_variables(
         train_indices = setdiff(1:n_samples, test_indices)
         @views X_train = X_train_full[train_indices, :]
         @views Y_train = Y_train_full[train_indices, :]
+        fold_sample_indices = sample_indices[train_indices]
 
         fold_kwargs = subset_fit_kwargs(fit_kwargs, train_indices, n_samples)
+        fold_kwargs = resolve_obs_weights(
+            fold_kwargs,
+            obs_weight_fn,
+            X_train,
+            Y_train,
+            fold_sample_indices,
+            spec,
+        )
         if spec.analysis_mode ≡ :discriminant
             fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
         end
@@ -532,6 +577,66 @@ function optimize_num_latent_variables(
     end
 
     floor(Int, median(best_num_latent_vars_per_fold))
+end
+
+"""
+    resolve_obs_weights(fit_kwargs, obs_weight_fn, X_train, Y_train, sample_indices, spec)
+
+Return `fit_kwargs` with fold-local observation weights applied. Fixed `obs_weights`
+present in `fit_kwargs` are preserved and combined elementwise with weights returned by
+`obs_weight_fn`.
+"""
+function resolve_obs_weights(
+    fit_kwargs::NamedTuple,
+    obs_weight_fn::Union{Function, Nothing},
+    X_train::AbstractMatrix{<:Real},
+    Y_train::AbstractMatrix{<:Real},
+    sample_indices::AbstractVector{<:Int},
+    spec::CPPLSSpec,
+)
+    isnothing(obs_weight_fn) && return fit_kwargs
+
+    base_weights = haskey(fit_kwargs, :obs_weights) ? fit_kwargs.obs_weights : nothing
+    derived_weights = obs_weight_fn(
+        X_train,
+        Y_train;
+        sample_indices=sample_indices,
+        fit_kwargs=fit_kwargs,
+        spec=spec,
+    )
+    isnothing(derived_weights) && return fit_kwargs
+
+    checked_weights = validate_obs_weight_output(derived_weights, size(X_train, 1))
+    final_weights = isnothing(base_weights) ? checked_weights :
+        combine_obs_weights(base_weights, checked_weights)
+
+    merge(fit_kwargs, (; obs_weights=final_weights))
+end
+
+function validate_obs_weight_output(weights, n_samples::Int)
+    weights isa AbstractVector{<:Real} || throw(ArgumentError(
+        "obs_weight_fn must return an AbstractVector of real numbers or nothing."))
+    length(weights) == n_samples || throw(DimensionMismatch(
+        "obs_weight_fn returned $(length(weights)) weights for $n_samples training samples."))
+    all(isfinite, weights) || throw(ArgumentError(
+        "obs_weight_fn returned non-finite observation weights."))
+    all(≥(0), weights) || throw(ArgumentError(
+        "obs_weight_fn returned negative observation weights."))
+    any(>(0), weights) || throw(ArgumentError(
+        "obs_weight_fn returned only zero observation weights."))
+    weights isa Vector{Float64} ? weights : Float64.(weights)
+end
+
+function combine_obs_weights(
+    base_weights::AbstractVector{<:Real},
+    derived_weights::AbstractVector{<:Real},
+)
+    length(base_weights) == length(derived_weights) || throw(DimensionMismatch(
+        "obs_weights and obs_weight_fn output must have the same length."))
+    combined = Float64.(base_weights) .* Float64.(derived_weights)
+    any(>(0), combined) || throw(ArgumentError(
+        "Combining obs_weights with obs_weight_fn output produced only zero weights."))
+    combined
 end
 
 """

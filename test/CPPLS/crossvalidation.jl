@@ -118,6 +118,7 @@ end
         2,
         spec,
         (;),
+        nothing,
         cfg.score_fn,
         cfg.predict_fn,
         cfg.select_fn,
@@ -128,15 +129,35 @@ end
     @test selected == 1
 end
 
+@testset "resolve_obs_weights combines fixed and fold-local weights" begin
+    fit_kwargs = (; obs_weights = [1.0, 2.0])
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
+    resolved = CPPLS.resolve_obs_weights(
+        fit_kwargs,
+        (X, Y; kwargs...) -> [0.5, 0.25],
+        CROSSVAL_X[1:2, :],
+        CROSSVAL_Y[1:2, :],
+        [3, 7],
+        spec,
+    )
+
+    @test resolved.obs_weights ≈ [0.5, 0.5]
+end
+
 @testset "nested_cv returns scores and component choices" begin
     spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
     cfg = CPPLS.cv_classification()
+    weight_calls = Ref(0)
     scores, components = suppress_info() do
         CPPLS.nested_cv(
             CROSSVAL_X,
             CROSSVAL_Y;
             spec = spec,
             fit_kwargs = (;),
+            obs_weight_fn = (X, Y; kwargs...) -> begin
+                weight_calls[] += 1
+                ones(size(X, 1))
+            end,
             score_fn = cfg.score_fn,
             predict_fn = cfg.predict_fn,
             select_fn = cfg.select_fn,
@@ -154,6 +175,7 @@ end
     @test length(scores) == 2
     @test all(0.0 ≤ acc ≤ 1.0 for acc in scores)
     @test components == [1, 1]
+    @test weight_calls[] == 6
 end
 
 @testset "nested_cv_permutation shuffles responses" begin
@@ -165,6 +187,7 @@ end
             CROSSVAL_Y;
             spec = spec,
             fit_kwargs = (;),
+            obs_weight_fn = (X, Y; kwargs...) -> ones(size(X, 1)),
             score_fn = cfg.score_fn,
             predict_fn = cfg.predict_fn,
             select_fn = cfg.select_fn,
@@ -192,6 +215,7 @@ end
             CROSSVAL_Y;
             spec = spec,
             fit_kwargs = (;),
+            obs_weight_fn = (X, Y; kwargs...) -> ones(size(X, 1)),
             num_outer_folds = 2,
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,

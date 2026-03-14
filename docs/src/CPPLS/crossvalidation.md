@@ -122,6 +122,12 @@ To keep the documentation example reasonably fast, we use a fixed `gamma=0.5`, a
 most two latent variables, and run only a small number of folds and permutations. For a
 real analysis, those settings should be chosen more carefully.
 
+In this example, class balancing is applied through `obs_weight_fn`, which is recomputed
+inside each training fold. This is preferable to precomputing inverse-frequency weights on
+the full dataset before cross-validation. If you instead want fixed sample-specific
+weights, pass them through `fit_kwargs=(; obs_weights=...)` and they will simply be
+subsetted to each training split.
+
 ```@example crossvalidation
 using CPPLS
 using JLD2
@@ -146,12 +152,12 @@ spec = CPPLSSpec(
 )
 
 rng = MersenneTwister(12345)
+obs_weight_fn = (X_train, Y_train; kwargs...) ->
+    invfreqweights(one_hot_to_labels(Y_train))
 
 fit_kwargs = (
-    obs_weights=invfreqweights(classes),
     Y_aux=Y_aux,
     sample_labels=sample_labels,
-    sample_classes=classes,
     response_labels=response_labels,
 )
 
@@ -160,13 +166,14 @@ scores, best_components = nested_cv(
     Y;
     spec=spec,
     fit_kwargs=fit_kwargs,
+    obs_weight_fn=obs_weight_fn,
     score_fn=cfg.score_fn,
     predict_fn=cfg.predict_fn,
     select_fn=cfg.select_fn,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
-    num_inner_folds=3,
-    num_inner_folds_repeats=3,
+    num_inner_folds=4,
+    num_inner_folds_repeats=4,
     max_components=2,
     strata=one_hot_to_labels(Y),
     rng=rng,
@@ -180,14 +187,15 @@ permutation_scores = nested_cv_permutation(
     Y;
     spec=spec,
     fit_kwargs=fit_kwargs,
+    obs_weight_fn=obs_weight_fn,
     score_fn=cfg.score_fn,
     predict_fn=cfg.predict_fn,
     select_fn=cfg.select_fn,
-    num_permutations=9,
+    num_permutations=99,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
-    num_inner_folds=3,
-    num_inner_folds_repeats=3,
+    num_inner_folds=4,
+    num_inner_folds_repeats=4,
     max_components=2,
     strata=one_hot_to_labels(Y),
     rng=MersenneTwister(12345),
@@ -221,11 +229,8 @@ outlier_scan = cv_outlier_scan(
     X,
     classes;
     spec=spec,
-    fit_kwargs=(;
-        obs_weights=invfreqweights(classes),
-        Y_aux=Y_aux,
-        sample_labels=sample_labels,
-    ),
+    fit_kwargs=(; Y_aux=Y_aux, sample_labels=sample_labels),
+    obs_weight_fn=obs_weight_fn,
     num_outer_folds=3,
     num_outer_folds_repeats=6,
     num_inner_folds=3,

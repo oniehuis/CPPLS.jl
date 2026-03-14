@@ -287,22 +287,22 @@ rounded to three decimal places and sorted in descending order.
 
 ```@example crossvalidation
 suspect_idx = sortperm(outlier_scan.rate, rev=true)[1:10]
-(;
-    sample=sample_labels[suspect_idx],
-    tested=outlier_scan.n_tested[suspect_idx],
-    flagged=outlier_scan.n_flagged[suspect_idx],
-    rate=round.(outlier_scan.rate[suspect_idx]; digits=3),
-)
+rate = round.(outlier_scan.rate[suspect_idx]; digits=3)
+for (j, i) in enumerate(suspect_idx)
+    println("Sample: ", sample_labels[i], "; error rate: ", rate[j])
+end
 ```
 
 In the current example, the overall model accuracy is fairly low, so several samples show
-non-negligible flagging rates. None of these samples is actually mislabeled. This 
-illustrates an important point: these rates are not formal proof that a sample is
-mislabeled. They are instead a practical way to prioritize follow-up inspection of
+non-negligible flagging rates. None of these samples is actually mislabeled. This
+illustrates an important point: these rates do not constitute formal proof that a sample
+is mislabeled. They are instead a practical way to prioritize follow-up inspection of
 samples that repeatedly fail when they are held out, which is often exactly the situation
 in which class-assignment problems or unusual sample behavior become visible.
 
 The functions discussed above are documented in full below.
+
+# API
 
 ```@docs
 CPPLS.calculate_p_value

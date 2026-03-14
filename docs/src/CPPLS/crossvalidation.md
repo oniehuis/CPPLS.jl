@@ -125,6 +125,15 @@ response matrix expected by the fitting and cross-validation routines, while the
 converts such a matrix back to ordinary class labels. That back-conversion is used below
 when stratified folds or class-frequency weights need access to the class labels again.
 
+The packages loaded below play different roles: `CPPLS` provides the modeling and
+cross-validation functions, `JLD2` reads the example dataset from disk, `Random`
+provides a reproducible RNG, `Statistics` provides summary functions such as `mean`, and
+`CairoMakie` is used to draw and save the histogram. In a normal Julia environment,
+packages such as `CPPLS`, `JLD2`, and `CairoMakie` must be installed before running the
+example; the Julia Pkg documentation explains how to install registered packages in the
+[Getting Started](https://pkgdocs.julialang.org/v1/getting-started/#Basic-Usage)
+section.
+
 ```@example crossvalidation
 using CPPLS
 using JLD2

@@ -34,7 +34,10 @@ structure is represented in the latent space.
 In addition to `CPPLS`, the example uses `JLD2` to load the dataset from disk,
 `MultivariateStats` to compute the PCA baseline, `Colors` to convert the auxiliary
 variable into grayscale values, `Statistics` to orient the latent variables
-consistently across plots, and `CairoMakie` to render static figures.
+consistently across plots, and `CairoMakie` to render static figures; the Julia Pkg 
+documentation explains how to install registered packages in the
+[Getting Started](https://pkgdocs.julialang.org/v1/getting-started/#Basic-Usage)
+section.
 
 ```@example fit_da
 using CPPLS

@@ -24,6 +24,13 @@ remaining observations, and then use the fitted model to:
 We start by loading the synthetic data and splitting them into a training set and a
 hold-out set.
 
+The packages loaded below serve different purposes: `CPPLS` provides the modeling,
+projection, and prediction functions, while `JLD2` reads the example dataset from disk.
+In a normal Julia environment, both packages must be installed before running the
+example; the Julia Pkg documentation explains how to install registered packages in the
+[Getting Started](https://pkgdocs.julialang.org/v1/getting-started/#Basic-Usage)
+section.
+
 ```@example project
 using CPPLS
 using JLD2

@@ -226,7 +226,7 @@ The `permutation_scores` vector contains the mean outer-fold accuracies for each
 `999` permutations. Let us visualize that distribution.
 
 ```@example crossvalidation
-f = Figure(; size=(900, 300))
+f = Figure(; size=(900, 600))
 ax = Axis(
     f[1, 1], 
     title="Model accuracy null distribution",

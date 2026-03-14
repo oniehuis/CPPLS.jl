@@ -111,6 +111,143 @@ This makes `cv_outlier_scan` especially useful in experimental DA applications, 
 goal is often not only to estimate classification performance but also to identify samples
 that deserve follow-up quality control.
 
+# Example
+
+We again use the synthetic discriminant-analysis dataset introduced on the [Fit](@ref)
+page. The goal here is to estimate predictive performance with nested cross-validation,
+compare that performance against a permutation-based null distribution, and then inspect
+which samples are most often misclassified across repeated outer folds.
+
+To keep the documentation example reasonably fast, we use a fixed `gamma=0.5`, allow at
+most two latent variables, and run only a small number of folds and permutations. For a
+real analysis, those settings should be chosen more carefully.
+
+```@example crossvalidation
+using CPPLS
+using JLD2
+using Random
+using Statistics
+
+sample_labels, X, classes, Y_aux = load(
+    CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
+    "sample_labels",
+    "X",
+    "classes",
+    "Y_aux"
+)
+
+Y, response_labels = labels_to_one_hot(classes)
+cfg = cv_classification()
+
+spec = CPPLSSpec(
+    n_components=2,
+    gamma=0.5,
+    analysis_mode=:discriminant,
+)
+
+rng = MersenneTwister(12345)
+
+fit_kwargs = (
+    obs_weights=invfreqweights(classes),
+    Y_aux=Y_aux,
+    sample_labels=sample_labels,
+    sample_classes=classes,
+    response_labels=response_labels,
+)
+
+scores, best_components = nested_cv(
+    X,
+    Y;
+    spec=spec,
+    fit_kwargs=fit_kwargs,
+    score_fn=cfg.score_fn,
+    predict_fn=cfg.predict_fn,
+    select_fn=cfg.select_fn,
+    num_outer_folds=3,
+    num_outer_folds_repeats=3,
+    num_inner_folds=3,
+    num_inner_folds_repeats=3,
+    max_components=2,
+    strata=one_hot_to_labels(Y),
+    rng=rng,
+    verbose=true,
+)
+
+observed_accuracy = mean(scores)
+
+permutation_scores = nested_cv_permutation(
+    X,
+    Y;
+    spec=spec,
+    fit_kwargs=fit_kwargs,
+    score_fn=cfg.score_fn,
+    predict_fn=cfg.predict_fn,
+    select_fn=cfg.select_fn,
+    num_permutations=9,
+    num_outer_folds=3,
+    num_outer_folds_repeats=3,
+    num_inner_folds=3,
+    num_inner_folds_repeats=3,
+    max_components=2,
+    strata=one_hot_to_labels(Y),
+    rng=MersenneTwister(12345),
+    verbose=true,
+)
+
+p_value = calculate_p_value(permutation_scores, observed_accuracy)
+
+(
+    observed_accuracy=observed_accuracy,
+    best_components=best_components,
+    permutation_mean=mean(permutation_scores),
+    p_value=p_value,
+)
+```
+
+The returned `best_components` vector contains the component count selected inside each
+outer repeat. The `observed_accuracy` is the mean nested-CV score on the real labels,
+whereas `permutation_scores` summarize the same workflow after the correspondence between
+predictors and class labels has been broken. The empirical p-value therefore answers a
+pipeline-level question: is the observed accuracy unusual compared with what the same
+analysis achieves under random label assignments?
+
+When the focus shifts from global performance to potentially problematic samples,
+[`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic.
+
+```@example crossvalidation
+outlier_scan = cv_outlier_scan(
+    X,
+    classes;
+    spec=spec,
+    fit_kwargs=(;
+        obs_weights=invfreqweights(classes),
+        Y_aux=Y_aux,
+        sample_labels=sample_labels,
+    ),
+    num_outer_folds=3,
+    num_outer_folds_repeats=6,
+    num_inner_folds=3,
+    num_inner_folds_repeats=3,
+    max_components=2,
+    rng=MersenneTwister(54321),
+    verbose=false,
+)
+
+suspect_idx = sortperm(outlier_scan.rate, rev=true)[1:5]
+
+(
+    sample=sample_labels[suspect_idx],
+    class=classes[suspect_idx],
+    tested=outlier_scan.n_tested[suspect_idx],
+    flagged=outlier_scan.n_flagged[suspect_idx],
+    rate=round.(outlier_scan.rate[suspect_idx]; digits=3),
+)
+```
+
+These rates are not formal proof that a sample is mislabeled. They are a practical way to
+prioritize inspection of samples that repeatedly fail when they are held out, which is
+often exactly the situation in which class-assignment problems or unusual sample behavior
+become visible.
 
 ```@docs
 CPPLS.calculate_p_value

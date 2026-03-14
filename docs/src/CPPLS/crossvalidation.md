@@ -177,7 +177,7 @@ scores, best_components = nested_cv(
     max_components=2,
     strata=one_hot_to_labels(Y),
     rng=rng,
-    verbose=true,
+    verbose=false,
 )
 
 observed_accuracy = mean(scores)
@@ -191,7 +191,7 @@ permutation_scores = nested_cv_permutation(
     score_fn=cfg.score_fn,
     predict_fn=cfg.predict_fn,
     select_fn=cfg.select_fn,
-    num_permutations=99,
+    num_permutations=999,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
     num_inner_folds=4,
@@ -199,7 +199,7 @@ permutation_scores = nested_cv_permutation(
     max_components=2,
     strata=one_hot_to_labels(Y),
     rng=MersenneTwister(12345),
-    verbose=true,
+    verbose=false,
 )
 
 p_value = calculate_p_value(permutation_scores, observed_accuracy; tail=:upper)

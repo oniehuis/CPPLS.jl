@@ -221,12 +221,12 @@ The `permutation_scores` vector contains the mean outer-fold accuracies for each
 `999` permutations. Let us visualize that distribution.
 
 ```@example crossvalidation
-f = hist(permutation_scores, bins=100, normalization=:pdf)
-save("accuracy_dist.svg", f)
+f = hist(permutation_scores, bins=20)
+save("accuracy_hist.svg", f)
 nothing
 ```
 
-![](accuracy_dist.svg)
+![](accuracy_hist.svg)
 
 As we can see, the permutation accuracies are tightly distributed around `0.5`, with only
 few being as large as or larger than the observed accuracy from the real data. This shows
@@ -249,8 +249,15 @@ traits, especially when `gamma` is optimized across a dense grid such as `gamma=
 the computation becomes much more demanding. In that situation it can make sense to 
 distribute the permutation runs. For example, one could run `20` separate calls to 
 [`nested_cv_permutation`](@ref) on `20` different nodes, then concatenate the stored 
-`permutation_scores` vectors before passing them to [`calculate_p_value`](@ref). If you do 
-that, make sure each run starts with a different RNG seed.
+`permutation_scores` vectors before passing them to [`calculate_p_value`](@ref).
+
+!!! warning
+    When permutation runs are distributed across multiple jobs or nodes, each run should
+    be started with a different RNG seed. Reusing the same seed can lead to overlapping
+    permutation sequences and therefore to a biased null distribution.
+
+    When running distributed permutations, limit each worker or node to a single thread.
+    Using multiple threads per worker can lead to non-deterministic crashes.
 
 When the focus shifts from global performance to potentially problematic samples,
 [`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic.
@@ -270,22 +277,32 @@ outlier_scan = cv_outlier_scan(
     rng=MersenneTwister(54321),
     verbose=false,
 )
+```
 
-suspect_idx = sortperm(outlier_scan.rate, rev=true)[1:5]
+`outlier_scan` is a named tuple with the fields `n_tested`, `n_flagged`, and `rate`.
+`n_tested` specifies how often a given sample was evaluated, `n_flagged` specifies how
+often that sample was misclassified, and `rate` is the ratio of the two. Most users will
+primarily be interested in `rate`. Let us inspect the samples with the largest rates,
+rounded to three decimal places and sorted in descending order.
 
-(
+```@example crossvalidation
+suspect_idx = sortperm(outlier_scan.rate, rev=true)[1:10]
+(;
     sample=sample_labels[suspect_idx],
-    class=classes[suspect_idx],
     tested=outlier_scan.n_tested[suspect_idx],
     flagged=outlier_scan.n_flagged[suspect_idx],
     rate=round.(outlier_scan.rate[suspect_idx]; digits=3),
 )
 ```
 
-These rates are not formal proof that a sample is mislabeled. They are a practical way to
-prioritize inspection of samples that repeatedly fail when they are held out, which is
-often exactly the situation in which class-assignment problems or unusual sample behavior
-become visible.
+In the current example, the overall model accuracy is fairly low, so several samples show
+non-negligible flagging rates. None of these samples is actually mislabeled. This 
+illustrates an important point: these rates are not formal proof that a sample is
+mislabeled. They are instead a practical way to prioritize follow-up inspection of
+samples that repeatedly fail when they are held out, which is often exactly the situation
+in which class-assignment problems or unusual sample behavior become visible.
+
+The functions discussed above are documented in full below.
 
 ```@docs
 CPPLS.calculate_p_value

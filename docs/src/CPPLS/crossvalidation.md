@@ -194,7 +194,7 @@ permutation_scores = nested_cv_permutation(
     verbose=true,
 )
 
-p_value = calculate_p_value(permutation_scores, observed_accuracy)
+p_value = calculate_p_value(permutation_scores, observed_accuracy; tail=:upper)
 
 (
     observed_accuracy=observed_accuracy,
@@ -209,7 +209,9 @@ outer repeat. The `observed_accuracy` is the mean nested-CV score on the real la
 whereas `permutation_scores` summarize the same workflow after the correspondence between
 predictors and class labels has been broken. The empirical p-value therefore answers a
 pipeline-level question: is the observed accuracy unusual compared with what the same
-analysis achieves under random label assignments?
+analysis achieves under random label assignments? Because classification uses an
+accuracy-like score here, `calculate_p_value` is called with `tail=:upper` so that large
+observed scores are treated as stronger evidence against the null model.
 
 When the focus shifts from global performance to potentially problematic samples,
 [`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic.

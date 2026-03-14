@@ -54,28 +54,46 @@ end
 
 
 """
-    calculate_p_value(permutation_accuracies::AbstractVector{<:Real},
-                      model_accuracy::Float64)
+    calculate_p_value(
+        permutation_scores::AbstractVector{<:Real},
+        observed_score::Float64;
+        tail::Symbol=:upper,
+    )
 
-Compute an empirical p-value from permutation test accuracies. Counts how many permutation 
-accuracies are less than or numerically equal to the observed `model_accuracy`, divides by 
-`length(permutation_accuracies) + 1` to include the observed model in the denominator.
+Compute an empirical p-value from permutation scores. With `tail=:upper`, the p-value is
+the fraction of permutation scores greater than or numerically equal to the observed
+score, divided by `length(permutation_scores) + 1` to include the observed model in the
+denominator. This is appropriate for accuracy-like metrics where larger values are better.
+With `tail=:lower`, the comparison is reversed, which is appropriate for error-like
+metrics where smaller values are better.
 
 Arguments
-- `permutation_accuracies`: vector of accuracies from label-shuffled runs.
-- `model_accuracy`: accuracy achieved by the true model.
+- `permutation_scores`: vector of scores from label-shuffled runs.
+- `observed_score`: score achieved by the model fit to the original data.
+- `tail`: comparison direction, either `:upper` or `:lower`.
 
 # Example
 ```
-julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.6
+julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.4
+true
+
+julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58; tail=:lower) ≈ 0.6
 true
 ```
 """
 function calculate_p_value(
-    permutation_accuracies::AbstractVector{<:Real},
-    model_accuracy::Float64,
+    permutation_scores::AbstractVector{<:Real},
+    observed_score::Float64;
+    tail::Symbol=:upper,
 )
+    tail in (:upper, :lower) || throw(ArgumentError(
+        "tail must be :upper or :lower, got $tail"))
 
-    count(x -> x ≤ model_accuracy || x ≈ model_accuracy, permutation_accuracies) /
-        (length(permutation_accuracies) + 1)
+    count_fn = if tail === :upper
+        x -> x ≥ observed_score || x ≈ observed_score
+    else
+        x -> x ≤ observed_score || x ≈ observed_score
+    end
+
+    count(count_fn, permutation_scores) / (length(permutation_scores) + 1)
 end

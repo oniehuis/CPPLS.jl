@@ -33,10 +33,12 @@ end
     )
 end
 
-@testset "calculate_p_value counts permutations below threshold" begin
+@testset "calculate_p_value supports upper and lower tails" begin
     perms = [0.4, 0.6, 0.5, 0.55]
     model_acc = 0.5
 
-    p_value = CPPLS.calculate_p_value(perms, model_acc)
-    @test p_value == 2 / (length(perms) + 1)
+    @test CPPLS.calculate_p_value(perms, model_acc) == 3 / (length(perms) + 1)
+    @test CPPLS.calculate_p_value(perms, model_acc; tail=:lower) ==
+        2 / (length(perms) + 1)
+    @test_throws ArgumentError CPPLS.calculate_p_value(perms, model_acc; tail=:sideways)
 end

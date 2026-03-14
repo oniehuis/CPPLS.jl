@@ -82,6 +82,10 @@ end
     @test 0.0 ≤ score ≤ 1.0
     @test cfg.flag_fn(Y_true, Y_pred) == [false, true]
     @test cfg.select_fn([0.1, 0.2]) == 2
+
+    Y_true_imbalanced = [1 0; 0 1; 0 1]
+    Y_pred_imbalanced = [0 1; 0 1; 0 1]
+    @test cfg.score_fn(Y_true_imbalanced, Y_pred_imbalanced) ≈ 0.5
 end
 
 @testset "cv_regression builds default functions" begin

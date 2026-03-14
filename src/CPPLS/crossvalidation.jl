@@ -79,7 +79,7 @@ This helper is meant to supply the callback interface expected by `nested_cv`,
 misclassified samples across repeated outer folds.
 """
 function cv_classification(; weighted::Bool=true)
-    score_fn = (Y_true, Y_pred) -> 1 - nmc(Y_pred, Y_true, weighted)
+    score_fn = (Y_true, Y_pred) -> 1 - nmc(Y_true, Y_pred, weighted)
     predict_fn = (model, X, k) -> predictonehot(model, X, k)
     select_fn = argmax
     flag_fn = (Y_true, Y_pred) -> one_hot_to_labels(Y_pred) .≠ one_hot_to_labels(Y_true)

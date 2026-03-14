@@ -1,10 +1,3 @@
-using LinearAlgebra: I
-
-struct DummyProjectionModel <: CPPLS.AbstractCPPLSFit
-    R::Matrix{Float64}
-    X_bar::Matrix{Float64}
-end
-
 @testset "predict applies centering and component selection" begin
     B = Array{Float64}(undef, 2, 2, 2)
     B[:, :, 1] = [1.0 0.0; 0.0 2.0]
@@ -129,21 +122,24 @@ end
 end
 
 @testset "project centers inputs before applying R" begin
-    X_bar = reshape([0.5, -1.0], 1, :)
-    R = [
-        1.0 0.0
-        0.5 2.0
+    X_train = Float64[
+        1 0
+        0 1
+        1 1
+        2 3
     ]
-    dummy = DummyProjectionModel(R, X_bar)
-    X = [
+    labels = ["red", "blue", "red", "blue"]
+    model = CPPLS.fit_cppls(X_train, labels, 2; gamma = 0.5)
+
+    X_new = Float64[
         0.5 -1.0
         1.0 0.0
         2.0 1.0
     ]
 
-    centered = X .- X_bar
-    expected_scores = centered * R
+    centered = X_new .- model.X_bar
+    expected_scores = centered * model.R
 
-    scores = CPPLS.project(dummy, X)
+    scores = CPPLS.project(model, X_new)
     @test scores ≈ expected_scores
 end

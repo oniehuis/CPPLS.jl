@@ -1,35 +1,50 @@
 """
-    predict(model::AbstractCPPLSFit, X::AbstractMatrix{<:Real},
-        n_components::Integer=size(model.B, 3)) -> Array{Float64, 3}
+    predict(
+        model::AbstractCPPLSFit, 
+        X::AbstractMatrix{<:Real},
+        n_components::Integer=size(model.B, 3)
+    ) -> Array{Float64, 3}
 
 Generate predictions from a fitted CPPLS model for the rows of `X`. The result is a
 `(n_samples, n_targets, n_components)` array where `[:, :, i]` contains predictions 
 using the first `i` components. A `DimensionMismatch` is thrown if `n_components`
 exceeds the number stored in the model.
 
+See also
+[`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
+[`CPPLSFit`](@ref CPPLS.CPPLSFit),
+[`predictonehot`](@ref CPPLS.predictonehot), 
+[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
+[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+
 # Examples
-```
-julia> coeffs = reshape(Float64[0.5, 1.0], 2, 1, 1);  # two predictors, one target
+```jldoctest
+julia> using CPPLS; using JLD2; using Random;
 
-julia> X_bar = zeros(1, 2); Y_bar = reshape([0.0], 1, 1);
+julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> model = CPPLSFitLight(coeffs, X_bar, Y_bar, :regression);
+julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
-julia> Xnew = [1.0 2.0; 3.0 4.0];
+julia> model = fit(spec, X, classes);
 
-julia> predict(model, Xnew) ≈ [2.5; 5.5]
-true
+julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
+
+julia> Ynew = predict(model, Xnew);
+
+julia> size(Ynew)
+(2, 2, 2)
 ```
 """
 function predict(
     model::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    n_components::Int=size(model.B, 3)
+    n_components::Integer=size(model.B, 3)
 )
     n_samples_X = size(X, 1)
     n_targets_Y = size(model.Y_bar, 2)
 
-    n_components ≤ size(model.B, 3) ||throw(DimensionMismatch(
+    n_components ≤ size(model.B, 3) || throw(DimensionMismatch(
         "n_components exceeds the number of components in the model"))
 
     X_centered = X .- model.X_bar
@@ -53,15 +68,25 @@ Generate one-hot encoded class predictions from a fitted CPPLS model and predict
 This calls `predict`, sums predictions across components, corrects for repeated mean
 addition, and assigns each sample to the highest-scoring class.
 
+See also
+[`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
+[`CPPLSFit`](@ref CPPLS.CPPLSFit),
+[`predict`](@ref CPPLS.predict), 
+[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
+[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+
 # Examples
-```
-julia> coeffs = reshape(Float64[1, -1, 0.5, -0.5], 2, 2, 1);  # two predictors, two classes
+```jldoctest
+julia> using CPPLS; using JLD2; using Random;
 
-julia> X_bar = zeros(1, 2); Y_bar = reshape([0.0 0.0], 1, 2);
+julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> model = CPPLSFitLight(coeffs, X_bar, Y_bar, :regression);
+julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
-julia> Xnew = [2.0 1.0; 0.5 3.0];
+julia> model = fit(spec, X, classes);
+
+julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> predictonehot(model, Xnew) ≈ [1 0; 0 1]
 true
@@ -70,7 +95,7 @@ true
 function predictonehot(
     model::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    n_components::Int=size(model.B, 3)
+    n_components::Integer=size(model.B, 3)
 )
     predictions_to_onehot(model, predict(model, X, n_components))
 end
@@ -85,15 +110,25 @@ Convert a 3D prediction tensor (as returned by `predict`) into a one-hot encoded
 Predictions are summed across components and corrected for repeated mean addition before
 selecting the highest-scoring class for each sample.
 
+See also
+[`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
+[`CPPLSFit`](@ref CPPLS.CPPLSFit),
+[`predict`](@ref CPPLS.predict), 
+[`predictonehot`](@ref CPPLS.predictonehot), 
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
+[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+
 # Examples
-```
-julia> coeffs = reshape(Float64[1, -1, 0.5, -0.5], 2, 2, 1);  # two predictors, two classes
+```jldoctest
+julia> using CPPLS; using JLD2; using Random;
 
-julia> X_bar = zeros(1, 2); Y_bar = reshape([0.0 0.0], 1, 2);
+julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> model = CPPLSFitLight(coeffs, X_bar, Y_bar, :regression);
+julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
-julia> Xnew = [2.0 1.0; 0.5 3.0];
+julia> model = fit(spec, X, classes);
+
+julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> raw = predict(model, Xnew);
 
@@ -103,12 +138,12 @@ true
 """
 function predictions_to_onehot(
   model::AbstractCPPLSFit, 
-  predictions::AbstractArray{<:Real,3}
+  predictions::AbstractArray{<:Real, 3}
 )
     n_components = size(predictions, 3)
     n_classes = size(predictions, 2)
 
-    Y_pred_sum = sum(predictions, dims = 3)[:, :, 1]
+    Y_pred_sum = sum(predictions, dims=3)[:, :, 1]
     Y_pred_final = Y_pred_sum .- (n_components - 1) .* model.Y_bar
 
     predicted_class_indices = argmax.(eachrow(Y_pred_final))
@@ -125,11 +160,35 @@ end
 
 Generate predicted class labels from a discriminant CPPLS model and predictors `X`.
 The returned vector follows the ordering in `response_labels`.
+
+See also
+[`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
+[`CPPLSFit`](@ref CPPLS.CPPLSFit),
+[`predict`](@ref CPPLS.predict), 
+[`predictonehot`](@ref CPPLS.predictonehot), 
+[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+
+# Examples
+```jldoctest
+julia> using CPPLS; using JLD2; using Random;
+
+julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+
+julia> model = fit(spec, X, classes);
+
+julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
+
+julia> predictsampleclasses(model, Xnew) == ["major", "minor"]
+true
+```
 """
 function predictsampleclasses(
     model::CPPLSFit,
     X::AbstractMatrix{<:Real},
-    n_components::Int=size(model.B, 3)
+    n_components::Integer=size(model.B, 3)
 )
     predictions_to_sampleclasses(model, predict(model, X, n_components))
 end
@@ -142,6 +201,32 @@ end
 
 Convert a 3D prediction tensor (as returned by `predict`) into class labels using the
 stored `response_labels` ordering.
+
+See also
+[`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
+[`CPPLSFit`](@ref CPPLS.CPPLSFit),
+[`predict`](@ref CPPLS.predict), 
+[`predictonehot`](@ref CPPLS.predictonehot), 
+[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
+
+# Examples
+```jldoctest
+julia> using CPPLS; using JLD2; using Random;
+
+julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+
+julia> model = fit(spec, X, classes);
+
+julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
+
+julia> raw = predict(model, Xnew);
+
+julia> predictions_to_sampleclasses(model, raw) == ["major", "minor"]
+true
+```
 """
 function predictions_to_sampleclasses(
     model::CPPLSFit,
@@ -163,31 +248,34 @@ function predictions_to_sampleclasses(
 end
 
 """
-    project(model::AbstractCPPLSFit, X::AbstractMatrix{<:Real}) -> AbstractMatrix
+    project(model::CPPLSFit, X::AbstractMatrix{<:Real}) -> AbstractMatrix
 
 Compute latent component scores by projecting new predictors `X` with a fitted CPPLS
-model. The predictors are centered using `model.X_bar` and multiplied by `model.R`,
-returning an `(n_samples, n_components)` score matrix.
+model that stores a projection matrix `R` and predictor means `X_bar`.
+In normal usage this means a full `CPPLSFit`. The predictors are centered using
+`model.X_bar` and multiplied by `model.R`, returning an
+`(n_samples, n_components)` score matrix.
+
+Here, `model.X_bar` is the predictor mean vector stored during fitting and used to center
+new data in the same way as the training data, while `model.R` is the projection matrix
+that maps centered predictors into the latent component score space.
 
 # Examples
+```jldoctest
+julia> using CPPLS; using JLD2; using Random;
+
+julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+
+julia> model = fit(spec, X, classes);
+
+julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
+
+julia> xscores = project(model, Xnew);
+
+julia> size(xscores)
+(2, 2)
 ```
-julia> struct DemoCPPLS <: CPPLS.AbstractCPPLSFit
-           R::Matrix{Float64}
-           X_bar::Matrix{Float64}
-       end
-
-julia> proj = reshape([1.0, 0.5], 2, 1)
-2×1 Matrix{Float64}:
- 1.0
- 0.5
-
-julia> demo = DemoCPPLS(proj, reshape([0.5, 0.5], 1, :));
-
-julia> project(demo, [1.0 2.0; 3.0 4.0]) ≈ [1.25; 4.25]
-true
-```
-In practice, `demo` would be the `CPPLSFit` object returned by `fit_cppls`, which already
-contains the appropriate R matrix and predictor means.
 """
-project(model::AbstractCPPLSFit, X::AbstractMatrix{<:Real}) =
-    (X .- model.X_bar) * model.R
+project(model::CPPLSFit, X::AbstractMatrix{<:Real}) = (X .- model.X_bar) * model.R

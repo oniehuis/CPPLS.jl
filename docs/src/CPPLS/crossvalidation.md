@@ -133,6 +133,7 @@ using CPPLS
 using JLD2
 using Random
 using Statistics
+using CairoMakie
 
 sample_labels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
@@ -181,7 +182,20 @@ scores, best_components = nested_cv(
 )
 
 observed_accuracy = mean(scores)
+```
 
+The returned `scores` vector contains the outer-fold accuracies, and the `best_components` 
+vector contains the component counts selected inside the outer repeats. The value 
+`observed_accuracy` is the mean nested-CV score on the real labels.
+
+That mean accuracy is not especially impressive in absolute terms, because it is only
+moderately better than random guessing. This raises the question of whether the result is
+nonetheless significantly better than chance. To answer that, we compare it with a null
+distribution obtained from permuted data in which the correspondence between predictors
+and class labels has been broken. For a fair comparison, the permutation procedure uses
+exactly the same settings as `nested_cv`, here with a total of `999` permutations.
+
+```@example crossvalidation
 permutation_scores = nested_cv_permutation(
     X,
     Y;
@@ -201,25 +215,42 @@ permutation_scores = nested_cv_permutation(
     rng=MersenneTwister(12345),
     verbose=false,
 )
-
-p_value = calculate_p_value(permutation_scores, observed_accuracy; tail=:upper)
-
-(
-    observed_accuracy=observed_accuracy,
-    best_components=best_components,
-    permutation_mean=mean(permutation_scores),
-    p_value=p_value,
-)
 ```
 
-The returned `best_components` vector contains the component count selected inside each
-outer repeat. The `observed_accuracy` is the mean nested-CV score on the real labels,
-whereas `permutation_scores` summarize the same workflow after the correspondence between
-predictors and class labels has been broken. The empirical p-value therefore answers a
-pipeline-level question: is the observed accuracy unusual compared with what the same
-analysis achieves under random label assignments? Because classification uses an
-accuracy-like score here, `calculate_p_value` is called with `tail=:upper` so that large
-observed scores are treated as stronger evidence against the null model.
+The `permutation_scores` vector contains the mean outer-fold accuracies for each of the
+`999` permutations. Let us visualize that distribution.
+
+```@example crossvalidation
+f = hist(permutation_scores, bins=100, normalization=:pdf)
+save("accuracy_dist.svg", f)
+nothing
+```
+
+![](accuracy_dist.svg)
+
+As we can see, the permutation accuracies are tightly distributed around `0.5`, with only
+few being as large as or larger than the observed accuracy from the real data. This shows
+that even a modest mean accuracy can still be statistically significant. We can quantify
+that more formally with [`calculate_p_value`](@ref), using the permutation scores and the
+observed accuracy. Because classification uses an accuracy-like score here,
+`calculate_p_value` is called with `tail=:upper` so that large observed scores are treated
+as stronger evidence against the null model.
+
+```@example crossvalidation
+p_value = calculate_p_value(permutation_scores, observed_accuracy; tail=:upper)
+```
+
+In this example, the resulting p-value indicates statistical significance at an
+`alpha = 0.05` threshold.
+
+Note that the assessment above is comparatively inexpensive because `X` is small and we
+use a fixed `gamma` value. With datasets containing hundreds of samples and thousands of
+traits, especially when `gamma` is optimized across a dense grid such as `gamma=0:0.01:1`, 
+the computation becomes much more demanding. In that situation it can make sense to 
+distribute the permutation runs. For example, one could run `20` separate calls to 
+[`nested_cv_permutation`](@ref) on `20` different nodes, then concatenate the stored 
+`permutation_scores` vectors before passing them to [`calculate_p_value`](@ref). If you do 
+that, make sure each run starts with a different RNG seed.
 
 When the focus shifts from global performance to potentially problematic samples,
 [`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic.

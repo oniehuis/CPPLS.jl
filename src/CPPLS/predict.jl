@@ -22,7 +22,7 @@ See also
 ```jldoctest
 julia> using CPPLS; using JLD2; using Random;
 
-julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -80,7 +80,7 @@ See also
 ```jldoctest
 julia> using CPPLS; using JLD2; using Random;
 
-julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -122,7 +122,7 @@ See also
 ```jldoctest
 julia> using CPPLS; using JLD2; using Random;
 
-julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -173,7 +173,7 @@ See also
 ```jldoctest
 julia> using CPPLS; using JLD2; using Random;
 
-julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -214,7 +214,7 @@ See also
 ```jldoctest
 julia> using CPPLS; using JLD2; using Random;
 
-julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -264,7 +264,7 @@ that maps centered predictors into the latent component score space.
 ```jldoctest
 julia> using CPPLS; using JLD2; using Random;
 
-julia> X, classes = load( CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
 

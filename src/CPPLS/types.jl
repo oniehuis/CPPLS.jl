@@ -126,6 +126,27 @@ coef(model::AbstractCPPLSFit) = @views model.B[:, :, end]
 coef(model::AbstractCPPLSFit, n_components::Integer) = @views model.B[:, :, n_components]
 
 """
+    regression_coefficients(model::AbstractCPPLSFit)
+
+Return the regression coefficients for the fitted model.
+"""
+regression_coefficients(model::AbstractCPPLSFit) = model.B
+
+"""
+    X_bar(cpplsfit::AbstractCPPLSFit)
+
+Return the predictor mean vector for the fitted model.
+"""
+X_bar(cpplsfit::AbstractCPPLSFit) = cpplsfit.X_bar
+
+"""
+    Y_bar(cpplsfit::AbstractCPPLSFit)
+
+Return the response mean vector for the fitted model.
+"""
+Y_bar(cpplsfit::AbstractCPPLSFit) = cpplsfit.Y_bar
+
+"""
     CPPLSFit{T1, T2}
 
 Full fitted CPPLS model returned by `fit`. This type stores regression coefficients
@@ -268,6 +289,13 @@ gamma(cpplsfit::CPPLSFit) = cpplsfit.gamma
 Return the stored predictor labels for the fitted model.
 """
 predictor_labels(cpplsfit::CPPLSFit) = cpplsfit.predictor_labels
+
+"""
+    projection_matrix(cpplsfit::CPPLSFit)
+
+Return the projection matrix `R` for the fitted model.
+"""
+projection_matrix(cpplsfit::CPPLSFit) = cpplsfit.R
 
 """
     residuals(model::CPPLSFit)

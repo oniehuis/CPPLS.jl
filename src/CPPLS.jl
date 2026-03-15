@@ -53,11 +53,14 @@ export response_labels
 export sample_classes
 export sample_labels
 export X_scores
+export X_bar
+export Y_bar
 export analysis_mode
 export n_components
 export coef
 export fitted
 export residuals
+export projection_matrix
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """

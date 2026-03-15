@@ -37,6 +37,9 @@ CPPLS.n_components(::CPPLSSpec)
 ```@docs
 CPPLS.AbstractCPPLSFit
 StatsAPI.coef(model::AbstractCPPLSFit) 
+CPPLS.regression_coefficients(::AbstractCPPLSFit)
+CPPLS.X_bar(::AbstractCPPLSFit)
+CPPLS.Y_bar(::AbstractCPPLSFit)
 ```
 
 ## CPPLSFit
@@ -47,6 +50,7 @@ CPPLS.analysis_mode(::CPPLSFit)
 StatsAPI.fitted(::CPPLSFit)
 CPPLS.gamma(::CPPLSFit)
 CPPLS.predictor_labels(::CPPLSFit)
+CPPLS.projection_matrix(::CPPLSFit)
 CPPLS.response_labels(::CPPLSFit)
 StatsAPI.residuals(::CPPLSFit)
 CPPLS.sample_classes(::CPPLSFit)

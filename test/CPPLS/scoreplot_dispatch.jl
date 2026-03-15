@@ -32,6 +32,16 @@ end
     end
 
     override_method = which(CPPLS._require_extension, (Symbol, String))
+    plotly_override_method = which(CPPLS.scoreplot_plotly, (
+        AbstractVector{<:AbstractString},
+        Any,
+        AbstractMatrix{<:Real},
+    ))
+    makie_override_method = which(CPPLS.scoreplot_makie, (
+        AbstractVector{<:AbstractString},
+        Any,
+        AbstractMatrix{<:Real},
+    ))
 
     samples = [SubString("s1", 1:2), SubString("s2", 1:2)]
     groups = ["g1", "g2"]
@@ -163,4 +173,6 @@ end
     @test_throws ErrorException CPPLS.scoreplot(cppls; backend = :unknown)
 
     Base.delete_method(override_method)
+    Base.delete_method(plotly_override_method)
+    Base.delete_method(makie_override_method)
 end

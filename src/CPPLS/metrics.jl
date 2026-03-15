@@ -10,7 +10,7 @@ matrices. The inputs `Y_true_one_hot` and `Y_pred_one_hot` are `(n_samples × n_
 one-hot matrices of identical shape containing the ground-truth and predicted labels,
 respectively. If `weighted` is `false`, the function returns the plain misclassification 
 rate, computed as the `mean` of the entry-wise inequality indicator. When `weighted` is 
-`true`, class weights inversely proportional to class prevalence are applied so that rare 
+`true`, class weights inversely proportional to class prevalence are applied so that all
 classes contribute equally. Returns a `Float64` between 0 and 1.
 
 See also

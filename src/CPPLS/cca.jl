@@ -8,7 +8,6 @@
         gamma_rel_tol::Real, 
         gamma_abs_tol::Real
     )
-    
     compute_cppls_weights(
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
@@ -35,7 +34,7 @@ function compute_cppls_weights(
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     gamma::Real,
     gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
+    gamma_abs_tol::Real
 )
 
     if gamma == 0.5
@@ -59,7 +58,7 @@ function compute_cppls_weights(
                  <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
     },
     gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
+    gamma_abs_tol::Real
 )
 
     # Correlation and scale statistics form the ingredients of W0(gamma).
@@ -122,7 +121,7 @@ function compute_best_loadings(
     },
     gamma_rel_tol::Real,
     gamma_abs_tol::Real,
-    q::Integer,
+    q::Integer
 )
 
     # Apply observation weights consistently with covariance weighting (sqrt for covariance).
@@ -168,7 +167,6 @@ end
         gamma_rel_tol::Real, 
         gamma_abs_tol::Real
     )
-    
     compute_best_gamma(
         X_def::AbstractMatrix{<:Real}, 
         S_x::AbstractMatrix{<:Real}, 
@@ -323,7 +321,6 @@ end
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}
     )
-    
     correlation(
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
@@ -416,13 +413,11 @@ end
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}
     )
-    
     cca_decomposition(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
         obs_weights::AbstractVector{<:Real}
     )
-    
     cca_decomposition(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
@@ -449,7 +444,7 @@ end
 @inline function cca_decomposition(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
-    obs_weights::AbstractVector{<:Real},
+    obs_weights::AbstractVector{<:Real}
 )
 
     cca_decomposition(X .* obs_weights, Y .* obs_weights)
@@ -516,7 +511,7 @@ combined into a single latent axis aligned with the primary responses.
 function cca_coeffs_and_corr(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
-    obs_weights::Union{AbstractVector{<:Real}, Nothing},
+    obs_weights::Union{AbstractVector{<:Real}, Nothing}
 )
 
     n_rows, n_cols, qx, qy, dx, dy, left_singular_vectors, right_singular_vectors, rho =
@@ -558,7 +553,7 @@ the direction a that combines the supervised axes of Z = X W0 into a single comp
 @inline function cca_coeffs(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
-    obs_weights::Union{AbstractVector{<:Real}, Nothing},
+    obs_weights::Union{AbstractVector{<:Real}, Nothing}
 )
 
     cca_coeffs_and_corr(X, Y, obs_weights)[1]
@@ -577,7 +572,7 @@ b that maximizes correlation with the supervised predictor component.
 @inline function cca_coeffs_y(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
-    obs_weights::Union{AbstractVector{<:Real}, Nothing},
+    obs_weights::Union{AbstractVector{<:Real}, Nothing}
 )
 
     cca_coeffs_and_corr(X, Y, obs_weights)[2]

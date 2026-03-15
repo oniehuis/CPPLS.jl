@@ -12,7 +12,7 @@ function center_mean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Re
 end
 
 function center_mean(M::AbstractMatrix{<:Real}, ::Nothing)
-    M̄ = mean(M, dims = 1)
+    M̄ = mean(M, dims=1)
     M .- M̄, M̄
 end
 
@@ -27,7 +27,7 @@ centering is performed.
 centerscale(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) =
     (M .- (obs_weights' * M) / sum(obs_weights)) .* obs_weights
 
-centerscale(M::AbstractMatrix{<:Real}, ::Nothing) = M .- mean(M, dims = 1)
+centerscale(M::AbstractMatrix{<:Real}, ::Nothing) = M .- mean(M, dims=1)
 
 """
     convert_to_float64(M::AbstractMatrix{T}) where {T<:Real}
@@ -70,7 +70,7 @@ end
         X::AbstractMatrix{<:Real}, 
         Y_prim::AbstractMatrix{<:Real}, 
         n_components::Integer, 
-        Y_aux::Union{LinearAlgebra.AbstractVecOrMat ,Nothing}, 
+        Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
         center::Bool
     )
@@ -83,9 +83,9 @@ function cppls_prepare_data(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     n_components::Integer,
-    Y_aux::Union{LinearAlgebra.AbstractVecOrMat,Nothing},
-    obs_weights::Union{AbstractVector{<:Real},Nothing},
-    center::Bool,
+    Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing},
+    obs_weights::Union{AbstractVector{<:Real}, Nothing},
+    center::Bool
 )
 
     X = convert_to_float64(X)

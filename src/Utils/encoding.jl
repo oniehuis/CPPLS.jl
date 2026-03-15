@@ -2,19 +2,33 @@
     labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
 
 Convert 1-based integer label indices to a dense one-hot encoded matrix with `n_labels`
-columns. This method assumes the set of classes is already known and returns only the
-encoded matrix.
+columns. Each entry in `label_indices` is interpreted as the target column of the `1`
+in that sample's one-hot row, so the integer values are used directly as class indices
+rather than being renumbered from the observed data. The argument `n_labels` specifies
+the full size of the known class space and therefore the number of output columns, even
+if some classes do not appear in `label_indices`. This method returns only the encoded
+matrix.
+
+See also
+[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
 
 # Examples
-```
-julia> labels_to_one_hot([1, 3, 2], 3)
-3×3 Matrix{Int64}:
- 1  0  0
- 0  0  1
- 0  1  0
+```jldoctest
+julia> labels_to_one_hot([4, 3, 2], 5)
+3×5 Matrix{Int64}:
+ 0  0  0  1  0
+ 0  0  1  0  0
+ 0  1  0  0  0
 ```
 """
 function labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
+    n_labels ≥ 0 || throw(ArgumentError("n_labels must be nonnegative, got $n_labels"))
+    all(≥(1), label_indices) || throw(ArgumentError(
+        "label_indices must contain only positive 1-based class indices"))
+    isempty(label_indices) || maximum(label_indices) ≤ n_labels || throw(ArgumentError(
+        "n_labels must be at least maximum(label_indices) " * 
+        "= $(maximum(label_indices)), got $n_labels"))
+
     n_samples = length(label_indices)
     one_hot = zeros(Int, n_samples, n_labels)
     @inbounds for i = 1:n_samples
@@ -23,19 +37,24 @@ function labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::I
     one_hot
 end
 
-
 """
     labels_to_one_hot(labels::AbstractVector)
 
-Encode arbitrary labels such as strings, integers, or symbols into a one-hot matrix,
-automatically determining the label ordering. The result is a tuple containing the
-encoded matrix and the ordered labels, so predictions can be mapped back to the original
-domain.
+Encode arbitrary labels such as strings, integers, or symbols into a one-hot matrix.
+The function removes duplicate labels, sorts the unique labels using Julia's default
+`sort` order for their type, and uses that sorted sequence as the column order of the
+encoded matrix. The result is a tuple containing the encoded matrix and the ordered
+labels, so predictions can be mapped back to the original domain.
+
+See also
+[`nested_cv`](@ref CPPLS.nested_cv),
+[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation),
+[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
 # Examples
-```
-julia> matrix, classes = labels_to_one_hot(["cat", "dog", "cat"])
-([1 0; 0 1; 1 0], ["cat", "dog"])
+```jldoctest
+julia> matrix, classes = labels_to_one_hot(["dog", "cat", "cat"])
+([0 1; 1 0; 1 0], ["cat", "dog"])
 ```
 """
 function labels_to_one_hot(labels::AbstractVector)
@@ -54,16 +73,21 @@ function labels_to_one_hot(labels::AbstractVector)
     one_hot, unique_labels
 end
 
-
 """
     one_hot_to_labels(one_hot_matrix::AbstractMatrix{<:Integer})
 
-Decode one-hot rows back into label indices by selecting the column of the maximum entry
-in each row. This works with integer-valued matrices whose rows encode a single selected
-label.
+Decode one-hot rows back into label indices by returning the column index selected in
+each row. An `ArgumentError` is thrown if `one_hot_matrix` contains values other than
+`0` and `1`, or if any row contains either no `1` entry or more than one `1`.
+
+See also
+[`invfreqweights`](@ref CPPLS.invfreqweights),
+[`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot(::AbstractVector)),
+[`nested_cv`](@ref CPPLS.nested_cv),
+[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
 
 # Examples
-```
+```jldoctest
 julia> one_hot_to_labels([1 0 0; 0 1 0; 0 0 1])
 3-element Vector{Int64}:
  1
@@ -71,5 +95,13 @@ julia> one_hot_to_labels([1 0 0; 0 1 0; 0 0 1])
  3
 ```
 """
-one_hot_to_labels(one_hot_matrix::AbstractMatrix{<:Integer}) =
+function one_hot_to_labels(one_hot_matrix::AbstractMatrix{<:Integer})
+    all(value -> value == 0 || value == 1, one_hot_matrix) || throw(ArgumentError(
+        "one_hot_matrix must contain only 0/1 entries"))
+
+    row_sums = vec(sum(one_hot_matrix, dims=2))
+    all(==(1), row_sums) || throw(ArgumentError(
+        "each row of one_hot_matrix must contain exactly one 1"))
+
     [argmax(row) for row in eachrow(one_hot_matrix)]
+end

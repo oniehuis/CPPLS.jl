@@ -77,6 +77,12 @@ This helper is meant to supply the callback interface expected by `nested_cv`,
 `predict_fn`, and `select_fn` can be passed directly to `nested_cv` and
 `nested_cv_permutation`, while `flag_fn` is used by `cv_outlier_scan` to count
 misclassified samples across repeated outer folds.
+
+See also
+[`nmc`](@ref CPPLS.nmc), 
+[`nested_cv`](@ref CPPLS.nested_cv), 
+[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
+
 """
 function cv_classification(; weighted::Bool=true)
     score_fn = (Y_true, Y_pred) -> 1 - nmc(Y_true, Y_pred, weighted)
@@ -146,6 +152,8 @@ For standard use, these callbacks can be obtained from `cv_classification()` or
 
 When `spec.analysis_mode == :discriminant`, default `response_labels` are injected if
 they are not already present in `fit_kwargs`.
+
+
 """
 function nested_cv(
     X::AbstractMatrix{<:Real},
@@ -269,6 +277,10 @@ Run a permutation test around `nested_cv` by repeatedly permuting the rows of `Y
 recomputing the nested cross-validation score. The result is a vector of mean scores,
 one for each permutation. As in `nested_cv`, the required callbacks can be obtained from
 `cv_classification()` or `cv_regression()`.
+
+See also
+[`nmc`](@ref CPPLS.nmc),  
+[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
 """
 function nested_cv_permutation(
     X::AbstractMatrix{<:Real},

@@ -42,9 +42,7 @@ export cv_outlier_scan
 export nested_cv_permutation
 export nested_cv
 export calculate_p_value
-export fisherztrack
 export invfreqweights
-export intervalize
 export labels_to_one_hot
 export one_hot_to_labels
 export gamma
@@ -61,6 +59,7 @@ export coef
 export fitted
 export residuals
 export projection_matrix
+export nmc
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """

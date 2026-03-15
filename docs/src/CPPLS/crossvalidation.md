@@ -118,7 +118,8 @@ the full dataset before cross-validation. If you instead want fixed sample-speci
 weights, pass them through `fit_kwargs=(; obs_weights=...)` and they will simply be
 subsetted to each training split.
 
-The example uses the encoding helpers [`labels_to_one_hot`](@ref) and
+The example uses the encoding helpers 
+[`labels_to_one_hot`](@ref labels_to_one_hot(::AbstractVector)) and
 [`one_hot_to_labels`](@ref). The first converts a vector of class labels into the one-hot
 response matrix expected by the fitting and cross-validation routines, while the second
 converts such a matrix back to ordinary class labels. That back-conversion is used below
@@ -320,4 +321,5 @@ CPPLS.cv_regression
 CPPLS.cv_outlier_scan
 CPPLS.nested_cv
 CPPLS.nested_cv_permutation
+CPPLS.nmc
 ```

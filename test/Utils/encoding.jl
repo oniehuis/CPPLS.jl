@@ -12,6 +12,9 @@
     encoded = CPPLS.labels_to_one_hot(label_indices, n_labels)
 
     @test encoded == expected
+    @test_throws ArgumentError CPPLS.labels_to_one_hot([1, 4], 3)
+    @test_throws ArgumentError CPPLS.labels_to_one_hot([0, 1], 3)
+    @test_throws ArgumentError CPPLS.labels_to_one_hot([1, 2], -1)
 end
 
 @testset "labels_to_one_hot discovers label order" begin
@@ -41,4 +44,7 @@ end
 
     decoded = CPPLS.one_hot_to_labels(one_hot)
     @test decoded == [2, 1, 3, 2]
+    @test_throws ArgumentError CPPLS.one_hot_to_labels([1 1 0; 0 1 0])
+    @test_throws ArgumentError CPPLS.one_hot_to_labels([0 0 0; 0 1 0])
+    @test_throws ArgumentError CPPLS.one_hot_to_labels([2 0 0; 0 1 0])
 end

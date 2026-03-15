@@ -1,29 +1,33 @@
 """
-    CPPLS.nmc(Y_true_one_hot::AbstractMatrix{<:Integer}, 
-        Y_pred_one_hot::AbstractMatrix{<:Integer}, weighted::Bool)
+    nmc(
+        Y_true_one_hot::AbstractMatrix{<:Integer}, 
+        Y_pred_one_hot::AbstractMatrix{<:Integer},
+        weighted::Bool
+    ) -> Float64
 
-Compute the normalized misclassification cost between true and predicted one-hot label 
-matrices. If `weighted` is `false`, the function returns the plain misclassification rate 
-(`mean` of entry-wise inequality). When `true`, class weights inversely proportional to 
-their prevalence are applied, so rare classes contribute equally.
+Compute the normalized misclassification cost between true and predicted one-hot label
+matrices. The inputs `Y_true_one_hot` and `Y_pred_one_hot` are `(n_samples × n_classes)`
+one-hot matrices of identical shape containing the ground-truth and predicted labels,
+respectively. If `weighted` is `false`, the function returns the plain misclassification 
+rate, computed as the `mean` of the entry-wise inequality indicator. When `weighted` is 
+`true`, class weights inversely proportional to class prevalence are applied so that rare 
+classes contribute equally. Returns a `Float64` between 0 and 1.
 
-Arguments
-- `Y_true_one_hot`: `(n_samples × n_classes)` ground truth one-hot labels.
-- `Y_pred_one_hot`: predicted one-hot labels of the same shape.
-- `weighted`: toggle class-balanced weighting.
-
-Returns a `Float64` between 0 and 1.
+See also
+[`cv_classification`](@ref CPPLS.cv_classification), 
+[`nested_cv`](@ref CPPLS.nested_cv), 
+[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
 
 # Example
-```
+```jldoctest
 julia> Y_true = [1 0 0; 0 1 0; 0 1 0];
 
 julia> Y_pred = [1 0 0; 0 0 1; 0 1 0];
 
-julia> CPPLS.nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
+julia> nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
 true
 
-julia> CPPLS.nmc(Y_true, Y_pred, true) ≈ 0.25
+julia> nmc(Y_true, Y_pred, true) ≈ 0.25
 true
 ```
 """
@@ -55,26 +59,31 @@ end
 
 """
     calculate_p_value(
-        permutation_scores::AbstractVector{<:Real},
-        observed_score::Float64;
-        tail::Symbol=:upper,
+        null_scores::AbstractVector{<:Real},
+        observed_score::Real;
+        tail::Symbol=:upper
     )
 
-Compute an empirical p-value from permutation scores. With `tail=:upper`, the p-value is
-the fraction of permutation scores greater than or numerically equal to the observed
-score, with a `+1` correction in both numerator and denominator to account for the
-observed model itself. This is appropriate for accuracy-like metrics where larger values
-are better. With `tail=:lower`, the comparison is reversed, which is appropriate for
-error-like metrics where smaller values are better.
+Compute a one-sided empirical p-value for an `observed_score` relative to a null
+distribution of scores. The input `null_scores` is the vector of scores from null-model
+or reference runs, typically obtained from label-shuffled permutations, and
+`observed_score` is the score achieved by the model fit to the original data. The
+argument `tail` selects the direction of the one-sided test and must be either `:upper`
+or `:lower`. In both cases, a `+1` correction is applied to the numerator and
+denominator to account for the observed score itself in the empirical null ranking.
+With `tail=:upper`, the p-value is the fraction of null scores greater than or
+numerically equal to the observed score, corresponding to a one-sided upper-tail test
+appropriate when larger scores indicate stronger evidence against the null. With
+`tail=:lower`, the comparison is reversed, corresponding to a one-sided lower-tail test
+appropriate when smaller scores indicate stronger evidence against the null.
 
-Arguments
-- `permutation_scores`: vector of scores from label-shuffled runs.
-- `observed_score`: score achieved by the model fit to the original data.
-- `tail`: comparison direction, either `:upper` or `:lower`.
+See also
+[`nested_cv`](@ref CPPLS.nested_cv),
+[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
 
 # Example
-```
-julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.6
+```jldoctest
+julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.4
 true
 
 julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58; tail=:lower) ≈ 0.8
@@ -82,18 +91,18 @@ true
 ```
 """
 function calculate_p_value(
-    permutation_scores::AbstractVector{<:Real},
-    observed_score::Float64;
+    null_scores::AbstractVector{<:Real},
+    observed_score::Real;
     tail::Symbol=:upper,
 )
     tail in (:upper, :lower) || throw(ArgumentError(
         "tail must be :upper or :lower, got $tail"))
 
-    count_fn = if tail === :upper
+    count_fn = if tail ≡ :upper
         x -> x ≥ observed_score || x ≈ observed_score
     else
         x -> x ≤ observed_score || x ≈ observed_score
     end
 
-    (count(count_fn, permutation_scores) + 1) / (length(permutation_scores) + 1)
+    (count(count_fn, null_scores) + 1) / (length(null_scores) + 1)
 end

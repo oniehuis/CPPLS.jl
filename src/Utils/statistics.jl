@@ -1,5 +1,9 @@
 """
-    fisherztrack(X::AbstractArray{<:Real, 3}, scores::AbstractVector; weights=:mean)
+    CPPLS.fisherztrack(
+        X::AbstractArray{<:Real, 3}, 
+        scores::AbstractVector; 
+        weights=:mean
+    )
 
 Interpret `X` as a three-dimensional array of shape `n × axis1 × axis2`, where `n`
 matches the length of `scores`. For each combination of `axis1` and `axis2`, the
@@ -57,7 +61,7 @@ function fisherztrack(
 end
 
 """
-    intervalize(values::AbstractVector{<:Real})
+    CPPLS.intervalize(values::AbstractVector{<:Real})
 
 Convert a sequence of numeric values into adjacent `(lo, hi)` intervals by pairing
 consecutive entries. This is useful for building gamma intervals from a range. If
@@ -104,6 +108,15 @@ end
 
 Return normalized inverse-frequency weights for `samples`. Each observation receives
 weight `1 / count(samples[i])`, and the resulting weights are rescaled to sum to `1`.
+
+See also
+[`fit`](@ref CPPLS.fit)
+
+# Examples
+```jldoctest
+julia> invfreqweights(["a", "b", "b"]) ≈ [0.5, 0.25, 0.25]
+true
+```
 """
 function invfreqweights(samples::AbstractVector)
     countof = Dict{eltype(samples), Int}()

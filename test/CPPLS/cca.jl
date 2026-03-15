@@ -106,6 +106,30 @@ end
     )
     @test length(weights_bounds) == 6
 
+    X_rank_zero_candidate = [
+        1.0 0.0 0.0
+        1.0 0.0 0.0
+        0.0 1.0 0.0
+        0.0 1.0 0.0
+        0.0 0.0 1.0
+    ]
+    Y_rank_zero_candidate = [
+        1.0 0.0 1.0
+        1.0 0.0 1.0
+        0.0 1.0 1.0
+        0.0 1.0 1.0
+        1.0 1.0 0.0
+    ]
+    @test length(CPPLS.compute_cppls_weights(
+        X_rank_zero_candidate,
+        Y_rank_zero_candidate,
+        Y_rank_zero_candidate,
+        nothing,
+        (0.1, 0.9),
+        1e-6,
+        1e-12,
+    )) == 6
+
     scalar_gamma = CPPLS.compute_cppls_weights(
         X,
         Y,

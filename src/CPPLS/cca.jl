@@ -200,8 +200,21 @@ function compute_best_gamma(
     a = first(gamma_bounds)
     b = last(gamma_bounds)
 
-    f = gamma -> evaluate_canonical_correlation(gamma, X_def, S_x, C, C_sign, Y_prim,
-        obs_weights)
+    if a == b
+        return a, -evaluate_canonical_correlation(a, X_def, S_x, C, C_sign, Y_prim,
+            obs_weights)
+    end
+
+    f = gamma -> try
+        evaluate_canonical_correlation(gamma, X_def, S_x, C, C_sign, Y_prim,
+            obs_weights)
+    catch error
+        if error isa ErrorException && (error.msg == "X has rank 0" || error.msg == "Y has rank 0")
+            0.0
+        else
+            rethrow()
+        end
+    end
 
     # Evaluate endpoints and then a Brent minimizer over the interval.
     fa = f(a)

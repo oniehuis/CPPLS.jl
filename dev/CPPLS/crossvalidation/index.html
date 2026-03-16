@@ -14,7 +14,7 @@ sample_labels, X, classes, Y_aux = load(
 )
 
 Y, response_labels = labels_to_one_hot(classes)
-cfg = cv_classification()
+cb = cv_classification()
 
 spec = CPPLSSpec(
     n_components=2,
@@ -37,9 +37,9 @@ scores, best_components = nested_cv(
     spec=spec,
     fit_kwargs=fit_kwargs,
     obs_weight_fn=obs_weight_fn,
-    score_fn=cfg.score_fn,
-    predict_fn=cfg.predict_fn,
-    select_fn=cfg.select_fn,
+    score_fn=cb.score_fn,
+    predict_fn=cb.predict_fn,
+    select_fn=cb.select_fn,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
     num_inner_folds=4,
@@ -56,9 +56,9 @@ observed_accuracy = mean(scores)</code></pre><pre class="documenter-example-outp
     spec=spec,
     fit_kwargs=fit_kwargs,
     obs_weight_fn=obs_weight_fn,
-    score_fn=cfg.score_fn,
-    predict_fn=cfg.predict_fn,
-    select_fn=cfg.select_fn,
+    score_fn=cb.score_fn,
+    predict_fn=cb.predict_fn,
+    select_fn=cb.select_fn,
     num_permutations=999,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
@@ -127,14 +127,51 @@ Sample: 97; error rate: 0.292</code></pre><p>In the current example, the overall
     null_scores::AbstractVector{&lt;:Real},
     observed_score::Real;
     tail::Symbol=:upper
-)</code></pre><p>Compute a one-sided empirical p-value for an <code>observed_score</code> relative to a null distribution of scores. The input <code>null_scores</code> is the vector of scores from null-model or reference runs, typically obtained from label-shuffled permutations, and <code>observed_score</code> is the score achieved by the model fit to the original data. The argument <code>tail</code> selects the direction of the one-sided test and must be either <code>:upper</code> or <code>:lower</code>. In both cases, a <code>+1</code> correction is applied to the numerator and denominator to account for the observed score itself in the empirical null ranking. With <code>tail=:upper</code>, the p-value is the fraction of null scores greater than or numerically equal to the observed score, corresponding to a one-sided upper-tail test appropriate when larger scores indicate stronger evidence against the null. With <code>tail=:lower</code>, the comparison is reversed, corresponding to a one-sided lower-tail test appropriate when smaller scores indicate stronger evidence against the null.</p><p>See also <a href="#CPPLS.nested_cv"><code>nested_cv</code></a>, <a href="#CPPLS.nested_cv_permutation"><code>nested_cv_permutation</code></a></p><p><strong>Example</strong></p><pre><code class="language-julia-repl hljs">julia&gt; calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.4
+)</code></pre><p>Compute a one-sided empirical p-value for an <code>observed_score</code> relative to a null distribution of scores. The input <code>null_scores</code> is the vector of scores from null-model or reference runs, typically obtained from label-shuffled permutations, and <code>observed_score</code> is the score achieved by the model fit to the original data. The argument <code>tail</code> selects the direction of the one-sided test and must be either <code>:upper</code> or <code>:lower</code>. In both cases, a <code>+1</code> correction is applied to the numerator and denominator to account for the observed score itself in the empirical null ranking  (Phipson &amp; Smyth 2010). With <code>tail=:upper</code>, the p-value is the fraction of null scores  greater than or numerically equal to the observed score, corresponding to a one-sided  upper-tail test appropriate when larger scores indicate stronger evidence against the null.  With <code>tail=:lower</code>, the comparison is reversed, corresponding to a one-sided lower-tail  test appropriate when smaller scores indicate stronger evidence against the null.</p><p>Reference Phipson B, Smyth GK (2010): Permutation P-values should never be zero: Calculating exact  P-values when permutations are randomly drawn. Statistical Applications in Genetics and  Molecular Biology 9: 39. https://doi.org/10.2202/1544-6115.1585</p><p>See also <a href="#CPPLS.nested_cv"><code>nested_cv</code></a>, <a href="#CPPLS.nested_cv_permutation"><code>nested_cv_permutation</code></a></p><p><strong>Example</strong></p><pre><code class="language-julia-repl hljs">julia&gt; calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.4
 true
 
 julia&gt; calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58; tail=:lower) ≈ 0.8
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/metrics.jl#L60-L92">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_classification"><a class="docstring-binding" href="#CPPLS.cv_classification"><code>CPPLS.cv_classification</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_classification(; weighted::Bool=true)</code></pre><p>Return a named tuple containing <code>score_fn</code>, <code>predict_fn</code>, <code>select_fn</code>, and <code>flag_fn</code> suited to CPPLS classification with one-hot response matrices. The scoring rule is based on nearest-mean classification and assumes models were fit in <code>:discriminant</code> mode.</p><p>This helper is meant to supply the callback interface expected by <code>nested_cv</code>, <code>nested_cv_permutation</code>, and <code>cv_outlier_scan</code>. In particular, <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code> can be passed directly to <code>nested_cv</code> and <code>nested_cv_permutation</code>, while <code>flag_fn</code> is used by <code>cv_outlier_scan</code> to count misclassified samples across repeated outer folds.</p><p>See also <a href="#CPPLS.nmc"><code>nmc</code></a>,  <a href="#CPPLS.nested_cv"><code>nested_cv</code></a>,  <a href="#CPPLS.nested_cv_permutation"><code>nested_cv_permutation</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/crossvalidation.jl#L68-L86">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_regression"><a class="docstring-binding" href="#CPPLS.cv_regression"><code>CPPLS.cv_regression</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_regression(;
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/metrics.jl#L60-L97">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_classification"><a class="docstring-binding" href="#CPPLS.cv_classification"><code>CPPLS.cv_classification</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_classification(; weighted::Bool=true)</code></pre><p>Return a named tuple containing <code>score_fn</code>, <code>predict_fn</code>, <code>select_fn</code>, and <code>flag_fn</code> suited to CPPLS classification with one-hot response matrices. The scoring rule is based on nearest-mean classification and assumes models were fit in <code>:discriminant</code> mode.</p><p>The returned callbacks implement the following defaults: <code>score_fn(Y_true, Y_pred) = 1 - nmc(Y_true, Y_pred, weighted)</code>, so larger scores are better and <code>weighted=true</code> applies inverse-frequency class weighting; <code>predict_fn(model, X, k) = predictonehot(model, X, k)</code> to obtain one-hot class predictions from a discriminant CPPLS fit; <code>select_fn = argmax</code>, so inner cross-validation chooses the component count with the largest score; and <code>flag_fn(Y_true, Y_pred) = one_hot_to_labels(Y_pred) .≠ one_hot_to_labels(Y_true)</code>, which returns a per-sample misclassification mask.</p><p>This helper is meant to supply the callback interface expected by <code>nested_cv</code>, <code>nested_cv_permutation</code>, and <code>cv_outlier_scan</code>. In particular, <code>score_fn</code>, <code>predict_fn</code>,  and <code>select_fn</code> can be passed directly to <code>nested_cv</code> and <code>nested_cv_permutation</code>, while  <code>flag_fn</code> is used by <code>cv_outlier_scan</code> to count misclassified samples across repeated  outer folds.</p><p>See also <a href="#CPPLS.cv_outlier_scan"><code>cv_outlier_scan</code></a>, <a href="#CPPLS.cv_regression"><code>cv_regression</code></a>,  <a href="../../Utils/statistics/#CPPLS.invfreqweights"><code>invfreqweights</code></a>, <a href="#CPPLS.nmc"><code>nmc</code></a>,  <a href="#CPPLS.nested_cv"><code>nested_cv</code></a>,  <a href="#CPPLS.nested_cv_permutation"><code>nested_cv_permutation</code></a> <a href="../predict/#StatsAPI.predict"><code>predict</code></a></p><pre><code class="language-julia-repl hljs">julia&gt; cb = cv_classification();
+
+julia&gt; Y_true = [1 0; 0 1; 0 1];
+
+julia&gt; Y_pred = [0 1; 0 1; 0 1];
+
+julia&gt; cb.score_fn(Y_true, Y_pred)
+0.5
+
+julia&gt; cb.flag_fn(Y_true, Y_pred)
+3-element BitVector:
+ 1
+ 0
+ 0
+
+julia&gt; cb.select_fn([0.2, 0.6, 0.4])
+2</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/crossvalidation.jl#L71-L123">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_regression"><a class="docstring-binding" href="#CPPLS.cv_regression"><code>CPPLS.cv_regression</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_regression(;
     score_fn=(Y_true, Y_pred) -&gt; sqrt(mean((Y_true .- Y_pred) .^ 2)),
     select_fn=argmin,
-)</code></pre><p>Return a named tuple containing <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code> suited to CPPLS regression. By default, predictions are scored with root mean squared error and the selected number of components minimizes that loss.</p><p>This helper is meant to supply the callback interface expected by <code>nested_cv</code> and <code>nested_cv_permutation</code> for regression problems. The returned <code>predict_fn</code> extracts the prediction matrix corresponding to the requested number of components.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/crossvalidation.jl#L95-L108">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_outlier_scan"><a class="docstring-binding" href="#CPPLS.cv_outlier_scan"><code>CPPLS.cv_outlier_scan</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_outlier_scan(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
+)</code></pre><p>Return a named tuple containing <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code> suited to CPPLS regression. By default, predictions are scored with root mean squared error and the selected number of components minimizes that loss.</p><p>The returned callbacks implement the following defaults: <code>score_fn(Y_true, Y_pred) = sqrt(mean((Y_true .- Y_pred) .^ 2))</code>, so smaller scores are better; <code>predict_fn(model, X, k) = predict(model, X, k)[:, :, end]</code>, which extracts the prediction matrix for the requested component count from the 3-dimensional array returned by <code>predict</code>; and <code>select_fn = argmin</code>, so inner cross-validation chooses the component count with the smallest score.</p><p>This helper is meant to supply the callback interface expected by <code>nested_cv</code> and <code>nested_cv_permutation</code> for regression problems. The returned <code>predict_fn</code> extracts the prediction matrix corresponding to the requested number of components.</p><p>See also <a href="../types/#CPPLS.CPPLSFitLight"><code>CPPLSFitLight</code></a>, <a href="#CPPLS.cv_classification"><code>cv_classification</code></a>, <a href="#CPPLS.nested_cv"><code>nested_cv</code></a>, <a href="#CPPLS.nested_cv_permutation"><code>nested_cv_permutation</code></a>, <a href="../predict/#StatsAPI.predict"><code>predict</code></a></p><pre><code class="language-julia-repl hljs">julia&gt; cb = cv_regression();
+
+julia&gt; Y_true = reshape([1.0, 2.0], :, 1);
+
+julia&gt; Y_pred = reshape([1.0, 3.0], :, 1);
+
+julia&gt; cb.score_fn(Y_true, Y_pred) ≈ sqrt(0.5)
+true
+
+julia&gt; B, X_bar, Y_bar = reshape([2.0], 1, 1, 1), reshape([0.0], 1, 1), reshape([0.5], 1, 1);
+
+julia&gt; model = CPPLSFitLight(B, X_bar, Y_bar, :regression);
+
+julia&gt; X = reshape([1.0, 2.0], :, 1);
+
+julia&gt; cb.predict_fn(model, X, 1)
+2×1 Matrix{Float64}:
+ 2.5
+ 4.5
+
+julia&gt; cb.select_fn([0.3, 0.2])
+2</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/crossvalidation.jl#L132-L186">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.cv_outlier_scan"><a class="docstring-binding" href="#CPPLS.cv_outlier_scan"><code>CPPLS.cv_outlier_scan</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">cv_outlier_scan(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple=(;),
     obs_weight_fn::Union{Function, Nothing}=nothing,
@@ -145,46 +182,136 @@ true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://
     max_components::Integer=spec.n_components,
     reshuffle_outer_folds::Bool=true,
     rng::AbstractRNG=Random.GLOBAL_RNG,
-    verbose::Bool=true)</code></pre><p>Run repeated nested cross-validation for classification and count how often each sample is tested and misclassified. The result is a named tuple containing <code>n_tested</code>, <code>n_flagged</code>, and <code>rate = n_flagged ./ n_tested</code>. By default, <code>reshuffle_outer_folds = true</code> so samples are re-evaluated across different outer splits. This routine uses the callback bundle returned by <code>cv_classification()</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/crossvalidation.jl#L341-L360">source</a></section><section><div><pre><code class="language-julia hljs">cv_outlier_scan(
+    verbose::Bool=true)</code></pre><p>Run repeated nested cross-validation for discriminant analysis and count how often each sample is tested and misclassified. This is a diagnostic companion to <code>nested_cv</code>, not a replacement for it: the goal is to identify samples that repeatedly fail when held out, which can be useful when screening for mislabeled, contaminated, atypical, or otherwise problematic observations.</p><p>Unlike <code>nested_cv</code>, this routine fixes the cross-validation callbacks internally by using the bundle returned by <code>cv_classification()</code>. On each outer split it selects the number of latent variables by repeated inner cross-validation, predicts the held-out samples, and records which of those samples were misclassified. Across repeats, each sample accumulates a test count and a misclassification count.</p><p>This method expects discriminant-analysis settings, so <code>spec.analysis_mode</code> must be <code>:discriminant</code> and <code>Y</code> must be a one-hot response matrix. Stratification is derived automatically from <code>Y</code> via <code>one_hot_to_labels(Y)</code>.</p><p>Arguments</p><ul><li><code>X</code>: predictor matrix with one row per sample.</li><li><code>Y</code>: one-hot response matrix with one row per sample and one column per class.</li></ul><p>Keyword arguments</p><ul><li><code>spec</code>: CPPLS model specification used for every fit. During inner optimization, the   routine evaluates component counts <code>1:max_components</code> by replacing <code>spec.n_components</code>   on temporary copies of <code>spec</code>.</li><li><code>fit_kwargs</code>: additional keyword arguments forwarded to <code>fit</code>. Entries tied to the   sample axis, namely <code>obs_weights</code>, <code>sample_labels</code>, <code>sample_classes</code>, <code>Y_aux</code>, and   <code>Y_auxiliary</code>, are subset automatically to the current training split. If   <code>response_labels</code> are not supplied, they are inferred from the number of columns in   <code>Y</code>.</li><li><code>obs_weight_fn</code>: optional callback for fold-local observation weights. It is called as   <code>obs_weight_fn(X_train, Y_train; sample_indices=..., fit_kwargs=..., spec=...)</code> on   each outer or inner training split and must return either <code>nothing</code> or an   <code>AbstractVector</code> of nonnegative finite weights of length <code>size(X_train, 1)</code>. These   weights are multiplied elementwise with any fixed <code>obs_weights</code> present in   <code>fit_kwargs</code>.</li><li><code>num_outer_folds</code>: number of folds in each outer partition.</li><li><code>num_outer_folds_repeats</code>: number of outer-fold evaluations to run. With the default   <code>reshuffle_outer_folds=true</code>, new outer partitions are drawn between repeats so a   sample can be tested multiple times across different train/test splits.</li><li><code>num_inner_folds</code>: number of folds used inside each outer training split to choose the   number of latent variables.</li><li><code>num_inner_folds_repeats</code>: number of inner folds evaluated per outer split. This   cannot exceed <code>num_inner_folds</code>.</li><li><code>max_components</code>: largest latent-variable count considered in the inner loop. This   search limit is independent of <code>spec.n_components</code>; if it is larger, temporary copies   of <code>spec</code> are used with the required component count.</li><li><code>reshuffle_outer_folds</code>: if <code>true</code>, regenerate the outer folds on each repeat; if   <code>false</code>, build one outer partition and reuse its folds. Since outlier scanning is   usually meant to probe sample stability across many different holdout sets, the   default is <code>true</code>.</li><li><code>rng</code>: random-number generator used for fold construction and reshuffling.</li><li><code>verbose</code>: if <code>true</code>, print progress for the outer and inner folds.</li></ul><p>Returns</p><ul><li><code>n_tested</code>: integer vector whose <code>i</code>th entry counts how often sample <code>i</code> appeared in an   outer test set.</li><li><code>n_flagged</code>: integer vector whose <code>i</code>th entry counts how often sample <code>i</code> was   misclassified when it appeared in an outer test set.</li><li><code>rate</code>: vector defined as <code>n_flagged ./ max.(1, n_tested)</code>. Larger values indicate   samples that are more frequently flagged when held out. A sample that was never   tested receives rate <code>0.0</code>.</li></ul><p>See also <a href="../types/#CPPLS.CPPLSSpec"><code>CPPLSSpec</code></a>, <a href="../fit/#StatsAPI.fit"><code>fit</code></a>, <a href="#CPPLS.cv_classification"><code>cv_classification</code></a>, <a href="../../Utils/statistics/#CPPLS.invfreqweights"><code>invfreqweights</code></a>, <a href="../../Utils/encoding/#CPPLS.labels_to_one_hot-Tuple{AbstractVector}"><code>labels_to_one_hot</code></a>, <a href="#CPPLS.nested_cv_permutation"><code>nested_cv</code></a>, <a href="../../Utils/encoding/#CPPLS.one_hot_to_labels"><code>one_hot_to_labels</code></a></p><pre><code class="language-julia-repl hljs">julia&gt; using Random;
+
+julia&gt; X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
+            2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];
+
+julia&gt; classes = repeat([&quot;A&quot;, &quot;B&quot;], inner=6);
+
+julia&gt; Y, response_labels = labels_to_one_hot(classes);
+
+julia&gt; spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
+
+julia&gt; obs_weight_fn = (X_train, Y_train; kwargs...) -&gt; invfreqweights(one_hot_to_labels(Y_train));
+
+julia&gt; out = cv_outlier_scan(
+           X,
+           Y;
+           spec=spec,
+           fit_kwargs=(; response_labels=response_labels),
+           obs_weight_fn=obs_weight_fn,
+           num_outer_folds=3,
+           num_outer_folds_repeats=3,
+           num_inner_folds=2,
+           num_inner_folds_repeats=2,
+           max_components=1,
+           rng=MersenneTwister(1),
+           verbose=false,
+       );
+
+julia&gt; sum(out.n_tested)
+12
+
+julia&gt; all(out.n_flagged .&lt;= out.n_tested)
+true
+
+julia&gt; all(0.0 .&lt;= out.rate .&lt;= 1.0)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/crossvalidation.jl#L652-L775">source</a></section><section><div><pre><code class="language-julia hljs">cv_outlier_scan(
     X::AbstractMatrix{&lt;:Real},
     sample_classes::AbstractCategoricalArray; 
     kwargs...
-)</code></pre><p>Convert categorical sample classes to one-hot form and forward to <code>cv_outlier_scan</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/crossvalidation.jl#L444-L452">source</a></section><section><div><pre><code class="language-julia hljs">cv_outlier_scan(
+)</code></pre><p>Convert categorical sample classes to one-hot form and forward to <code>cv_outlier_scan</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/crossvalidation.jl#L865-L873">source</a></section><section><div><pre><code class="language-julia hljs">cv_outlier_scan(
     X::AbstractMatrix{&lt;:Real}, 
     sample_classes::AbstractVector; 
     kwargs...
-)</code></pre><p>Convert non-numeric sample classes to one-hot form and forward to <code>cv_outlier_scan</code>. Numeric vectors are rejected because they are ambiguous with regression targets.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/crossvalidation.jl#L463-L472">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv"><a class="docstring-binding" href="#CPPLS.nested_cv"><code>CPPLS.nested_cv</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
+)</code></pre><p>Convert non-numeric sample classes to one-hot form and forward to <code>cv_outlier_scan</code>. Numeric vectors are rejected because they are ambiguous with regression targets.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/crossvalidation.jl#L884-L893">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv"><a class="docstring-binding" href="#CPPLS.nested_cv"><code>CPPLS.nested_cv</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple=(;),
     obs_weight_fn::Union{Function, Nothing}=nothing,
     score_fn::Function,
     predict_fn::Function,
     select_fn::Function,
-    num_outer_folds::Int=8,
-    num_outer_folds_repeats::Int=num_outer_folds,
-    num_inner_folds::Int=7,
-    num_inner_folds_repeats::Int=num_inner_folds,
-    max_components::Int=spec.n_components,
-    strata::Union{AbstractVector{&lt;:Int}, Nothing}=nothing,
+    num_outer_folds::Integer=8,
+    num_outer_folds_repeats::Integer=num_outer_folds,
+    num_inner_folds::Integer=7,
+    num_inner_folds_repeats::Integer=num_inner_folds,
+    max_components::Integer=spec.n_components,
+    strata::Union{AbstractVector{&lt;:Integer}, Nothing}=nothing,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
-    verbose::Bool=true)</code></pre><p>Run explicit nested cross-validation for CPPLS. The caller supplies <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code>, so the routine can be used for either regression or classification. <code>spec</code> and <code>fit_kwargs</code> control model fitting, while the return value is <code>(outer_fold_scores, optimal_num_latent_variables)</code>.</p><p>When provided, <code>obs_weight_fn</code> is called on each training split as <code>obs_weight_fn(X_train, Y_train; sample_indices=..., fit_kwargs=..., spec=...)</code>. The callback must return fold-local observation weights matching the current training-set size, or <code>nothing</code>. Any fold-local weights returned by the callback are combined elementwise with fixed <code>obs_weights</code> supplied through <code>fit_kwargs</code>.</p><p>For standard use, these callbacks can be obtained from <code>cv_classification()</code> or <code>cv_regression()</code>.</p><p>When <code>spec.analysis_mode == :discriminant</code>, default <code>response_labels</code> are injected if they are not already present in <code>fit_kwargs</code>.</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/crossvalidation.jl#L121-L157">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv_permutation"><a class="docstring-binding" href="#CPPLS.nested_cv_permutation"><code>CPPLS.nested_cv_permutation</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv_permutation(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
+    verbose::Bool=true)</code></pre><p>Run explicit nested cross-validation for CPPLS. The caller supplies <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code>, so the routine can be used for either regression or classification. <code>spec</code> and <code>fit_kwargs</code> control model fitting, while the return value is <code>(outer_fold_scores, optimal_num_latent_variables)</code>.</p><p>When provided, <code>obs_weight_fn</code> is called on each training split as <code>obs_weight_fn(X_train, Y_train; sample_indices=..., fit_kwargs=..., spec=...)</code>. The callback must return fold-local observation weights matching the current training-set size, or <code>nothing</code>. Any fold-local weights returned by the callback are combined elementwise with fixed <code>obs_weights</code> supplied through <code>fit_kwargs</code>.</p><p>For standard use, <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code> can be obtained from <code>cv_classification()</code> or <code>cv_regression()</code>. In contrast, <code>obs_weight_fn</code> is an optional user-supplied callback when fold-specific observation weighting is needed.</p><p>When <code>spec.analysis_mode == :discriminant</code>, default <code>response_labels</code> are injected if they are not already present in <code>fit_kwargs</code>.</p><p>Arguments</p><ul><li><code>X</code>: predictor matrix with one row per sample.</li><li><code>Y</code>: response matrix with one row per sample. For classification this is typically a   one-hot matrix; for regression it contains continuous responses.</li></ul><p>Keyword arguments</p><ul><li><code>spec</code>: CPPLS model specification used for every fit. During inner optimization, the   routine evaluates component counts <code>1:max_components</code> by replacing <code>spec.n_components</code>   on temporary copies of <code>spec</code>.</li><li><code>fit_kwargs</code>: additional keyword arguments forwarded to <code>fit</code>. Entries tied to the   sample axis, namely <code>obs_weights</code>, <code>sample_labels</code>, <code>sample_classes</code>, <code>Y_aux</code>, and   <code>Y_auxiliary</code>, are subset automatically to the current training split.</li><li><code>obs_weight_fn</code>: optional callback for fold-local observation weights. It receives   <code>X_train</code> and <code>Y_train</code> for the current training split, and may also inspect   <code>sample_indices</code>, <code>fit_kwargs</code>, and <code>spec</code> through keyword arguments. It must return   either <code>nothing</code> or an <code>AbstractVector</code> of nonnegative finite weights of length   <code>size(X_train, 1)</code>. These weights are multiplied elementwise with any fixed   <code>obs_weights</code> present in <code>fit_kwargs</code>.</li><li><code>score_fn</code>: scoring callback with signature <code>score_fn(Y_true, Y_pred) -&gt; Real</code>. It is   called on held-out responses and the predictions produced by <code>predict_fn</code> for a single   candidate component count. The returned scalar is the objective optimized in inner   cross-validation and reported on the outer folds.</li><li><code>predict_fn</code>: prediction callback with signature <code>predict_fn(model, X_holdout, k)</code>. It   receives a fitted CPPLS model, the held-out predictor rows to evaluate, and the number   of latent variables <code>k</code>. <code>predict_fn</code> must return predictions in a representation and    shape that <code>score_fn</code> can compare directly with <code>Y_true</code>.</li><li><code>select_fn</code>: model-selection callback with signature <code>select_fn(scores) -&gt; Int</code>. It   receives the vector of inner-fold scores for <code>k = 1:max_components</code> and must return a   1-based component count in that range. Its optimization direction must match   <code>score_fn</code>, for example <code>argmax</code> for larger-is-better scores or <code>argmin</code> for   smaller-is-better losses.</li><li><code>num_outer_folds</code>: number of folds in the outer assessment loop.</li><li><code>num_outer_folds_repeats</code>: number of outer-fold evaluations to run. When   <code>reshuffle_outer_folds=false</code>, this usually matches <code>num_outer_folds</code> so each fold in   one fixed outer partition is evaluated once. Larger values require   <code>reshuffle_outer_folds=true</code>, in which case new outer partitions are drawn between   repeats.</li><li><code>num_inner_folds</code>: number of folds used inside each outer training split to choose the   number of latent variables.</li><li><code>num_inner_folds_repeats</code>: number of inner folds evaluated per outer split. This   cannot exceed <code>num_inner_folds</code>.</li><li><code>max_components</code>: largest latent-variable count considered in the inner loop.   This value defines the search range <code>1:max_components</code> independently of the   <code>n_components</code> stored in <code>spec</code>. If <code>max_components &gt; spec.n_components</code>, the inner   loop and the final outer-fold fit still evaluate those larger component counts by   working on temporary copies of <code>spec</code> with <code>n_components</code> replaced accordingly.</li><li><code>strata</code>: optional integer labels used to build stratified folds. When omitted, folds   are created by shuffling sample indices without stratification.</li><li><code>reshuffle_outer_folds</code>: if <code>true</code>, regenerate the outer folds on each repeat; if   <code>false</code>, build one outer partition and reuse its folds, which is the standard nested   cross-validation setup. If <code>true</code>, perform repeated nested cross-validation by   drawing a new outer partition on each repeat. This is especially useful for   diagnostics such as <code>cv_outlier_scan</code>, but it can also be used in ordinary nested CV   when repeated random outer splits are desired. For permutation testing, however, the   observed run and all permuted runs must use the same <code>reshuffle_outer_folds</code> setting   and the same score aggregation; otherwise the resulting p-value is not comparable.</li><li><code>rng</code>: random-number generator used for fold construction and any reshuffling.</li><li><code>verbose</code>: if <code>true</code>, print progress for outer and inner folds.</li></ul><p>Returns</p><ul><li><code>outer_fold_scores</code>: one scalar score per outer repeat, obtained by fitting the model   on the corresponding outer training split with the selected number of components and   evaluating it with <code>score_fn</code> on the outer test split.</li><li><code>optimal_num_latent_variables</code>: one selected component count per outer repeat. Each   value comes from repeated inner cross-validation on that outer training split.</li></ul><p>See also <a href="../types/#CPPLS.CPPLSSpec"><code>CPPLSSpec</code></a>, <a href="../fit/#StatsAPI.fit"><code>fit</code></a>, <a href="#CPPLS.calculate_p_value"><code>calculate_p_value</code></a>, <a href="#CPPLS.cv_classification"><code>cv_classification</code></a>, <a href="#CPPLS.cv_outlier_scan"><code>cv_outlier_scan</code></a>, <a href="#CPPLS.cv_regression"><code>cv_regression</code></a>,  <a href="../../Utils/statistics/#CPPLS.invfreqweights"><code>invfreqweights</code></a>, <a href="../../Utils/encoding/#CPPLS.labels_to_one_hot-Tuple{AbstractVector}"><code>labels_to_one_hot</code></a>, <a href="#CPPLS.nested_cv_permutation"><code>nested_cv_permutation</code></a>, <a href="../../Utils/encoding/#CPPLS.one_hot_to_labels"><code>one_hot_to_labels</code></a></p><pre><code class="language-julia-repl hljs">julia&gt; using Random;
+
+julia&gt; X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
+            2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];
+
+julia&gt; classes = repeat([&quot;A&quot;, &quot;B&quot;], inner=6)
+12-element Vector{String}:
+ &quot;A&quot;
+ &quot;A&quot;
+ &quot;A&quot;
+ &quot;A&quot;
+ &quot;A&quot;
+ &quot;A&quot;
+ &quot;B&quot;
+ &quot;B&quot;
+ &quot;B&quot;
+ &quot;B&quot;
+ &quot;B&quot;
+ &quot;B&quot;
+
+julia&gt; Y, response_labels = labels_to_one_hot(classes)
+([1 0; 1 0; … ; 0 1; 0 1], [&quot;A&quot;, &quot;B&quot;])
+
+julia&gt; cb = cv_classification();
+
+julia&gt; spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
+
+julia&gt; obs_weight_fn = (X_train, Y_train; kwargs...) -&gt; invfreqweights(one_hot_to_labels(Y_train));
+
+julia&gt; scores, best_k = nested_cv(
+           X,
+           Y;
+           spec=spec,
+           fit_kwargs=(; response_labels=response_labels),
+           obs_weight_fn=obs_weight_fn,
+           score_fn=cb.score_fn,
+           predict_fn=cb.predict_fn,
+           select_fn=cb.select_fn,
+           num_outer_folds=3,
+           num_outer_folds_repeats=3,
+           num_inner_folds=2,
+           num_inner_folds_repeats=2,
+           max_components=1,
+           strata=one_hot_to_labels(Y),
+           rng=MersenneTwister(1),
+           verbose=false,
+       );
+
+julia&gt; length(scores)
+3
+
+julia&gt; all(==(1.0), scores)
+true
+
+julia&gt; best_k == fill(1, 3)
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/crossvalidation.jl#L199-L371">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nested_cv_permutation"><a class="docstring-binding" href="#CPPLS.nested_cv_permutation"><code>CPPLS.nested_cv_permutation</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nested_cv_permutation(X::AbstractMatrix{&lt;:Real}, Y::AbstractMatrix{&lt;:Real};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple=(;),
     obs_weight_fn::Union{Function, Nothing}=nothing,
     score_fn::Function,
     predict_fn::Function,
     select_fn::Function,
-    num_permutations::Int=999,
-    num_outer_folds::Int=8,
-    num_outer_folds_repeats::Int=num_outer_folds,
-    num_inner_folds::Int=7,
-    num_inner_folds_repeats::Int=num_inner_folds,
-    max_components::Int=spec.n_components,
-    strata::Union{AbstractVector{&lt;:Int}, Nothing}=nothing,
+    num_permutations::Integer=999,
+    num_outer_folds::Integer=8,
+    num_outer_folds_repeats::Integer=num_outer_folds,
+    num_inner_folds::Integer=7,
+    num_inner_folds_repeats::Integer=num_inner_folds,
+    max_components::Integer=spec.n_components,
+    strata::Union{AbstractVector{&lt;:Integer}, Nothing}=nothing,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
-    verbose::Bool=true)</code></pre><p>Run a permutation test around <code>nested_cv</code> by repeatedly permuting the rows of <code>Y</code> and recomputing the nested cross-validation score. The result is a vector of mean scores, one for each permutation. As in <code>nested_cv</code>, the required callbacks can be obtained from <code>cv_classification()</code> or <code>cv_regression()</code>.</p><p>See also <a href="#CPPLS.nmc"><code>nmc</code></a>,   <a href="#CPPLS.nested_cv_permutation"><code>nested_cv_permutation</code></a></p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/crossvalidation.jl#L257-L284">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nmc"><a class="docstring-binding" href="#CPPLS.nmc"><code>CPPLS.nmc</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nmc(
+    verbose::Bool=true)</code></pre><p>Run a permutation test around <code>nested_cv</code> by repeatedly permuting the rows of <code>Y</code> and recomputing the nested cross-validation score. The result is a vector of mean scores, one for each permutation. Each permutation reruns the full nested-CV pipeline, so the null distribution reflects outer-fold assessment, inner-loop model selection, and any fold-local observation weighting supplied through <code>obs_weight_fn</code>.</p><p>This function takes the same core callbacks as <code>nested_cv</code>: <code>score_fn</code>, <code>predict_fn</code>, and <code>select_fn</code> can be obtained from <code>cv_classification()</code> or <code>cv_regression()</code>, while <code>obs_weight_fn</code> remains an optional user-supplied callback.</p><p>The positional arguments <code>X</code> and <code>Y</code>, and the shared keyword arguments <code>spec</code>, <code>fit_kwargs</code>, <code>obs_weight_fn</code>, the callback trio, the fold controls, <code>max_components</code>, <code>reshuffle_outer_folds</code>, <code>rng</code>, and <code>verbose</code> have the same meaning as in <code>nested_cv</code>. Here, <code>num_permutations</code> additionally controls how many shuffled response runs are performed.</p><p>When <code>strata</code> are provided, the same row permutation applied to <code>Y</code> is also applied to <code>strata</code> before nested CV is rerun, so fold construction remains aligned with the permuted responses.</p><p>Returns</p><ul><li><code>permutation_scores</code>: vector whose <code>i</code>th entry is <code>mean(scores)</code> from the <code>i</code>th call to   <code>nested_cv</code> on permuted responses.</li></ul><p>To compare these scores with an observed score using <code>calculate_p_value</code>, the observed analysis must use the same <code>score_fn</code>, <code>predict_fn</code>, <code>select_fn</code>, fold settings, <code>reshuffle_outer_folds</code> choice, and score aggregation.</p><p>See also <a href="../types/#CPPLS.CPPLSSpec"><code>CPPLSSpec</code></a>, <a href="../fit/#StatsAPI.fit"><code>fit</code></a>, <a href="#CPPLS.calculate_p_value"><code>calculate_p_value</code></a>, <a href="#CPPLS.cv_classification"><code>cv_classification</code></a>, <a href="#CPPLS.cv_outlier_scan"><code>cv_outlier_scan</code></a>, <a href="#CPPLS.cv_regression"><code>cv_regression</code></a>,  <a href="../../Utils/statistics/#CPPLS.invfreqweights"><code>invfreqweights</code></a>, <a href="../../Utils/encoding/#CPPLS.labels_to_one_hot-Tuple{AbstractVector}"><code>labels_to_one_hot</code></a>, <a href="#CPPLS.nested_cv_permutation"><code>nested_cv</code></a>, <a href="../../Utils/encoding/#CPPLS.one_hot_to_labels"><code>one_hot_to_labels</code></a></p><p>```jldoctest julia&gt; using Random;</p><p>julia&gt; X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;             2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];</p><p>julia&gt; classes = repeat([&quot;A&quot;, &quot;B&quot;], inner=6) 12-element Vector{String}:  &quot;A&quot;  &quot;A&quot;  &quot;A&quot;  &quot;A&quot;  &quot;A&quot;  &quot;A&quot;  &quot;B&quot;  &quot;B&quot;  &quot;B&quot;  &quot;B&quot;  &quot;B&quot;  &quot;B&quot;</p><p>julia&gt; Y, response<em>labels = labels</em>to<em>one</em>hot(classes);</p><p>julia&gt; cb = cv_classification();</p><p>julia&gt; spec = CPPLSSpec(n<em>components=1, gamma=0.5, analysis</em>mode=:discriminant);</p><p>julia&gt; obs<em>weight</em>fn = (X<em>train, Y</em>train; kwargs...) -&gt; invfreqweights(one<em>hot</em>to<em>labels(Y</em>train));</p><p>julia&gt; permutation<em>scores = nested</em>cv<em>permutation(                      X,                      Y;                      spec=spec,                      fit</em>kwargs=(; response<em>labels=response</em>labels),                      obs<em>weight</em>fn=obs<em>weight</em>fn,                      score<em>fn=cb.score</em>fn,                      predict<em>fn=cb.predict</em>fn,                      select<em>fn=cb.select</em>fn,                      num<em>permutations=3,                      num</em>outer<em>folds=3,                      num</em>outer<em>folds</em>repeats=3,                      num<em>inner</em>folds=2,                      num<em>inner</em>folds<em>repeats=2,                      max</em>components=1,                      strata=one<em>hot</em>to_labels(Y),                      rng=MersenneTwister(1),                      verbose=false,              );</p><p>julia&gt; length(permutation_scores) 3</p><p>julia&gt; all(0.0 .&lt;= permutation_scores .&lt;= 1.0) true</p></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/crossvalidation.jl#L476-L589">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.nmc"><a class="docstring-binding" href="#CPPLS.nmc"><code>CPPLS.nmc</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">nmc(
     Y_true_one_hot::AbstractMatrix{&lt;:Integer}, 
     Y_pred_one_hot::AbstractMatrix{&lt;:Integer},
     weighted::Bool
@@ -196,4 +323,4 @@ julia&gt; nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
 true
 
 julia&gt; nmc(Y_true, Y_pred, true) ≈ 0.25
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/c90f926018118e61ef4dc931f66368efb6462aa1/src/CPPLS/metrics.jl#L1-L33">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../predict/">« Projection and Prediction</a><a class="docs-footer-nextpage" href="../visualization/">Visualization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Sunday 15 March 2026 11:35">Sunday 15 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/b3ff844e2d4d0ae1b2728b7d531ba54040f620e0/src/CPPLS/metrics.jl#L1-L33">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../predict/">« Projection and Prediction</a><a class="docs-footer-nextpage" href="../visualization/">Visualization »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 16 March 2026 20:21">Monday 16 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

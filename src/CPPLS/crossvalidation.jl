@@ -1,5 +1,5 @@
 """
-    CPPLS.random_batch_indices(
+    random_batch_indices(
         strata::AbstractVector{<:Integer},
         num_batches::Integer, 
         rng::AbstractRNG=Random.GLOBAL_RNG
@@ -393,7 +393,7 @@ function nested_cv(
     T3<:Integer,
     T4<:Integer,
     T5<:Integer,
-    T6<:Union{AbstractVector{<:Int}, Nothing}
+    T6<:Union{AbstractVector{<:Integer}, Nothing}
 }
     num_outer_folds_repeats > 0 || throw(ArgumentError(
         "The number of outer folds must be greater than zero"))
@@ -778,7 +778,7 @@ function cv_outlier_scan(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
     spec::CPPLSSpec,
-    fit_kwargs::NamedTuple = (;),
+    fit_kwargs::NamedTuple=(;),
     obs_weight_fn::Union{Function, Nothing}=nothing,
     num_outer_folds::T1=8,
     num_outer_folds_repeats::T2=10 * num_outer_folds,
@@ -911,12 +911,12 @@ end
 ############################################################################################
 
 """
-    CPPLS.optimize_num_latent_variables(
+    optimize_num_latent_variables(
         X_train_full::AbstractMatrix{<:Real},
         Y_train_full::AbstractMatrix{<:Real},
-        max_components::Int,
-        num_inner_folds::Int,
-        num_inner_folds_repeats::Int,
+        max_components::Integer,
+        num_inner_folds::Integer,
+        num_inner_folds_repeats::Integer,
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple,
         obs_weight_fn::Union{Function, Nothing},
@@ -925,8 +925,8 @@ end
         select_fn::Function,
         rng::AbstractRNG,
         verbose::Bool;
-        strata::Union{AbstractVector{<:Int}, Nothing}=nothing,
-        sample_indices::AbstractVector{<:Int}=collect(1:size(X_train_full, 1)))
+        strata::Union{AbstractVector{<:Integer}, Nothing}=nothing,
+        sample_indices::AbstractVector{<:Integer}=collect(1:size(X_train_full, 1)))
 
 Run repeated inner cross-validation to select the number of latent variables. For each
 inner split, a model is fit with up to `max_components` components, evaluated with
@@ -936,9 +936,9 @@ The returned value is the median selected component count across repeats.
 function optimize_num_latent_variables(
     X_train_full::AbstractMatrix{<:Real},
     Y_train_full::AbstractMatrix{<:Real},
-    max_components::Int,
-    num_inner_folds::Int,
-    num_inner_folds_repeats::Int,
+    max_components::T1,
+    num_inner_folds::T2,
+    num_inner_folds_repeats::T3,
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple,
     obs_weight_fn::Union{Function, Nothing},
@@ -947,10 +947,14 @@ function optimize_num_latent_variables(
     select_fn::Function,
     rng::AbstractRNG,
     verbose::Bool;
-    strata::T1=nothing,
-    sample_indices::AbstractVector{<:Int}=collect(1:size(X_train_full, 1)),
+    strata::T4=nothing,
+    sample_indices::T5=collect(1:size(X_train_full, 1))
 ) where {
-    T1<:Union{AbstractVector{<:Int}, Nothing}
+    T1<:Integer,
+    T2<:Integer,
+    T3<:Integer,
+    T4<:Union{AbstractVector{<:Integer}, Nothing},
+    T5<:AbstractVector{<:Integer}
 }
     max_components > 0 || throw(ArgumentError(
         "The number of components must be greater than zero"))
@@ -1014,7 +1018,14 @@ function optimize_num_latent_variables(
 end
 
 """
-    resolve_obs_weights(fit_kwargs, obs_weight_fn, X_train, Y_train, sample_indices, spec)
+    resolve_obs_weights(
+        fit_kwargs::NamedTuple, 
+        obs_weight_fn::Union{Function, Nothing},
+        X_train::AbstractMatrix{<:Real},
+        Y_train::AbstractMatrix{<:Real},
+        sample_indices::AbstractVector{<:Integer},
+        spec::CPPLSSpec
+    )
 
 Return `fit_kwargs` with fold-local observation weights applied. Fixed `obs_weights`
 present in `fit_kwargs` are preserved and combined elementwise with weights returned by
@@ -1025,8 +1036,8 @@ function resolve_obs_weights(
     obs_weight_fn::Union{Function, Nothing},
     X_train::AbstractMatrix{<:Real},
     Y_train::AbstractMatrix{<:Real},
-    sample_indices::AbstractVector{<:Int},
-    spec::CPPLSSpec,
+    sample_indices::AbstractVector{<:Integer},
+    spec::CPPLSSpec
 )
     isnothing(obs_weight_fn) && return fit_kwargs
 
@@ -1075,10 +1086,10 @@ end
 
 """
     build_folds(
-        n_samples::Int, 
-        num_folds::Int, 
+        n_samples::Integer, 
+        num_folds::Integer, 
         rng::AbstractRNG; 
-        strata::Union{AbstractVector{<:Int}, Nothing}=nothing
+        strata::Union{AbstractVector{<:Integer}, Nothing}=nothing
     )
 
 Construct cross-validation folds for `n_samples` observations. When `strata` is provided, 
@@ -1086,12 +1097,12 @@ stratified folds are created via `random_batch_indices`; otherwise shuffled cont
 folds are returned.
 """
 function build_folds(
-    n_samples::Int,
-    num_folds::Int,
+    n_samples::Integer,
+    num_folds::Integer,
     rng::AbstractRNG;
-    strata::T1=nothing,
+    strata::T1=nothing
 ) where {
-    T1<:Union{AbstractVector{<:Int}, Nothing}
+    T1<:Union{AbstractVector{<:Integer}, Nothing}
 }
     num_folds ≥ 1 || throw(ArgumentError("Number of folds must be at least 1."))
     
@@ -1120,15 +1131,19 @@ function build_folds(
 end
 
 """
-    subset_fit_kwargs(fit_kwargs::NamedTuple, train_indices, n_samples)
+    subset_fit_kwargs(
+        fit_kwargs::NamedTuple, 
+        train_indices::AbstractVector{<:Integer}, 
+        n_samples::Integer
+    )
 
 Subset fold-dependent entries in `fit_kwargs` to the current training indices and return
 the adjusted `NamedTuple`.
 """
 function subset_fit_kwargs(
     fit_kwargs::NamedTuple,
-    train_indices::AbstractVector{<:Int},
-    n_samples::Int
+    train_indices::AbstractVector{<:Integer},
+    n_samples::Integer
 )
     isempty(fit_kwargs) && return fit_kwargs
 
@@ -1154,7 +1169,7 @@ labels `"1"`, `"2"`, and so on when necessary.
 """
 function ensure_response_labels(
     fit_kwargs::NamedTuple,
-    Y::AbstractMatrix{<:Real},
+    Y::AbstractMatrix{<:Real}
 )
     haskey(fit_kwargs, :response_labels) && return fit_kwargs
     labels = string.(1:size(Y, 2))
@@ -1162,7 +1177,12 @@ function ensure_response_labels(
 end
 
 """
-    subset_vector_like(values, train_indices, n_samples, name)
+    subset_vector_like(
+        values, 
+        train_indices::AbstractVector{<:Integer}, 
+        n_samples::Integer, 
+        name::Symbol
+    )
 
 Return the training subset of a vector-like argument passed through `fit_kwargs`. Values
 that already match the training set length are returned unchanged; `nothing` and
@@ -1170,9 +1190,9 @@ non-vectors are passed through.
 """
 function subset_vector_like(
     values,
-    train_indices::AbstractVector{<:Int},
-    n_samples::Int,
-    name::Symbol,
+    train_indices::AbstractVector{<:Integer},
+    n_samples::Integer,
+    name::Symbol
 )
     isnothing(values) && return values
     values isa AbstractVector || return values
@@ -1189,7 +1209,11 @@ function subset_vector_like(
 end
 
 """
-    subset_matrix_like(values, train_indices, n_samples, name)
+    subset_matrix_like(
+        values, 
+        train_indices::AbstractVector{<:Integer}, 
+        n_samples::Integer, name::Symbol
+    )
 
 Return the training subset of a matrix-like argument passed through `fit_kwargs`. Values
 that already match the training set shape are returned unchanged; `nothing` and
@@ -1197,9 +1221,9 @@ non-matrices are passed through.
 """
 function subset_matrix_like(
     values,
-    train_indices::AbstractVector{<:Int},
-    n_samples::Int,
-    name::Symbol,
+    train_indices::AbstractVector{<:Integer},
+    n_samples::Integer,
+    name::Symbol
 )
     isnothing(values) && return values
     values isa AbstractVector && return subset_vector_like(values, train_indices, n_samples, 
@@ -1218,11 +1242,11 @@ function subset_matrix_like(
 end
 
 """
-    with_n_components(spec::CPPLSSpec, n_components::Int)
+    with_n_components(spec::CPPLSSpec, n_components::Integer)
 
 Return a copy of `spec` with `n_components` replaced and all other fields preserved.
 """
-function with_n_components(spec::CPPLSSpec, n_components::Int)
+function with_n_components(spec::CPPLSSpec, n_components::Integer)
     CPPLSSpec(
         n_components=n_components, gamma=spec.gamma, center=spec.center,
         X_tolerance=spec.X_tolerance,

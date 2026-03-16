@@ -586,6 +586,7 @@ julia> length(permutation_scores)
 
 julia> all(0.0 .<= permutation_scores .<= 1.0)
 true
+```
 """
 function nested_cv_permutation(
     X::AbstractMatrix{<:Real},

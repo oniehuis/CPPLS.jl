@@ -7,7 +7,7 @@ const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
 @test CPPLS._require_extension(:MakieExtension, "Makie") === nothing
 
 function set_backend(mod)
-    @eval Makie current_backend() = $mod
+    MakieExt._current_backend_ref[] = () -> mod
     return nothing
 end
 

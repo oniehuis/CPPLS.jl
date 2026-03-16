@@ -155,6 +155,14 @@ function _require_extension(extsym::Symbol, pkg::AbstractString)
     return nothing
 end
 
+const _require_extension_ref = Ref{Function}(_require_extension)
+const _scoreplot_plotly_ref = Ref{Function}(
+  (samples, groups, scores; kwargs...) -> scoreplot_plotly(samples, groups, scores; kwargs...)
+)
+const _scoreplot_makie_ref = Ref{Function}(
+  (samples, groups, scores; kwargs...) -> scoreplot_makie(samples, groups, scores; kwargs...)
+)
+
 function scoreplot(
     samples::AbstractVector{<:AbstractString},
     groups,
@@ -163,11 +171,11 @@ function scoreplot(
     kwargs...,
 )
     if backend === :plotly
-        _require_extension(:PlotlyJSExtension, "PlotlyJS")
-        return scoreplot_plotly(samples, groups, scores; kwargs...)
+    _require_extension_ref[](:PlotlyJSExtension, "PlotlyJS")
+    return _scoreplot_plotly_ref[](samples, groups, scores; kwargs...)
     elseif backend === :makie
-        _require_extension(:MakieExtension, "Makie")
-        return scoreplot_makie(samples, groups, scores; kwargs...)
+    _require_extension_ref[](:MakieExtension, "Makie")
+    return _scoreplot_makie_ref[](samples, groups, scores; kwargs...)
     else
         error("Unknown backend")
     end
@@ -187,11 +195,11 @@ function scoreplot(
     samples = cppls.sample_labels
     scores = cppls.T[:, 1:2]
     if backend === :plotly
-        _require_extension(:PlotlyJSExtension, "PlotlyJS")
-        return scoreplot_plotly(samples, groups, scores; kwargs...)
+      _require_extension_ref[](:PlotlyJSExtension, "PlotlyJS")
+      return _scoreplot_plotly_ref[](samples, groups, scores; kwargs...)
     elseif backend === :makie
-        _require_extension(:MakieExtension, "Makie")
-        return scoreplot_makie(samples, groups, scores; kwargs...)
+      _require_extension_ref[](:MakieExtension, "Makie")
+      return _scoreplot_makie_ref[](samples, groups, scores; kwargs...)
     else
         error("Unknown backend")
     end

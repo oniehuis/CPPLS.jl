@@ -62,7 +62,7 @@ function CPPLS.scoreplot_makie(
         to_nt(default_marker)
     )
 
-    backend_mod = Makie.current_backend()
+    backend_mod = _current_backend_ref[]()
     backend_name = backend_mod === missing ? :missing : nameof(backend_mod)
     inspector_enabled = show_inspector && (backend_name == :GLMakie || backend_name == :WGLMakie)
 

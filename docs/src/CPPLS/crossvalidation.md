@@ -150,7 +150,7 @@ sample_labels, X, classes, Y_aux = load(
 )
 
 Y, response_labels = labels_to_one_hot(classes)
-cfg = cv_classification()
+cb = cv_classification()
 
 spec = CPPLSSpec(
     n_components=2,
@@ -173,9 +173,9 @@ scores, best_components = nested_cv(
     spec=spec,
     fit_kwargs=fit_kwargs,
     obs_weight_fn=obs_weight_fn,
-    score_fn=cfg.score_fn,
-    predict_fn=cfg.predict_fn,
-    select_fn=cfg.select_fn,
+    score_fn=cb.score_fn,
+    predict_fn=cb.predict_fn,
+    select_fn=cb.select_fn,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
     num_inner_folds=4,
@@ -207,9 +207,9 @@ permutation_scores = nested_cv_permutation(
     spec=spec,
     fit_kwargs=fit_kwargs,
     obs_weight_fn=obs_weight_fn,
-    score_fn=cfg.score_fn,
-    predict_fn=cfg.predict_fn,
-    select_fn=cfg.select_fn,
+    score_fn=cb.score_fn,
+    predict_fn=cb.predict_fn,
+    select_fn=cb.select_fn,
     num_permutations=999,
     num_outer_folds=5,
     num_outer_folds_repeats=5,

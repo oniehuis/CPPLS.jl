@@ -70,12 +70,17 @@ or reference runs, typically obtained from label-shuffled permutations, and
 `observed_score` is the score achieved by the model fit to the original data. The
 argument `tail` selects the direction of the one-sided test and must be either `:upper`
 or `:lower`. In both cases, a `+1` correction is applied to the numerator and
-denominator to account for the observed score itself in the empirical null ranking.
-With `tail=:upper`, the p-value is the fraction of null scores greater than or
-numerically equal to the observed score, corresponding to a one-sided upper-tail test
-appropriate when larger scores indicate stronger evidence against the null. With
-`tail=:lower`, the comparison is reversed, corresponding to a one-sided lower-tail test
-appropriate when smaller scores indicate stronger evidence against the null.
+denominator to account for the observed score itself in the empirical null ranking 
+(Phipson & Smyth 2010). With `tail=:upper`, the p-value is the fraction of null scores 
+greater than or numerically equal to the observed score, corresponding to a one-sided 
+upper-tail test appropriate when larger scores indicate stronger evidence against the null. 
+With `tail=:lower`, the comparison is reversed, corresponding to a one-sided lower-tail 
+test appropriate when smaller scores indicate stronger evidence against the null.
+
+Reference
+Phipson B, Smyth GK (2010): Permutation P-values should never be zero: Calculating exact 
+P-values when permutations are randomly drawn. Statistical Applications in Genetics and 
+Molecular Biology 9: 39. https://doi.org/10.2202/1544-6115.1585
 
 See also
 [`nested_cv`](@ref CPPLS.nested_cv),

@@ -13,7 +13,7 @@ StatsAPI = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
 CPPLS = {path = ".."}
 
 [compat]
-CategoricalArrays = "0.10"
+CategoricalArrays = "0.10, 1"
 CairoMakie = "0.15"
 Colors = "0.13"
 CPPLS = "0.0.1"

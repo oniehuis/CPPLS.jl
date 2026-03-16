@@ -22,14 +22,15 @@ MakieExtension = "Makie"
 PlotlyJSExtension = "PlotlyJS"
 
 [compat]
-CategoricalArrays = "0.10"
+CategoricalArrays = "0.10, 1"
 julia = "1.12"
 Makie = "0.24"
+Optim = "1, 2"
 PlotlyJS = "0.18"
-Optim = "1"
 Reexport = "1"
-StatsBase = "0.34"
+Statistics = "1"
 StatsAPI = "1"
+StatsBase = "0.34"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

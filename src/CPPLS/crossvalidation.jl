@@ -197,7 +197,9 @@ end
 ############################################################################################
 
 """
-    nested_cv(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
+    nested_cv(
+        X::AbstractMatrix{<:Real}, 
+        Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple=(;),
         obs_weight_fn::Union{Function, Nothing}=nothing,
@@ -212,7 +214,8 @@ end
         strata::Union{AbstractVector{<:Integer}, Nothing}=nothing,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
-        verbose::Bool=true)
+        verbose::Bool=true
+    )
 
 Run explicit nested cross-validation for CPPLS. The caller supplies `score_fn`,
 `predict_fn`, and `select_fn`, so the routine can be used for either regression or
@@ -474,7 +477,9 @@ function nested_cv(
 end
 
 """
-    nested_cv_permutation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
+    nested_cv_permutation(
+        X::AbstractMatrix{<:Real}, 
+        Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple=(;),
         obs_weight_fn::Union{Function, Nothing}=nothing,
@@ -490,7 +495,8 @@ end
         strata::Union{AbstractVector{<:Integer}, Nothing}=nothing,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
-        verbose::Bool=true)
+        verbose::Bool=true
+    )
 
 Run a permutation test around `nested_cv` by repeatedly permuting the rows of `Y` and
 recomputing the nested cross-validation score. The result is a vector of mean scores,
@@ -651,7 +657,9 @@ function nested_cv_permutation(
 end
 
 """
-    cv_outlier_scan(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
+    cv_outlier_scan(
+        X::AbstractMatrix{<:Real}, 
+        Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
         fit_kwargs::NamedTuple=(;),
         obs_weight_fn::Union{Function, Nothing}=nothing,
@@ -662,7 +670,8 @@ end
         max_components::Integer=spec.n_components,
         reshuffle_outer_folds::Bool=true,
         rng::AbstractRNG=Random.GLOBAL_RNG,
-        verbose::Bool=true)
+        verbose::Bool=true
+    )
 
 Run repeated nested cross-validation for discriminant analysis and count how often each
 sample is tested and misclassified. This is a diagnostic companion to `nested_cv`, not a
@@ -926,7 +935,8 @@ end
         rng::AbstractRNG,
         verbose::Bool;
         strata::Union{AbstractVector{<:Integer}, Nothing}=nothing,
-        sample_indices::AbstractVector{<:Integer}=collect(1:size(X_train_full, 1)))
+        sample_indices::AbstractVector{<:Integer}=collect(1:size(X_train_full, 1))
+    )
 
 Run repeated inner cross-validation to select the number of latent variables. For each
 inner split, a model is fit with up to `max_components` components, evaluated with

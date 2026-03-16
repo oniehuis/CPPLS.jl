@@ -584,7 +584,7 @@ julia> permutation_scores = nested_cv_permutation(
 julia> length(permutation_scores)
 3
 
-julia> all(0.0 .<= permutation_scores .<= 1.0)
+julia> all(0.0 .≤ permutation_scores .≤ 1.0)
 true
 ```
 """
@@ -767,10 +767,10 @@ julia> out = cv_outlier_scan(
 julia> sum(out.n_tested)
 12
 
-julia> all(out.n_flagged .<= out.n_tested)
+julia> all(out.n_flagged .≤ out.n_tested)
 true
 
-julia> all(0.0 .<= out.rate .<= 1.0)
+julia> all(0.0 .≤ out.rate .≤ 1.0)
 true
 ```
 """

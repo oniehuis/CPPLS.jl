@@ -280,30 +280,7 @@ overall winner among those interval-wise optima. The interval-wise optimized gam
 close to the one found by the very dense grid, but it is not identical, and the dense
 grid search yields a marginally larger `rho^2` value. Whether that difference matters in
 practice depends on the analysis. A full dense grid search may be too expensive,
-especially inside cross-validation. In that situation, a focused local interval search
-can be a useful compromise, for example `intervalize(0.75:0.01:0.95)`.
-
-```@example fit_da
-interval_spec = CPPLSSpec(
-    n_components=1,
-    gamma=intervalize(0.75:0.01:0.95),
-    analysis_mode=:discriminant
-)
-
-interval_model = fit(
-    interval_spec,
-    X,
-    classes
-)
-
-interval_gammas = gamma_search_gammas(interval_model, 1)
-interval_rhos = gamma_search_rhos(interval_model, 1)
-selected_interval_gamma = gamma(interval_model)[1]
-
-println("Best gamma: ", selected_interval_gamma)
-i = findfirst(==(selected_interval_gamma), interval_gammas)
-println("Associated rho^2: ", interval_rhos[i])
-```
+especially inside cross-validation.
 
 ### Observation weights and auxiliary responses
 

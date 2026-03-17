@@ -229,7 +229,119 @@ cppls_weighted_yaux_shaded_plt = scoreplot(
     default_scatter=(; color=point_colors),
     default_marker=(; markersize=14)
 )
-save(&quot;cppls_weighted_yaux_shaded.svg&quot;, cppls_weighted_yaux_shaded_plt)</code></pre><p><img src="../cppls_weighted_shaded.svg" alt/></p><p><img src="../cppls_weighted_yaux_shaded.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the grayscale values are not randomly distributed across the score space. Instead, they are arranged roughly along the first latent dimension. This indicates that auxiliary signal correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the grayscale values being more evenly distributed across the plot.</p><p>Overall, the example shows how <code>gamma</code> can be explored and optimized, how observation weights can rebalance class influence, and how auxiliary responses can help separate auxiliary structure from the signal that is genuinely relevant to group membership.</p><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><p>The example above illustrates a discriminant-analysis workflow, but the same fitting entry point is used more generally throughout <code>CPPLS</code>. The reference below documents the <code>fit</code> interface itself.</p><article><details class="docstring" open="true"><summary id="StatsAPI.fit"><a class="docstring-binding" href="#StatsAPI.fit"><code>StatsAPI.fit</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">fit(model::CPPLSSpec,
+save(&quot;cppls_weighted_yaux_shaded.svg&quot;, cppls_weighted_yaux_shaded_plt)</code></pre><p><img src="../cppls_weighted_shaded.svg" alt/></p><p><img src="../cppls_weighted_yaux_shaded.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the grayscale values are not randomly distributed across the score space. Instead, they are arranged roughly along the first latent dimension. This indicates that auxiliary signal correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the grayscale values being more evenly distributed across the plot.</p><h3 id="Re-optimizing-Gamma-With-Observation-Weights-and-Auxiliary-Responses"><a class="docs-heading-anchor" href="#Re-optimizing-Gamma-With-Observation-Weights-and-Auxiliary-Responses">Re-optimizing Gamma With Observation Weights and Auxiliary Responses</a><a id="Re-optimizing-Gamma-With-Observation-Weights-and-Auxiliary-Responses-1"></a><a class="docs-heading-anchor-permalink" href="#Re-optimizing-Gamma-With-Observation-Weights-and-Auxiliary-Responses" title="Permalink"></a></h3><p>The weighted and auxiliary-response fits above deliberately kept <code>gamma=0.5</code> fixed so that the effect of those two ingredients remained easy to isolate. If the goal is the strongest DA fit obtainable within this example, however, <code>gamma</code> should be revisited under the same <code>obs_weights</code> and <code>Y_aux</code> settings, because both ingredients change the objective that CPPLS optimizes.</p><p>We therefore plot the gamma landscape again, now for a model that includes both inverse-frequency observation weights and the auxiliary response block.</p><pre><code class="language-julia hljs">class_weights = invfreqweights(classes)
+
+weighted_yaux_grid_spec = CPPLSSpec(
+    n_components=1,
+    gamma=0:0.001:1,
+    analysis_mode=:discriminant
+)
+
+weighted_yaux_grid_model = fit(
+    weighted_yaux_grid_spec,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Y_aux=Y_aux
+)
+
+weighted_yaux_grid_gammas = gamma_search_gammas(weighted_yaux_grid_model, 1)
+weighted_yaux_grid_rhos = gamma_search_rhos(weighted_yaux_grid_model, 1)
+selected_weighted_yaux_grid_gamma = gamma(weighted_yaux_grid_model)[1]
+
+println(&quot;Best gamma with obs_weights and Y_aux: &quot;, selected_weighted_yaux_grid_gamma)
+
+weighted_yaux_gamma_fig = Figure(size=(900, 450))
+weighted_yaux_gamma_ax = Axis(
+    weighted_yaux_gamma_fig[1, 1],
+    xlabel=&quot;Gamma&quot;,
+    ylabel=&quot;Leading Squared Canonical Correlation&quot;,
+    title=&quot;Weighted + auxiliary objective landscape over gamma&quot;
+)
+
+lines!(weighted_yaux_gamma_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rhos;
+    color=:darkgreen, linewidth=3)
+vlines!(weighted_yaux_gamma_ax, [selected_weighted_yaux_grid_gamma];
+    color=:black, linestyle=:dash)
+
+save(&quot;gamma_weighted_yaux_grid.svg&quot;, weighted_yaux_gamma_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Best gamma with obs_weights and Y_aux: 0.692</code></pre><p><img src="../gamma_weighted_yaux_grid.svg" alt/></p><p>To turn that landscape into an actual optimization step, we next search over adjacent intervals. The grey curve below is the dense landscape just plotted, the red points are the best values retained from each interval, and the dashed line marks the overall winner.</p><pre><code class="language-julia hljs">weighted_yaux_interval_spec = CPPLSSpec(
+    n_components=1,
+    gamma=intervalize(0:0.05:1),
+    analysis_mode=:discriminant
+)
+
+weighted_yaux_interval_model = fit(
+    weighted_yaux_interval_spec,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Y_aux=Y_aux
+)
+
+weighted_yaux_interval_gammas = gamma_search_gammas(weighted_yaux_interval_model, 1)
+weighted_yaux_interval_rhos = gamma_search_rhos(weighted_yaux_interval_model, 1)
+selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_model)[1]
+
+println(&quot;Interval-optimized gamma with obs_weights and Y_aux: &quot;, selected_weighted_yaux_gamma)
+i = findfirst(==(selected_weighted_yaux_gamma), weighted_yaux_interval_gammas)
+println(&quot;Associated rho^2: &quot;, weighted_yaux_interval_rhos[i])
+
+weighted_yaux_interval_fig = Figure(size=(900, 450))
+weighted_yaux_interval_ax = Axis(
+    weighted_yaux_interval_fig[1, 1],
+    xlabel=&quot;Gamma&quot;,
+    ylabel=&quot;Leading Squared Canonical Correlation&quot;,
+    title=&quot;Interval-wise gamma optimization with weights and auxiliary responses&quot;
+)
+
+lines!(weighted_yaux_interval_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rhos;
+    color=:grey70, linewidth=3)
+scatter!(weighted_yaux_interval_ax, weighted_yaux_interval_gammas, weighted_yaux_interval_rhos;
+    color=:firebrick, markersize=10)
+vlines!(weighted_yaux_interval_ax, [selected_weighted_yaux_gamma];
+    color=:firebrick, linestyle=:dash)
+
+save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.6917448608611934
+Associated rho^2: 0.7722166962883601</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_spec = CPPLSSpec(
+    n_components=2,
+    gamma=intervalize(0:0.05:1),
+    analysis_mode=:discriminant
+)
+
+m_weighted_yaux_best = fit(
+    weighted_yaux_best_spec,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Y_aux=Y_aux,
+    sample_labels=sample_labels
+)
+
+selected_weighted_yaux_rhos = [
+    gamma_search_rhos(m_weighted_yaux_best, lv)[findfirst(
+        ==(gamma(m_weighted_yaux_best)[lv]),
+        gamma_search_gammas(m_weighted_yaux_best, lv),
+    )]
+    for lv in 1:2
+]
+
+println(&quot;Selected gammas for the two latent variables: &quot;,
+    round.(gamma(m_weighted_yaux_best), digits=3))
+println(&quot;Associated rho^2: &quot;, round.(selected_weighted_yaux_rhos, digits=6))
+
+scores_weighted_yaux_best = orient_scores(X_scores(m_weighted_yaux_best)[:, 1:2], classes)
+
+cppls_weighted_yaux_best_plt = scoreplot(
+    sample_labels,
+    classes,
+    scores_weighted_yaux_best;
+    backend=backend,
+    figure_kwargs=figure_kwargs,
+    title=&quot;CPPLS-DA scores with weights, Y_aux, and optimized gamma&quot;,
+    default_marker=(; markersize=14)
+)
+save(&quot;cppls_weighted_yaux_best.svg&quot;, cppls_weighted_yaux_best_plt)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Selected gammas for the two latent variables: [0.692, 0.676]
+Associated rho^2: [0.772217, 0.038351]</code></pre><p><img src="../cppls_weighted_yaux_best.svg" alt/></p><p>Overall, the example shows how <code>gamma</code> can be explored and optimized, how observation weights can rebalance class influence, how auxiliary responses can help separate auxiliary structure from the signal that is genuinely relevant to group membership, and how <code>gamma</code> can be re-optimized after those ingredients are introduced.</p><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><p>The example above illustrates a discriminant-analysis workflow, but the same fitting entry point is used more generally throughout <code>CPPLS</code>. The reference below documents the <code>fit</code> interface itself.</p><article><details class="docstring" open="true"><summary id="StatsAPI.fit"><a class="docstring-binding" href="#StatsAPI.fit"><code>StatsAPI.fit</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">fit(model::CPPLSSpec,
     X::AbstractMatrix{&lt;:Real},
     Y_prim::AbstractMatrix{&lt;:Real};
     kwargs...
@@ -273,4 +385,4 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
-  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/0be614d543fda956aedcf7286f41dd1e7d652e99/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 17 March 2026 13:19">Tuesday 17 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/ec07f6f310a1469204a312d3077042ba48e65e41/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 17 March 2026 13:58">Tuesday 17 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

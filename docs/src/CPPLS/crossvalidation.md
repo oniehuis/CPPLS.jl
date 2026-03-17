@@ -211,7 +211,7 @@ ax = Axis(
     xlabel="Mean outer-fold accuracy",
     ylabel="Count across permutations"
 )
-hist!(ax, permutation_scores, bins=20)
+hist!(ax, permutation_scores, bins=40)
 save("accuracy_hist.svg", f)
 nothing
 ```

@@ -503,6 +503,8 @@ weighted_yaux_grid_rhos = gamma_search_rhos(weighted_yaux_grid_model, 1)
 selected_weighted_yaux_grid_gamma = gamma(weighted_yaux_grid_model)[1]
 
 println("Best gamma with obs_weights and Y_aux: ", selected_weighted_yaux_grid_gamma)
+i = findfirst(==(selected_weighted_yaux_grid_gamma), weighted_yaux_grid_gammas)
+println("Associated rho^2: ", weighted_yaux_grid_rhos[i])
 
 weighted_yaux_gamma_fig = Figure(size=(900, 450))
 weighted_yaux_gamma_ax = Axis(

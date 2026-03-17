@@ -195,13 +195,13 @@ permutation_scores = permda(
     num_inner_folds=4,
     num_inner_folds_repeats=4,
     max_components=2,
-    rng=MersenneTwister(12345),
+    rng=MersenneTwister(54321),
     verbose=false,
 )
 ```
 
 The `permutation_scores` vector contains the mean outer-fold accuracies for each of the
-`999` permutations. Let us visualize that distribution.
+`1000` permutations. Let us visualize that distribution.
 
 ```@example crossvalidation
 f = Figure(; size=(900, 600))
@@ -218,7 +218,7 @@ nothing
 
 ![](accuracy_hist.svg)
 
-As we can see, the permutation accuracies are mostly distributed around and below `0.5`, 
+As we can see, the permutation accuracies are mostly distributed around and below `0.55`, 
 with only few being as large as or larger than the observed accuracy from the real data. 
 This shows that even a modest mean accuracy can still be statistically significant. We can 
 quantify that more formally with [`calculate_p_value`](@ref), using the permutation scores 

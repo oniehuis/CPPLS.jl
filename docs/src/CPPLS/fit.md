@@ -204,9 +204,9 @@ println("Associated rho^2: ", grid_rhos[i])
 gamma_grid_fig = Figure(size=(900, 450))
 gamma_grid_ax = Axis(
     gamma_grid_fig[1, 1],
-    xlabel="gamma",
-    ylabel="leading squared canonical correlation",
-    title="Gamma landscape from a fixed grid"
+    xlabel="Gamma",
+    ylabel="Leading Squared Canonical Correlation",
+    title="Objective landscape over gamma"
 )
 
 lines!(gamma_grid_ax, grid_gammas, grid_rhos; color=:steelblue, linewidth=3)
@@ -259,8 +259,8 @@ println("Associated rho^2: ", interval_rhos[i])
 gamma_interval_fig = Figure(size=(900, 450))
 gamma_interval_ax = Axis(
     gamma_interval_fig[1, 1],
-    xlabel="gamma",
-    ylabel="leading squared canonical correlation",
+    xlabel="Gamma",
+    ylabel="Leading Squared Canonical Correlation",
     title="Interval-wise gamma optimization"
 )
 

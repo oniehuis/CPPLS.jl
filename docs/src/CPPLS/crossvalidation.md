@@ -146,7 +146,7 @@ sample_labels, X, classes, Y_aux = load(
 
 spec = CPPLSSpec(
     n_components=2,
-    gamma=0.5,
+    gamma=0.69,
     analysis_mode=:discriminant
 )
 

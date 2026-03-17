@@ -299,18 +299,22 @@ end
 
 Often it is useful to see those rates in the fitted score space rather than only as a
 sorted text list. Following the plotting pattern used on the [Fit](@ref) page, we fit a
-two-component CPPLS-DA model to the full dataset and then overlay the samples whose
-outlier-scan error rate is at least `0.75`. In this synthetic example, those are the
-samples that most consistently fail across repeated outer-fold predictions.
+two-component CPPLS-DA model to the full dataset with the same inverse-frequency
+observation weighting used by the DA cross-validation wrappers, and then overlay the
+samples whose outlier-scan error rate is at least `0.75`. In this synthetic example,
+those are the samples that most consistently fail across repeated outer-fold
+predictions.
 
 ```@example crossvalidation
 major_outlier_threshold = 0.75
 major_outlier_idx = findall(>=(major_outlier_threshold), outlier_scan.rate)
+class_weights = invfreqweights(classes)
 
 outlier_view_model = fit(
     spec,
     X,
     classes;
+    obs_weights=class_weights,
     Y_aux=Y_aux,
     sample_labels=sample_labels
 )

@@ -4,10 +4,10 @@ Model fitting in `CPPLS` is performed through `StatsAPI.fit` together with a
 [`CPPLSSpec`](@ref). The same interface is used for both regression and discriminant
 analysis. In both settings, the fit can optionally incorporate `obs_weights` and
 `Y_aux`. Observation weights control how strongly individual samples contribute to the
-model, whereas auxiliary response information can shape the supervised projection without 
-changing the primary prediction target. In discriminant analysis (DA), observation weights 
-are especially useful when classes are imbalanced. Together with `gamma`, these arguments 
-are among the main levers for tailoring a CPPLS model to the structure of a particular 
+model, whereas auxiliary response information can shape the supervised projection without
+changing the primary prediction target. In discriminant analysis (DA), observation weights
+are especially useful when classes are imbalanced. Together with `gamma`, these arguments
+are among the main levers for tailoring a CPPLS model to the structure of a particular
 dataset.
 
 The `gamma` argument supports three distinct workflows. A fixed scalar such as `0.5`
@@ -70,8 +70,7 @@ In addition to `CPPLS`, the example uses `JLD2` to load the dataset from disk,
 `MultivariateStats` to compute the PCA baseline, `Colors` to convert the auxiliary
 variable into grayscale values in the later auxiliary-response plots, `Statistics` to
 orient the latent variables consistently across plots, and `CairoMakie` to render
-static figures; the Julia Pkg 
-documentation explains how to install registered packages in the
+static figures. The Julia Pkg documentation explains how to install registered packages in the
 [Getting Started](https://pkgdocs.julialang.org/v1/getting-started/#Basic-Usage)
 section.
 
@@ -131,8 +130,8 @@ nothing # hide
 
 ![](pca.svg)
 
-In this synthetic dataset, the first two principal components are not optimized for 
-class discrimination, so a substantial part of the visible structure reflects nuisance 
+In this synthetic dataset, the first two principal components are not optimized for
+class discrimination, so a substantial part of the visible structure reflects nuisance
 variation rather than the class contrast of interest.
 
 ### CPPLS-DA With a Fixed Gamma of 0.5
@@ -177,8 +176,7 @@ space than a variance-only baseline. Because `gamma` is fixed at `0.5`, however,
 does not tell us whether nearby `gamma` values would perform similarly or whether a
 different region of the parameter space might be preferable. To get a better overview of
 how the leading squared canonical correlation responds to different values of `gamma`,
-we next fit a model over a dense grid of gamma values, here
-`0:0.001:1`.
+we next fit a model over a dense grid of gamma values, here using `0:0.001:1`.
 
 ### Gamma landscape from a grid
 
@@ -234,7 +232,7 @@ partition may be needed to increase the chance of finding the global maximum. If
 landscape mainly shows a single broad optimum, a smaller number of intervals may be
 sufficient.
 
-In the next fit, we divide `[0, 1]` into adjacent subranges with `intervalize(0:0.2:1)` 
+In the next fit, we divide `[0, 1]` into adjacent subranges with `intervalize(0:0.25:1)`
 and optimize once inside each of those intervals.
 
 ```@example fit_da
@@ -267,7 +265,6 @@ gamma_interval_ax = Axis(
 )
 
 lines!(gamma_interval_ax, grid_gammas, grid_rhos; color=:grey70, linewidth=3)
-# scatter!(gamma_interval_ax, interval_gammas, interval_rhos; color=:firebrick, markersize=14)
 vlines!(gamma_interval_ax, [selected_interval_gamma]; color=:firebrick, linestyle=:dash)
 
 save("gamma_intervals.svg", gamma_interval_fig)
@@ -276,11 +273,36 @@ nothing # hide
 
 ![](gamma_intervals.svg)
 
-In this plot, the grey curve is the same grid-based landscape as before, while the red
-points show the single optimum retained from each interval. The dashed line marks the
-overall winner among those interval-wise optima. This is useful when a full grid would be
-too expensive, but the plotted red points should not be interpreted as a dense landscape
-trace.
+In this plot, the grey curve is the same grid-based landscape as before, and the dashed
+line marks the optimum found by the interval-wise search. The interval-wise optimized
+gamma is close to the one found by the very dense grid, but it is not identical, and the
+dense grid search yields a marginally larger `rho^2` value. Whether that difference
+matters in practice depends on the analysis. A full dense grid search may be too expensive,
+especially inside cross-validation. In that situation, a focused local interval search
+can be a useful compromise, for example `intervalize(0.75:0.01:0.95)`.
+
+
+```@example fit_da
+interval_spec = CPPLSSpec(
+    n_components=1,
+    gamma=intervalize(0.75:0.01:0.95),
+    analysis_mode=:discriminant
+)
+
+interval_model = fit(
+    interval_spec,
+    X,
+    classes
+)
+
+interval_gammas = gamma_search_gammas(interval_model, 1)
+interval_rhos = gamma_search_rhos(interval_model, 1)
+selected_interval_gamma = gamma(interval_model)[1]
+
+println("Best gamma: ", selected_interval_gamma)
+i = findfirst(==(selected_interval_gamma), interval_gammas)
+println("Associated rho^2: ", interval_rhos[i])
+```
 
 ### Observation weights and auxiliary responses
 

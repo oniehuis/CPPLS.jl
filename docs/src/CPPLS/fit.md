@@ -178,7 +178,7 @@ different region of the parameter space might be preferable. To get a better ove
 how the leading squared canonical correlation responds to different values of `gamma`,
 we next fit a model over a dense grid of gamma values, here using `0:0.001:1`.
 
-### Gamma landscape from a grid
+### Objective landscape over gamma
 
 ```@example fit_da
 grid_spec = CPPLSSpec(
@@ -226,7 +226,7 @@ landscape.
 ### Gamma optimization over intervals
 
 If the goal is optimization rather than visualization, it can be more efficient to search
-over a smaller number of intervals. The right choice depends on the $\rho$ landscape,
+over a smaller number of intervals. The right choice depends on the objective landscape,
 which in turn depends on the data. If the landscape is very rugged, a finer interval
 partition may be needed to increase the chance of finding the global maximum. If the
 landscape mainly shows a single broad optimum, a smaller number of intervals may be
@@ -326,17 +326,19 @@ weights allow us to correct for that.
 
 ### Observation weights and auxiliary responses
 
-The dataset contains two ingredients that were deliberately ignored in the gamma examples
-above: strong class imbalance and an auxiliary response block `Y_aux`. Those become
-relevant once the focus shifts from choosing `gamma` to understanding how the fitted
-score space changes when class prevalence is rebalanced and auxiliary supervision is
-modeled explicitly.
+The example dataset contains two ingredients that were deliberately ignored in the gamma
+examples above: strong class imbalance and an auxiliary response block `Y_aux`. They were
+set aside temporarily so that the effect of `gamma` could be examined in isolation. In a
+practical analysis, however, these ingredients should be considered together, since class
+weighting and auxiliary supervision can also influence which `gamma` values are most
+useful.
 
 For the remainder of this section, we keep `gamma=0.84` fixed so that the main differences
 between the fits come from the inclusion or omission of observation weights and auxiliary
-responses rather than from changes in `gamma`. For visual comparability across plots, we
-orient each latent variable so that the mean score of class `major` is positive; this only
-fixes the sign indeterminacy of the latent variables and does not change the fit itself.
+responses rather than from additional changes in `gamma`. For visual comparability across
+plots, we orient each latent variable so that the mean score of class `major` is positive;
+this only fixes the sign indeterminacy of the latent variables and does not change the fit
+itself.
 
 We now add inverse-frequency observation weights. This gives the two classes the same
 total influence on the fitted model and reduces the bias introduced by unequal class

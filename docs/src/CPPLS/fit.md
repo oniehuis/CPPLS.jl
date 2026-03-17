@@ -470,9 +470,162 @@ With the auxiliary response information included, as shown in the second plot, t
 auxiliary structure is much less pronounced in the fitted scores, as indicated by
 the grayscale values being more evenly distributed across the plot.
 
+### Re-optimizing Gamma With Observation Weights and Auxiliary Responses
+
+The weighted and auxiliary-response fits above deliberately kept `gamma=0.5` fixed so
+that the effect of those two ingredients remained easy to isolate. If the goal is the
+strongest DA fit obtainable within this example, however, `gamma` should be revisited
+under the same `obs_weights` and `Y_aux` settings, because both ingredients change the
+objective that CPPLS optimizes.
+
+We therefore plot the gamma landscape again, now for a model that includes both
+inverse-frequency observation weights and the auxiliary response block.
+
+```@example fit_da
+class_weights = invfreqweights(classes)
+
+weighted_yaux_grid_spec = CPPLSSpec(
+    n_components=1,
+    gamma=0:0.001:1,
+    analysis_mode=:discriminant
+)
+
+weighted_yaux_grid_model = fit(
+    weighted_yaux_grid_spec,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Y_aux=Y_aux
+)
+
+weighted_yaux_grid_gammas = gamma_search_gammas(weighted_yaux_grid_model, 1)
+weighted_yaux_grid_rhos = gamma_search_rhos(weighted_yaux_grid_model, 1)
+selected_weighted_yaux_grid_gamma = gamma(weighted_yaux_grid_model)[1]
+
+println("Best gamma with obs_weights and Y_aux: ", selected_weighted_yaux_grid_gamma)
+
+weighted_yaux_gamma_fig = Figure(size=(900, 450))
+weighted_yaux_gamma_ax = Axis(
+    weighted_yaux_gamma_fig[1, 1],
+    xlabel="Gamma",
+    ylabel="Leading Squared Canonical Correlation",
+    title="Weighted + auxiliary objective landscape over gamma"
+)
+
+lines!(weighted_yaux_gamma_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rhos;
+    color=:darkgreen, linewidth=3)
+vlines!(weighted_yaux_gamma_ax, [selected_weighted_yaux_grid_gamma];
+    color=:black, linestyle=:dash)
+
+save("gamma_weighted_yaux_grid.svg", weighted_yaux_gamma_fig)
+nothing # hide
+```
+
+![](gamma_weighted_yaux_grid.svg)
+
+To turn that landscape into an actual optimization step, we next search over adjacent
+intervals. The grey curve below is the dense landscape just plotted, the red points are
+the best values retained from each interval, and the dashed line marks the overall
+winner.
+
+```@example fit_da
+weighted_yaux_interval_spec = CPPLSSpec(
+    n_components=1,
+    gamma=intervalize(0:0.05:1),
+    analysis_mode=:discriminant
+)
+
+weighted_yaux_interval_model = fit(
+    weighted_yaux_interval_spec,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Y_aux=Y_aux
+)
+
+weighted_yaux_interval_gammas = gamma_search_gammas(weighted_yaux_interval_model, 1)
+weighted_yaux_interval_rhos = gamma_search_rhos(weighted_yaux_interval_model, 1)
+selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_model)[1]
+
+println("Interval-optimized gamma with obs_weights and Y_aux: ", selected_weighted_yaux_gamma)
+i = findfirst(==(selected_weighted_yaux_gamma), weighted_yaux_interval_gammas)
+println("Associated rho^2: ", weighted_yaux_interval_rhos[i])
+
+weighted_yaux_interval_fig = Figure(size=(900, 450))
+weighted_yaux_interval_ax = Axis(
+    weighted_yaux_interval_fig[1, 1],
+    xlabel="Gamma",
+    ylabel="Leading Squared Canonical Correlation",
+    title="Interval-wise gamma optimization with weights and auxiliary responses"
+)
+
+lines!(weighted_yaux_interval_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rhos;
+    color=:grey70, linewidth=3)
+scatter!(weighted_yaux_interval_ax, weighted_yaux_interval_gammas, weighted_yaux_interval_rhos;
+    color=:firebrick, markersize=10)
+vlines!(weighted_yaux_interval_ax, [selected_weighted_yaux_gamma];
+    color=:firebrick, linestyle=:dash)
+
+save("gamma_weighted_yaux_intervals.svg", weighted_yaux_interval_fig)
+nothing # hide
+```
+
+![](gamma_weighted_yaux_intervals.svg)
+
+Finally, we fit the two-component discriminant model with interval-optimized `gamma`
+while keeping both inverse-frequency weights and `Y_aux`. This is the most favorable DA
+setup examined in this example because weighting, auxiliary supervision, and gamma
+selection are all aligned with the same objective.
+
+```@example fit_da
+weighted_yaux_best_spec = CPPLSSpec(
+    n_components=2,
+    gamma=intervalize(0:0.05:1),
+    analysis_mode=:discriminant
+)
+
+m_weighted_yaux_best = fit(
+    weighted_yaux_best_spec,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Y_aux=Y_aux,
+    sample_labels=sample_labels
+)
+
+selected_weighted_yaux_rhos = [
+    gamma_search_rhos(m_weighted_yaux_best, lv)[findfirst(
+        ==(gamma(m_weighted_yaux_best)[lv]),
+        gamma_search_gammas(m_weighted_yaux_best, lv),
+    )]
+    for lv in 1:2
+]
+
+println("Selected gammas for the two latent variables: ",
+    round.(gamma(m_weighted_yaux_best), digits=3))
+println("Associated rho^2: ", round.(selected_weighted_yaux_rhos, digits=6))
+
+scores_weighted_yaux_best = orient_scores(X_scores(m_weighted_yaux_best)[:, 1:2], classes)
+
+cppls_weighted_yaux_best_plt = scoreplot(
+    sample_labels,
+    classes,
+    scores_weighted_yaux_best;
+    backend=backend,
+    figure_kwargs=figure_kwargs,
+    title="CPPLS-DA scores with weights, Y_aux, and optimized gamma",
+    default_marker=(; markersize=14)
+)
+save("cppls_weighted_yaux_best.svg", cppls_weighted_yaux_best_plt)
+nothing # hide
+```
+
+![](cppls_weighted_yaux_best.svg)
+
 Overall, the example shows how `gamma` can be explored and optimized, how observation
-weights can rebalance class influence, and how auxiliary responses can help separate
-auxiliary structure from the signal that is genuinely relevant to group membership.
+weights can rebalance class influence, how auxiliary responses can help separate
+auxiliary structure from the signal that is genuinely relevant to group membership, and
+how `gamma` can be re-optimized after those ingredients are introduced.
 
 ## API
 

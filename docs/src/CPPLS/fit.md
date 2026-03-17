@@ -50,7 +50,7 @@ closed interval and then choose the best interval-wise optimum. Plotting the sto
 values is still possible in that case, but the result should be interpreted as one point
 per interval rather than as a continuous landscape.
 
-## Example: Synthetic DA Workflow
+## Example
 
 In this example, we use a synthetic dataset that ships with the package. The dataset
 contains 100 samples: 10 belong to the minority class `minor` and 90 to the majority
@@ -178,7 +178,7 @@ different region of the parameter space might be preferable. To get a better ove
 how the leading squared canonical correlation responds to different values of `gamma`,
 we next fit a model over a dense grid of gamma values, here using `0:0.001:1`.
 
-### Objective landscape over gamma
+### Objective Landscape Over Gamma
 
 ```@example fit_da
 grid_spec = CPPLSSpec(
@@ -223,7 +223,7 @@ dashed line marks the `gamma` value ultimately selected from that grid. This kin
 is the right tool when the main goal is to understand the overall shape of the search
 landscape.
 
-### Gamma optimization over intervals
+### Gamma Optimization Over Intervals
 
 If the goal is optimization rather than visualization, it can be more efficient to search
 over a smaller number of intervals. The right choice depends on the objective landscape,
@@ -324,7 +324,7 @@ the origin of the first latent variable still falls squarely within the major-cl
 cluster, which directly reflects the class imbalance in the dataset. Observation
 weights allow us to correct for that.
 
-### Observation weights and auxiliary responses
+### Observation Weights and Auxiliary Responses
 
 The example dataset contains two ingredients that were deliberately ignored in the gamma
 examples above: strong class imbalance and an auxiliary response block `Y_aux`. They were
@@ -333,7 +333,7 @@ practical analysis, however, these ingredients should be considered together, si
 weighting and auxiliary supervision can also influence which `gamma` values are most
 useful.
 
-For the remainder of this section, we keep `gamma=0.84` fixed so that the main differences
+For the remainder of this section, we keep `gamma=0.5` fixed so that the main differences
 between the fits come from the inclusion or omission of observation weights and auxiliary
 responses rather than from additional changes in `gamma`. For visual comparability across
 plots, we orient each latent variable so that the mean score of class `major` is positive;
@@ -347,7 +347,7 @@ sizes.
 ```@example fit_da
 spec = CPPLSSpec(
     n_components=2,
-    gamma=0.84,
+    gamma=0.5,
     analysis_mode=:discriminant
 )
 
@@ -415,11 +415,10 @@ nothing # hide
 
 ![](cppls_weighted_yaux.svg)
 
-The visible class separation may not have increased much, but it is now more likely
-to reflect information that is genuinely related to class membership rather than
-variation carried by a correlated covariate. To make that difference easier to see,
-we plot the last two score sets again, now shading each point by its auxiliary
-response value.
+The visible class separation may not have increased, but it is now more likely to reflect 
+information that is genuinely related to class membership rather than variation carried 
+by a correlated covariate. To make that difference easier to see, we plot the last two 
+score sets again, now shading each point by its auxiliary response value.
 
 ```@example fit_da
 aux = vec(Y_aux[:, 1])

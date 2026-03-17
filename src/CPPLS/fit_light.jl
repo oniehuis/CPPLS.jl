@@ -56,7 +56,7 @@ function fit_cppls_light(
         cppls_prepare_data(X, Y_prim, n_components, Y_aux, obs_weights, center)
 
     for i = 1:n_components
-        wᵢ, _, _, _, _, _ = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
+        wᵢ, _, _, _, _, _, _, _ = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
             gamma, gamma_rel_tol, gamma_abs_tol)
 
         process_component!(i, X_def, wᵢ, Y_prim, W_comp, P, C, B, zero_mask, X_tolerance,

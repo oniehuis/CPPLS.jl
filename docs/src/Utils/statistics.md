@@ -2,4 +2,5 @@
 
 ```@docs
 invfreqweights
+CPPLS.intervalize
 ```

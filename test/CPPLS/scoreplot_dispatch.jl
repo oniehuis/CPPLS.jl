@@ -64,6 +64,8 @@ end
         X_var_total = 1.0
         gamma = [0.7, 0.6]
         rho = [0.8, 0.75]
+        gamma_search_gammas = reshape([0.7, 0.6], 1, n_components)
+        gamma_search_rhos = reshape([0.8, 0.75], 1, n_components)
         zero_mask = reshape(Bool[false, true, true, false], n_components, n_predictors)
         a = reshape(collect(3.0:(2+n_responses*n_components)),
             n_responses, n_components)
@@ -95,6 +97,8 @@ end
             X_var_total,
             gamma,
             rho,
+            gamma_search_gammas,
+            gamma_search_rhos,
             zero_mask,
             a,
             b,
@@ -135,6 +139,8 @@ end
             X_var_total,
             gamma,
             rho,
+            gamma_search_gammas,
+            gamma_search_rhos,
             zero_mask,
             a,
             b,

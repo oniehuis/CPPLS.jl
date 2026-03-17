@@ -36,9 +36,11 @@ export predictions_to_onehot
 export predictions_to_sampleclasses
 export project
 export scoreplot
-export cv_classification
-export cv_regression
+export cvreg
+export cvda
 export cv_outlier_scan
+export permda
+export permreg
 export nested_cv_permutation
 export nested_cv
 export calculate_p_value
@@ -46,6 +48,8 @@ export invfreqweights
 export labels_to_one_hot
 export one_hot_to_labels
 export gamma
+export gamma_search_gammas
+export gamma_search_rhos
 export predictor_labels
 export response_labels
 export sample_classes
@@ -60,6 +64,7 @@ export fitted
 export residuals
 export projection_matrix
 export nmc
+export intervalize
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """

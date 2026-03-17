@@ -51,6 +51,16 @@
         X_var_total = T_el(5.0)
         gamma = T_el.(reverse(1:n_components)) ./ T_el(n_components + 2)
         rho = T_el.(1:n_components) ./ T_el(n_components + 3)
+        gamma_search_gammas = reshape(
+            T_el.(501:(500+n_components)),
+            1,
+            n_components,
+        )
+        gamma_search_rhos = reshape(
+            T_el.(601:(600+n_components)),
+            1,
+            n_components,
+        )
         zero_mask =
             reshape(Tmask.(0:(n_components*n_predictors-1)), n_components, n_predictors)
         a =
@@ -93,6 +103,8 @@
             X_var_total,
             gamma,
             rho,
+            gamma_search_gammas,
+            gamma_search_rhos,
             zero_mask,
             a,
             b,
@@ -165,6 +177,8 @@
             X_var_total,
             gamma,
             rho,
+            gamma_search_gammas,
+            gamma_search_rhos,
             zero_mask,
             a,
             b,
@@ -193,6 +207,8 @@
             X_var_total,
             gamma,
             rho,
+            gamma_search_gammas,
+            gamma_search_rhos,
             zero_mask,
             a,
             b,
@@ -300,6 +316,8 @@ end
     X_var_total = 1.0
     gamma = [0.5, 0.5]
     rho = [0.9, 0.8]
+    gamma_search_gammas = reshape([0.4, 0.6], 1, 2)
+    gamma_search_rhos = reshape([0.81, 0.64], 1, 2)
     zero_mask = zeros(Int, 2, 2)
     a = reshape(Float64.(91:94), 2, 2)
     b = reshape(Float64.(101:104), 2, 2)
@@ -312,8 +330,8 @@ end
 
     model = CPPLS.CPPLSFit(
         B, T_scores, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
-        gamma, rho, zero_mask, a, b, W0, Z, sample_labels, predictor_labels,
-        response_labels, :regression, sample_classes,
+        gamma, rho, gamma_search_gammas, gamma_search_rhos, zero_mask, a, b, W0, Z,
+        sample_labels, predictor_labels, response_labels, :regression, sample_classes,
     )
     model_inline = sprint(show, model)
     model_plain = sprint(io -> show(io, MIME"text/plain"(), model))

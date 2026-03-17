@@ -27,6 +27,12 @@ aligning Z with the primary responses through CCA. A fixed gamma can be supplied
 or a search/grid specification can be used to select gamma by maximizing the leading
 canonical correlation.
 """
+gamma_search_candidate_count(::Real) = 1
+gamma_search_candidate_count(::NTuple{2, <:Real}) = 1
+gamma_search_candidate_count(
+    gamma::AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
+) = length(gamma)
+
 function compute_cppls_weights(
     X_def::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
@@ -42,7 +48,7 @@ function compute_cppls_weights(
         W0 = X_def' * Y
         a, b, rho = cca_coeffs_and_corr(X_def * W0, Y_prim, obs_weights)
         w = vec(W0 * a[:, 1])
-        return w, rho^2, a[:, 1], b[:, 1], 0.5, W0
+        return w, rho^2, a[:, 1], b[:, 1], 0.5, W0, [0.5], [rho^2]
     else
         return compute_cppls_weights(X_def, Y, Y_prim, obs_weights, (gamma, gamma),
             gamma_rel_tol, gamma_abs_tol)
@@ -127,8 +133,17 @@ function compute_best_loadings(
     # Apply observation weights consistently with covariance weighting (sqrt for covariance).
     obs_weights = isnothing(obs_weights) ? obs_weights : sqrt.(obs_weights)
 
-    gamma, rho2 = compute_best_gamma(X_def, S_x, C, C_sign, Y_prim, obs_weights,
-        gamma_bounds, gamma_rel_tol, gamma_abs_tol)
+    gamma, rho2, gamma_search_gammas, gamma_search_rhos = compute_best_gamma(
+        X_def,
+        S_x,
+        C,
+        C_sign,
+        Y_prim,
+        obs_weights,
+        gamma_bounds,
+        gamma_rel_tol,
+        gamma_abs_tol,
+    )
 
     if gamma == 0
         w_base = compute_variance_weights(S_x)
@@ -152,7 +167,7 @@ function compute_best_loadings(
         w = vec((W0 * a[:, 1])')
     end
 
-    w, rho2, a[:, 1], b[:, 1], gamma, W0
+    w, rho2, a[:, 1], b[:, 1], gamma, W0, gamma_search_gammas, gamma_search_rhos
 end
 
 """
@@ -199,8 +214,9 @@ function compute_best_gamma(
     b = last(gamma_bounds)
 
     if a == b
-        return a, -evaluate_canonical_correlation(a, X_def, S_x, C, C_sign, Y_prim,
+        rho2 = -evaluate_canonical_correlation(a, X_def, S_x, C, C_sign, Y_prim,
             obs_weights)
+        return a, rho2, [Float64(a)], [rho2]
     end
 
     f = gamma -> try
@@ -235,7 +251,7 @@ function compute_best_gamma(
 
     # Return squared canonical correlation (positive).
     rho2 = -fbest
-    γbest, rho2
+    γbest, rho2, [Float64(γbest)], [rho2]
 end
 
 function compute_best_gamma(
@@ -273,7 +289,7 @@ function compute_best_gamma(
     end
 
     idx = argmax(rho2_vals)
-    gamma_vals[idx], rho2_vals[idx]
+    gamma_vals[idx], rho2_vals[idx], gamma_vals, rho2_vals
 end
 
 """

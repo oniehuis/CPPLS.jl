@@ -33,9 +33,9 @@ between repeats: with `reshuffle_outer_folds=false`, the same outer partition is
 whereas with `reshuffle_outer_folds=true`, a new outer partition is drawn for each repeat.
 
 In conclusion, the outer scores measure prediction on samples excluded from fitting, while 
-the inner loop controls model complexity. For classification, [`cv_classification`](@ref) 
+the inner loop controls model complexity. For classification, [`CPPLS.cv_classification`](@ref)
 provides an accuracy-like score based on one-hot predictions and normalized 
-misclassification cost. For regression, [`cv_regression`](@ref) provides the corresponding 
+misclassification cost. For regression, [`CPPLS.cv_regression`](@ref) provides the corresponding 
 callbacks, using root mean squared error by default.
 
 ## Permutation-Based Significance Assessment
@@ -112,18 +112,13 @@ To keep the documentation example reasonably fast, we use a fixed `gamma=0.5` an
 most two latent variables. For a real analysis, those settings should be chosen more 
 carefully.
 
-In this example, class balancing is applied through `obs_weight_fn`, which is recomputed
-inside each training fold. This is preferable to precomputing inverse-frequency weights on
-the full dataset before cross-validation. If you instead want fixed sample-specific
-weights, pass them through `fit_kwargs=(; obs_weights=...)` and they will simply be
-subsetted to each training split.
-
-The example uses the encoding helpers 
-[`labels_to_one_hot`](@ref labels_to_one_hot(::AbstractVector)) and
-[`one_hot_to_labels`](@ref). The first converts a vector of class labels into the one-hot
-response matrix expected by the fitting and cross-validation routines, while the second
-converts such a matrix back to ordinary class labels. That back-conversion is used below
-when stratified folds or class-frequency weights need access to the class labels again.
+In this example, we use the higher-level discriminant-analysis wrappers [`cvda`](@ref)
+and [`permda`](@ref). These functions apply the standard DA defaults automatically:
+they use the callback bundle from [`CPPLS.cv_classification`](@ref), recompute
+inverse-frequency observation weights inside each training fold, derive the
+stratification from the class labels, and inject `response_labels` into `fit_kwargs`
+when needed. If you instead want fixed sample-specific weights, pass them through
+`fit_kwargs=(; obs_weights=...)` and they will simply be subsetted to each training split.
 
 The packages loaded below play different roles: `CPPLS` provides the modeling and
 cross-validation functions, `JLD2` reads the example dataset from disk, `Random`
@@ -149,41 +144,29 @@ sample_labels, X, classes, Y_aux = load(
     "Y_aux"
 )
 
-Y, response_labels = labels_to_one_hot(classes)
-cb = cv_classification()
-
 spec = CPPLSSpec(
     n_components=2,
     gamma=0.5,
-    analysis_mode=:discriminant,
+    analysis_mode=:discriminant
 )
-
-rng = MersenneTwister(12345)
-obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train))
 
 fit_kwargs = (
     Y_aux=Y_aux,
-    sample_labels=sample_labels,
-    response_labels=response_labels,
+    sample_labels=sample_labels
 )
 
-scores, best_components = nested_cv(
+scores, best_components = cvda(
     X,
-    Y;
+    classes;
     spec=spec,
     fit_kwargs=fit_kwargs,
-    obs_weight_fn=obs_weight_fn,
-    score_fn=cb.score_fn,
-    predict_fn=cb.predict_fn,
-    select_fn=cb.select_fn,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
     num_inner_folds=4,
     num_inner_folds_repeats=4,
     max_components=2,
-    strata=one_hot_to_labels(Y),
-    rng=rng,
-    verbose=false,
+    rng=MersenneTwister(12345),
+    verbose=false
 )
 
 observed_accuracy = mean(scores)
@@ -198,25 +181,20 @@ moderately better than random guessing. This raises the question of whether the 
 nonetheless significantly better than chance. To answer that, we compare it with a null
 distribution obtained from permuted data in which the correspondence between predictors
 and class labels has been broken. For a fair comparison, the permutation procedure uses
-exactly the same settings as `nested_cv`, here with a total of `999` permutations.
+exactly the same settings as `cvda`, here with a total of `999` permutations.
 
 ```@example crossvalidation
-permutation_scores = nested_cv_permutation(
+permutation_scores = permda(
     X,
-    Y;
+    classes;
     spec=spec,
     fit_kwargs=fit_kwargs,
-    obs_weight_fn=obs_weight_fn,
-    score_fn=cb.score_fn,
-    predict_fn=cb.predict_fn,
-    select_fn=cb.select_fn,
     num_permutations=999,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
     num_inner_folds=4,
     num_inner_folds_repeats=4,
     max_components=2,
-    strata=one_hot_to_labels(Y),
     rng=MersenneTwister(12345),
     verbose=false,
 )
@@ -261,7 +239,7 @@ used a fixed `gamma` value. With datasets containing hundreds of samples and tho
 traits, especially when `gamma` is optimized across a dense grid such as `gamma=0:0.01:1`, 
 the computation becomes much more demanding. In that situation it can make sense to 
 distribute the permutation runs. For example, one could run `20` separate calls to 
-[`nested_cv_permutation`](@ref) on `20` different nodes, then concatenate the stored 
+[`CPPLS.permda`](@ref) on `20` different nodes, then concatenate the stored 
 `permutation_scores` vectors before passing them to [`calculate_p_value`](@ref).
 
 !!! warning
@@ -270,7 +248,10 @@ distribute the permutation runs. For example, one could run `20` separate calls 
     permutation sequences and therefore to a biased null distribution.
 
 When the focus shifts from global performance to potentially problematic samples,
-[`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic.
+[`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic. By default it uses the
+same fold-local inverse-frequency weighting rule as `cvda` and `permda`, although you can
+still override that behavior with a custom `obs_weight_fn` or disable it by passing
+`obs_weight_fn=nothing`.
 
 ```@example crossvalidation
 outlier_scan = cv_outlier_scan(
@@ -278,7 +259,6 @@ outlier_scan = cv_outlier_scan(
     classes;
     spec=spec,
     fit_kwargs=(; Y_aux=Y_aux, sample_labels=sample_labels),
-    obs_weight_fn=obs_weight_fn,
     num_outer_folds=5,
     num_outer_folds_repeats=500,
     num_inner_folds=4,
@@ -317,9 +297,13 @@ The functions discussed above are documented in full below.
 ```@docs
 CPPLS.calculate_p_value
 CPPLS.cv_classification
+CPPLS.cvda
 CPPLS.cv_regression
+CPPLS.cvreg
 CPPLS.cv_outlier_scan
 CPPLS.nested_cv
 CPPLS.nested_cv_permutation
 CPPLS.nmc
+CPPLS.permda
+CPPLS.permreg
 ```

@@ -93,7 +93,9 @@ end
         1e-6,
         1e-12,
     )
-    @test length(weights) == 6
+    @test length(weights) == 8
+    @test weights[7] == [0.5]
+    @test weights[8] == [weights[2]]
 
     weights_bounds = CPPLS.compute_cppls_weights(
         X,
@@ -104,7 +106,9 @@ end
         1e-6,
         1e-12,
     )
-    @test length(weights_bounds) == 6
+    @test length(weights_bounds) == 8
+    @test length(weights_bounds[7]) == 1
+    @test length(weights_bounds[8]) == 1
 
     X_rank_zero_candidate = [
         1.0 0.0 0.0
@@ -128,7 +132,7 @@ end
         (0.1, 0.9),
         1e-6,
         1e-12,
-    )) == 6
+    )) == 8
 
     scalar_gamma = CPPLS.compute_cppls_weights(
         X,
@@ -153,7 +157,8 @@ end
     @test all(isapprox.(scalar_gamma[3], tuple_gamma[3]))
     @test scalar_gamma[5] ≈ tuple_gamma[5]
 
-    loadings_one, corr_one, coeffs_one, coeffs_one_y, gamma_one, _ =
+    loadings_one, corr_one, coeffs_one, coeffs_one_y, gamma_one, _, gamma_trace_one,
+    rho_trace_one =
         CPPLS.compute_cppls_weights(
             X,
             Y,
@@ -167,6 +172,8 @@ end
     @test all(isfinite.(loadings_one))
     @test all(isnan.(coeffs_one))
     @test all(isnan.(coeffs_one_y))
+    @test gamma_trace_one == [1.0]
+    @test rho_trace_one == [corr_one]
 end
 
 @testset "compute_cppls_weights handles zero max normalization" begin
@@ -184,7 +191,7 @@ end
         -1.0 -1.0
     ]
 
-    loadings, _, _, _, gamma, _ = CPPLS.compute_cppls_weights(
+    loadings, _, _, _, gamma, _, _, _ = CPPLS.compute_cppls_weights(
         X,
         Y,
         Y,

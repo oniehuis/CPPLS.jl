@@ -45,6 +45,12 @@ const CROSSVAL_Y = [
     0 1
 ]
 
+const CROSSVAL_Y_REG = reshape(
+    CROSSVAL_X[:, 1] .+ 0.5 .* CROSSVAL_X[:, 2],
+    :,
+    1,
+)
+
 @testset "random_batch_indices builds stratified folds" begin
     strata = [1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2]
     folds = CPPLS.random_batch_indices(
@@ -207,6 +213,188 @@ end
     @test all(0.0 ≤ acc ≤ 1.0 for acc in perms)
 end
 
+@testset "cvreg applies regression defaults" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :regression)
+
+    scores, components = suppress_info() do
+        CPPLS.cvreg(
+            CROSSVAL_X,
+            CROSSVAL_Y_REG;
+            spec = spec,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            rng = CPPLS.MersenneTwister(666),
+            verbose = false,
+        )
+    end
+
+    @test length(scores) == 2
+    @test components == [1, 1]
+    @test all(isfinite, scores)
+
+    scores_vec, components_vec = suppress_info() do
+        CPPLS.cvreg(
+            CROSSVAL_X,
+            vec(CROSSVAL_Y_REG);
+            spec = spec,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            rng = CPPLS.MersenneTwister(666),
+            verbose = false,
+        )
+    end
+
+    @test scores_vec == scores
+    @test components_vec == components
+    @test_throws MethodError CPPLS.cvreg(CROSSVAL_X, CROSSVAL_Y_REG; spec = spec, score_fn = identity)
+    @test_throws ArgumentError CPPLS.cvreg(
+        CROSSVAL_X,
+        CROSSVAL_Y_REG;
+        spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant),
+    )
+end
+
+@testset "permreg applies regression defaults" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :regression)
+
+    permutation_scores = suppress_info() do
+        CPPLS.permreg(
+            CROSSVAL_X,
+            vec(CROSSVAL_Y_REG);
+            spec = spec,
+            num_permutations = 2,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            rng = CPPLS.MersenneTwister(777),
+            verbose = false,
+        )
+    end
+
+    @test length(permutation_scores) == 2
+    @test all(isfinite, permutation_scores)
+    @test_throws MethodError CPPLS.permreg(CROSSVAL_X, CROSSVAL_Y_REG; spec = spec, predict_fn = identity)
+    @test_throws ArgumentError CPPLS.permreg(
+        CROSSVAL_X,
+        CROSSVAL_Y_REG;
+        spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant),
+    )
+end
+
+@testset "cvda applies DA defaults and limits control" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
+    classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+
+    scores, components = suppress_info() do
+        CPPLS.cvda(
+            CROSSVAL_X,
+            classes;
+            spec = spec,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            rng = CPPLS.MersenneTwister(444),
+            verbose = false,
+        )
+    end
+
+    @test length(scores) == 2
+    @test components == [1, 1]
+    @test all(0.0 ≤ acc ≤ 1.0 for acc in scores)
+
+    Y, labels = CPPLS.labels_to_one_hot(classes)
+    scores_matrix, components_matrix = suppress_info() do
+        CPPLS.cvda(
+            CROSSVAL_X,
+            Y;
+            spec = spec,
+            fit_kwargs = (; response_labels = labels),
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            rng = CPPLS.MersenneTwister(444),
+            verbose = false,
+        )
+    end
+
+    @test scores_matrix == scores
+    @test components_matrix == components
+
+    @test_throws MethodError CPPLS.cvda(
+        CROSSVAL_X,
+        classes;
+        spec = spec,
+        score_fn = identity,
+    )
+    @test_throws MethodError CPPLS.cvda(
+        CROSSVAL_X,
+        classes;
+        spec = spec,
+        obs_weight_fn = (X, Y; kwargs...) -> ones(size(X, 1)),
+    )
+    @test_throws ArgumentError CPPLS.cvda(
+        CROSSVAL_X,
+        classes;
+        spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :regression),
+    )
+    @test_throws ArgumentError CPPLS.cvda(CROSSVAL_X, collect(1:size(CROSSVAL_X, 1)); spec = spec)
+end
+
+@testset "permda applies DA defaults and limits control" begin
+    spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
+    classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+
+    permutation_scores = suppress_info() do
+        CPPLS.permda(
+            CROSSVAL_X,
+            classes;
+            spec = spec,
+            num_permutations = 2,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            rng = CPPLS.MersenneTwister(555),
+            verbose = false,
+        )
+    end
+
+    @test length(permutation_scores) == 2
+    @test all(0.0 ≤ acc ≤ 1.0 for acc in permutation_scores)
+
+    @test_throws MethodError CPPLS.permda(
+        CROSSVAL_X,
+        classes;
+        spec = spec,
+        strata = ones(Int, size(CROSSVAL_X, 1)),
+    )
+    @test_throws MethodError CPPLS.permda(
+        CROSSVAL_X,
+        classes;
+        spec = spec,
+        predict_fn = identity,
+    )
+    @test_throws ArgumentError CPPLS.permda(
+        CROSSVAL_X,
+        classes;
+        spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :regression),
+    )
+    @test_throws ArgumentError CPPLS.permda(CROSSVAL_X, collect(1:size(CROSSVAL_X, 1)); spec = spec)
+end
+
 @testset "cv_outlier_scan returns per-sample counts" begin
     spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
     out = suppress_info() do
@@ -215,7 +403,6 @@ end
             CROSSVAL_Y;
             spec = spec,
             fit_kwargs = (;),
-            obs_weight_fn = (X, Y; kwargs...) -> ones(size(X, 1)),
             num_outer_folds = 2,
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
@@ -233,4 +420,24 @@ end
     expected = 2 * (size(CROSSVAL_X, 1) ÷ 2)
     @test sum(out.n_tested) == expected
     @test all(out.n_flagged .≤ out.n_tested)
+
+    out_unweighted = suppress_info() do
+        CPPLS.cv_outlier_scan(
+            CROSSVAL_X,
+            CROSSVAL_Y;
+            spec = spec,
+            fit_kwargs = (;),
+            obs_weight_fn = nothing,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            rng = CPPLS.MersenneTwister(111),
+            verbose = false,
+        )
+    end
+
+    @test length(out_unweighted.n_tested) == size(CROSSVAL_X, 1)
+    @test all(out_unweighted.n_flagged .≤ out_unweighted.n_tested)
 end

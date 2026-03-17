@@ -29,7 +29,14 @@ The `gamma` setting in `model` may be a fixed scalar, a `(lo, hi)` tuple, or a v
 mixing scalars and tuples. Non-scalar settings trigger per-component selection by
 choosing the value that yields the largest leading canonical correlation between the
 supervised projection and the primary responses, and the resulting gamma values are
-stored in the fitted model.
+stored in the fitted model. The per-candidate gamma and squared-canonical-correlation
+values examined during that search are also stored in the fitted model as matrices for
+downstream diagnostics and plotting. A range such as `0:0.01:1` is treated as a grid of
+fixed gamma values. To convert such a range into adjacent search intervals, use
+`intervalize(0:0.01:1)`, which yields `[(0.0, 0.01), (0.01, 0.02), ...]`. If you want
+interval-wise Brent searches, pass `intervalize(...)` to `gamma`. Tuple intervals
+are treated as closed intervals: both endpoints are evaluated explicitly, and the final
+choice is the best among the two endpoints and the interior Brent minimizer.
 
 Keyword arguments accepted by `fit` include `obs_weights` for per-sample weighting,
 `Y_aux` for auxiliary response columns, and optional `sample_labels`, `predictor_labels`,
@@ -48,6 +55,7 @@ See also
 [`coef`](@ref CPPLS.coef(::AbstractCPPLSFit)), 
 [`fitted`](@ref CPPLS.fitted(::CPPLSFit)), 
 [`gamma`](@ref CPPLS.gamma(::CPPLSFit)), 
+[`intervalize`](@ref),
 [`invfreqweights`](@ref invfreqweights(::AbstractVector)),
 [`predictor_labels`](@ref predictor_labels(::CPPLSFit)),
 [`response_labels`](@ref response_labels(::CPPLSFit)),
@@ -194,6 +202,10 @@ function fit_cppls(
     b = Matrix{Float64}(undef, n_targets_Y, n_components)
     rho = Vector{Float64}(undef, n_components)
     gamma_vals = fill(0.5, n_components)
+    gamma_search_gammas = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
+        n_components)
+    gamma_search_rhos = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
+        n_components)
     t_norms = Vector{Float64}(undef, n_components)
     U = Matrix{Float64}(undef, n_samples_X, n_components)
     Y_hat = Array{Float64}(undef, n_samples_X, n_targets_Y, n_components)
@@ -201,8 +213,9 @@ function fit_cppls(
     Z = Array{Float64}(undef, n_samples_X, size(Y, 2), n_components)
 
     for i = 1:n_components
-        wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ = compute_cppls_weights(
-            X_def, Y, Y_prim, obs_weights, gamma, gamma_rel_tol, gamma_abs_tol)
+        wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gamma_search_gammas[:, i],
+        gamma_search_rhos[:, i] = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
+            gamma, gamma_rel_tol, gamma_abs_tol)
         
         W0[:, :, i] = W0ᵢ
         Z[:, :, i] = X_def * W0ᵢ
@@ -227,7 +240,8 @@ function fit_cppls(
     X_var_total = sum(X .* X)
 
     CPPLSFit(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
-        gamma_vals, rho, zero_mask, a, b, W0, Z; sample_labels=sample_labels,
+        gamma_vals, rho, gamma_search_gammas, gamma_search_rhos, zero_mask, a, b, W0,
+        Z; sample_labels=sample_labels,
         predictor_labels=predictor_labels, response_labels=response_labels,
         analysis_mode=analysis_mode, sample_classes=sample_classes)
 end

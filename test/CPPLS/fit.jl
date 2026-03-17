@@ -29,6 +29,10 @@ using StatsAPI
     @test model.Y_bar ≈ CPPLS.mean(Y, dims = 1)
     @test model.gamma ≈ fill(0.5, 2)
     @test length(model.rho) == 2
+    @test size(CPPLS.gamma_search_gammas(model)) == (1, 2)
+    @test size(CPPLS.gamma_search_rhos(model)) == (1, 2)
+    @test CPPLS.gamma_search_gammas(model, 1) == [0.5]
+    @test CPPLS.gamma_search_rhos(model, 1) ≈ [model.rho[1]]
     @test length(model.X_var) == 2
     @test model.X_var_total > 0
     @test model.sample_labels == ["1", "2", "3", "4", "5"]
@@ -39,6 +43,41 @@ using StatsAPI
     @test size(model_from_spec.B) ==
           (size(X, 2), size(Y, 2), 2)
     @test model_from_spec.sample_labels == ["1", "2", "3", "4", "5"]
+end
+
+@testset "fit_cppls stores gamma search matrices" begin
+    X = Float64[
+        1 0 2
+        0 1 2
+        1 1 1
+        2 3 0
+        3 2 1
+    ]
+    Y = Float64[
+        1 0
+        0 1
+        1 1
+        0 1
+        1 0
+    ]
+    gamma_candidates = Union{Float64, Tuple{Float64, Float64}}[
+        0.0,
+        (0.2, 0.8),
+        1.0,
+    ]
+
+    model = CPPLS.fit_cppls(X, Y, 1; gamma = gamma_candidates)
+
+    @test size(CPPLS.gamma_search_gammas(model)) == (length(gamma_candidates), 1)
+    @test size(CPPLS.gamma_search_rhos(model)) == (length(gamma_candidates), 1)
+    @test CPPLS.gamma_search_gammas(model, 1) == CPPLS.gamma_search_gammas(model)[:, 1]
+    @test CPPLS.gamma_search_rhos(model, 1) == CPPLS.gamma_search_rhos(model)[:, 1]
+
+    for k = 1:1
+        best_idx = argmax(CPPLS.gamma_search_rhos(model, k))
+        @test model.gamma[k] ≈ CPPLS.gamma_search_gammas(model, k)[best_idx]
+        @test model.rho[k] ≈ CPPLS.gamma_search_rhos(model, k)[best_idx]
+    end
 end
 
 @testset "StatsAPI fit/predict/coefs round-trip" begin

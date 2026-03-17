@@ -144,6 +144,20 @@ sample_labels, X, classes, Y_aux = load(
     "Y_aux"
 )
 
+backend = :makie
+figure_kwargs = (; size=(900, 600))
+
+function orient_scores(scores, classes; reference_class="major")
+    oriented = copy(scores)
+    reference_idx = classes .== reference_class
+    for lv in axes(oriented, 2)
+        if mean(oriented[reference_idx, lv]) < 0
+            oriented[:, lv] .*= -1
+        end
+    end
+    oriented
+end
+
 spec = CPPLSSpec(
     n_components=2,
     gamma=0.69,
@@ -282,6 +296,85 @@ for (j, i) in enumerate(suspect_idx)
     println("Sample: ", sample_labels[i], "; error rate: ", rate[j])
 end
 ```
+
+Often it is useful to see those rates in the fitted score space rather than only as a
+sorted text list. Following the plotting pattern used on the [Fit](@ref) page, we fit a
+two-component CPPLS-DA model to the full dataset and then overlay the samples whose
+outlier-scan error rate is at least `0.75`. In this synthetic example, those are the
+samples that most consistently fail across repeated outer-fold predictions.
+
+```@example crossvalidation
+major_outlier_threshold = 0.75
+major_outlier_idx = findall(>=(major_outlier_threshold), outlier_scan.rate)
+
+outlier_view_model = fit(
+    spec,
+    X,
+    classes;
+    Y_aux=Y_aux,
+    sample_labels=sample_labels
+)
+
+outlier_view_scores = orient_scores(X_scores(outlier_view_model)[:, 1:2], classes)
+
+outlier_fig = Figure(size=figure_kwargs.size)
+outlier_ax = Axis(
+    outlier_fig[1, 1],
+    title="CPPLS-DA score plot with repeated outlier-scan failures highlighted",
+    xlabel="Latent Variable 1",
+    ylabel="Latent Variable 2"
+)
+
+scoreplot(
+    sample_labels,
+    classes,
+    outlier_view_scores;
+    backend=backend,
+    figure=outlier_fig,
+    axis=outlier_ax,
+    show_legend=false,
+    default_marker=(; markersize=14)
+)
+
+major_outlier_scores = outlier_view_scores[major_outlier_idx, :]
+x_span = maximum(outlier_view_scores[:, 1]) - minimum(outlier_view_scores[:, 1])
+y_span = maximum(outlier_view_scores[:, 2]) - minimum(outlier_view_scores[:, 2])
+label_dx = 0.02 * x_span
+label_dy = 0.02 * y_span
+
+scatter!(
+    outlier_ax,
+    major_outlier_scores[:, 1],
+    major_outlier_scores[:, 2];
+    color=(:crimson, 0.18),
+    strokecolor=:crimson,
+    strokewidth=2,
+    marker=:circle,
+    markersize=24,
+    label="error rate ≥ 0.75"
+)
+
+text!(
+    outlier_ax,
+    major_outlier_scores[:, 1] .+ label_dx,
+    major_outlier_scores[:, 2] .+ label_dy;
+    text=sample_labels[major_outlier_idx],
+    color=:crimson,
+    fontsize=14,
+    align=(:left, :bottom)
+)
+
+axislegend(outlier_ax; position=:rb)
+save("outlier_scoreplot.svg", outlier_fig)
+nothing
+```
+
+![](outlier_scoreplot.svg)
+
+This view makes the diagnostic easier to interpret. The four samples with error rates of
+at least `0.75` occupy a localized part of the score space rather than being scattered
+uniformly across both classes. That does not prove that they are mislabeled, but it does
+show exactly which points in the score plot deserve follow-up inspection first.
 
 In the current example, the overall model accuracy is fairly low, so several samples show
 non-negligible flagging rates. None of these samples is actually mislabeled. This

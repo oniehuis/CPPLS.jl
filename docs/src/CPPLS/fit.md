@@ -265,6 +265,7 @@ gamma_interval_ax = Axis(
 )
 
 lines!(gamma_interval_ax, grid_gammas, grid_rhos; color=:grey70, linewidth=3)
+scatter!(gamma_interval_ax, interval_gammas, interval_rhos; color=:firebrick, markersize=10)
 vlines!(gamma_interval_ax, [selected_interval_gamma]; color=:firebrick, linestyle=:dash)
 
 save("gamma_intervals.svg", gamma_interval_fig)
@@ -273,14 +274,14 @@ nothing # hide
 
 ![](gamma_intervals.svg)
 
-In this plot, the grey curve is the same grid-based landscape as before, and the dashed
-line marks the optimum found by the interval-wise search. The interval-wise optimized
-gamma is close to the one found by the very dense grid, but it is not identical, and the
-dense grid search yields a marginally larger `rho^2` value. Whether that difference
-matters in practice depends on the analysis. A full dense grid search may be too expensive,
+In this plot, the grey curve is the same grid-based landscape as before, the red points
+show the single optimum retained from each interval, and the dashed line marks the
+overall winner among those interval-wise optima. The interval-wise optimized gamma is
+close to the one found by the very dense grid, but it is not identical, and the dense
+grid search yields a marginally larger `rho^2` value. Whether that difference matters in
+practice depends on the analysis. A full dense grid search may be too expensive,
 especially inside cross-validation. In that situation, a focused local interval search
 can be a useful compromise, for example `intervalize(0.75:0.01:0.95)`.
-
 
 ```@example fit_da
 interval_spec = CPPLSSpec(

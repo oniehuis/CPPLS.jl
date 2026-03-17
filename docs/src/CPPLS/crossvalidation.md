@@ -108,7 +108,7 @@ page. The goal here is to estimate predictive performance with nested cross-vali
 compare that performance against a permutation-based null distribution, and then inspect
 which samples are most often misclassified across repeated outer folds.
 
-To keep the documentation example reasonably fast, we use a fixed `gamma=0.84` and allow at
+To keep the documentation example reasonably fast, we use a fixed `gamma=0.5` and allow at
 most two latent variables. For a real analysis, those settings should be chosen more 
 carefully.
 
@@ -146,7 +146,7 @@ sample_labels, X, classes, Y_aux = load(
 
 spec = CPPLSSpec(
     n_components=2,
-    gamma=0.84,
+    gamma=0.5,
     analysis_mode=:discriminant
 )
 

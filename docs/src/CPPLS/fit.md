@@ -176,16 +176,16 @@ Fitting CPPLS-DA directly to the class labels already yields a more class-orient
 space than a variance-only baseline. Because `gamma` is fixed at `0.5`, however, this fit
 does not tell us whether nearby `gamma` values would perform similarly or whether a
 different region of the parameter space might be preferable. To get a better overview of
-how $\rho$, the leading canonical correlation between `X` and `Y`, responds to different
-values of `gamma`, we next fit a model over a dense grid of gamma values, here
-`0:0.01:1`.
+how the leading squared canonical correlation responds to different values of `gamma`,
+we next fit a model over a dense grid of gamma values, here
+`0:0.001:1`.
 
 ### Gamma landscape from a grid
 
 ```@example fit_da
 grid_spec = CPPLSSpec(
     n_components=1,
-    gamma=0:0.01:1,
+    gamma=0:0.001:1,
     analysis_mode=:discriminant
 )
 
@@ -199,6 +199,10 @@ grid_gammas = gamma_search_gammas(grid_model, 1)
 grid_rhos = gamma_search_rhos(grid_model, 1)
 selected_grid_gamma = gamma(grid_model)[1]
 
+println("Best gamma: ", selected_grid_gamma)
+i = findfirst(==(selected_grid_gamma), grid_gammas)
+println("Associated rho^2: ", grid_rhos[i])
+
 gamma_grid_fig = Figure(size=(900, 450))
 gamma_grid_ax = Axis(
     gamma_grid_fig[1, 1],
@@ -208,7 +212,6 @@ gamma_grid_ax = Axis(
 )
 
 lines!(gamma_grid_ax, grid_gammas, grid_rhos; color=:steelblue, linewidth=3)
-scatter!(gamma_grid_ax, grid_gammas, grid_rhos; color=:steelblue, markersize=6)
 vlines!(gamma_grid_ax, [selected_grid_gamma]; color=:black, linestyle=:dash)
 
 save("gamma_grid.svg", gamma_grid_fig)
@@ -237,7 +240,7 @@ and optimize once inside each of those intervals.
 ```@example fit_da
 interval_spec = CPPLSSpec(
     n_components=1,
-    gamma=intervalize(0:0.2:1),
+    gamma=intervalize(0:0.25:1),
     analysis_mode=:discriminant
 )
 
@@ -251,6 +254,10 @@ interval_gammas = gamma_search_gammas(interval_model, 1)
 interval_rhos = gamma_search_rhos(interval_model, 1)
 selected_interval_gamma = gamma(interval_model)[1]
 
+println("Best gamma: ", selected_interval_gamma)
+i = findfirst(==(selected_interval_gamma), interval_gammas)
+println("Associated rho^2: ", interval_rhos[i])
+
 gamma_interval_fig = Figure(size=(900, 450))
 gamma_interval_ax = Axis(
     gamma_interval_fig[1, 1],
@@ -260,7 +267,7 @@ gamma_interval_ax = Axis(
 )
 
 lines!(gamma_interval_ax, grid_gammas, grid_rhos; color=:grey70, linewidth=3)
-scatter!(gamma_interval_ax, interval_gammas, interval_rhos; color=:firebrick, markersize=14)
+# scatter!(gamma_interval_ax, interval_gammas, interval_rhos; color=:firebrick, markersize=14)
 vlines!(gamma_interval_ax, [selected_interval_gamma]; color=:firebrick, linestyle=:dash)
 
 save("gamma_intervals.svg", gamma_interval_fig)

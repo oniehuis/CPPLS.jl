@@ -276,21 +276,22 @@ nothing # hide
 
 In this plot, the grey curve is the same grid-based landscape as before, the red points
 show the single optimum retained from each interval, and the dashed line marks the
-overall winner among those interval-wise optima. The interval-wise optimized gamma is
-close to the one found by the very dense grid, but it is not identical, and the dense
-grid search yields a marginally larger `rho^2` value. Whether that difference matters in
-practice depends on the analysis. A full dense grid search may be too expensive,
-especially inside cross-validation.
+overall winner among those interval-wise optima. In this dataset, the interval-wise
+optimized gamma is close to the one found by the very dense grid, but it is not
+identical, and the dense grid samples a marginally larger `rho^2` value. Whether that
+difference matters in practice depends on the analysis. However, a full dense grid search
+may be too expensive, especially inside cross-validation, so a focused interval search
+can be a useful compromise.
 
 ### Observation weights and auxiliary responses
 
-The same dataset also contains two ingredients that were deliberately ignored in the
-gamma examples above: strong class imbalance and an auxiliary response block `Y_aux`.
-Those become relevant once the focus shifts from choosing `gamma` to understanding how
-the fitted score space changes when class prevalence is rebalanced and auxiliary
-supervision is modeled explicitly.
+The  dataset contains two ingredients that were deliberately ignored in the gamma examples 
+above: strong class imbalance and an auxiliary response block `Y_aux`. Those become 
+relevant once the focus shifts from choosing `gamma` to understanding how the fitted score 
+space changes when class prevalence is rebalanced and auxiliary supervision is modeled 
+explicitly.
 
-For the remainder of this section, we keep `gamma=0.5` fixed so that the main differences
+For the remainder of this section, we keep `gamma=0.84` fixed so that the main differences
 between the fits come from the inclusion or omission of observation weights and auxiliary
 responses rather than from changes in `gamma`. For visual comparability across plots, we
 orient each latent variable so that the mean score of class `major` is positive; this only
@@ -301,6 +302,12 @@ total influence on the fitted model and reduces the bias introduced by unequal c
 sizes.
 
 ```@example fit_da
+spec = CPPLSSpec(
+    n_components=2,
+    gamma=0.84,
+    analysis_mode=:discriminant
+)
+
 m_weighted = fit(
     spec,
     X,

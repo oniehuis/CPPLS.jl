@@ -317,6 +317,13 @@ nothing # hide
 
 ![](cppls_gamma.svg)
 
+Changing gamma from 0.50 to 0.84 has a substantial effect on the separation of the two
+classes: the groups are now much better separated along the first latent variable, with
+considerably less overlap than in the score plot obtained with `gamma=0.5`. However,
+the origin of the first latent variable still falls squarely within the major-class
+cluster, which directly reflects the class imbalance in the dataset. Observation
+weights allow us to correct for that.
+
 ### Observation weights and auxiliary responses
 
 The dataset contains two ingredients that were deliberately ignored in the gamma examples

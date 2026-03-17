@@ -64,7 +64,7 @@ selected during fitting.
 ```@example project
 spec = CPPLSSpec(
     n_components=2,
-    gamma=0:0.1:1,
+    gamma=intervalize(0:0.25:1),
     analysis_mode=:discriminant
 )
 

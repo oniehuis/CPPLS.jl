@@ -108,7 +108,7 @@ page. The goal here is to estimate predictive performance with nested cross-vali
 compare that performance against a permutation-based null distribution, and then inspect
 which samples are most often misclassified across repeated outer folds.
 
-To keep the documentation example reasonably fast, we use a fixed `gamma=0.5` and allow at
+To keep the documentation example reasonably fast, we use a fixed `gamma=0.84` and allow at
 most two latent variables. For a real analysis, those settings should be chosen more 
 carefully.
 
@@ -146,7 +146,7 @@ sample_labels, X, classes, Y_aux = load(
 
 spec = CPPLSSpec(
     n_components=2,
-    gamma=0.5,
+    gamma=0.84,
     analysis_mode=:discriminant
 )
 
@@ -181,7 +181,7 @@ moderately better than random guessing. This raises the question of whether the 
 nonetheless significantly better than chance. To answer that, we compare it with a null
 distribution obtained from permuted data in which the correspondence between predictors
 and class labels has been broken. For a fair comparison, the permutation procedure uses
-exactly the same settings as `cvda`, here with a total of `999` permutations.
+exactly the same settings as `cvda`, here with a total of `1000` permutations.
 
 ```@example crossvalidation
 permutation_scores = permda(
@@ -189,7 +189,7 @@ permutation_scores = permda(
     classes;
     spec=spec,
     fit_kwargs=fit_kwargs,
-    num_permutations=999,
+    num_permutations=1000,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
     num_inner_folds=4,
@@ -236,11 +236,11 @@ In this example, the resulting p-value indicates statistical significance at an
 
 Note that the assessment above was comparatively inexpensive because `X` is small and we
 used a fixed `gamma` value. With datasets containing hundreds of samples and thousands of
-traits, especially when `gamma` is optimized across a dense grid such as `gamma=0:0.01:1`, 
-the computation becomes much more demanding. In that situation it can make sense to 
-distribute the permutation runs. For example, one could run `20` separate calls to 
-[`CPPLS.permda`](@ref) on `20` different nodes, then concatenate the stored 
-`permutation_scores` vectors before passing them to [`calculate_p_value`](@ref).
+traits, especially when `gamma` is optimized, the computation becomes much more demanding. 
+In that situation it can make sense to distribute the permutation runs. For example, one 
+could run `50` separate calls to [`CPPLS.permda`](@ref) on `20` different nodes, then 
+concatenate the stored  `permutation_scores` vectors before passing them to 
+[`calculate_p_value`](@ref).
 
 !!! warning
     When permutation runs are distributed across multiple jobs or nodes, each run should

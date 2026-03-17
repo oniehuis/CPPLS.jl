@@ -283,13 +283,47 @@ difference matters in practice depends on the analysis. However, a full dense gr
 may be too expensive, especially inside cross-validation, so a focused interval search
 can be a useful compromise.
 
+We now set `gamma=0.84`, as suggested by the preceding gamma search, and examine how
+this choice affects the separation of the two groups in the score plot.
+
+```@example fit_da
+spec = CPPLSSpec(
+    n_components=2,
+    gamma=0.84,
+    analysis_mode=:discriminant
+)
+
+m_plain = fit(
+    spec,
+    X,
+    classes;
+    sample_labels=sample_labels
+)
+
+scores_plain = orient_scores(X_scores(m_plain)[:, 1:2], classes)
+
+cppls_gamma_plt = scoreplot(
+    sample_labels,
+    classes,
+    scores_plain;
+    backend=backend,
+    figure_kwargs=figure_kwargs,
+    title="CPPLS-DA scores with gamma = 0.84",
+    default_marker=(; markersize=14)
+)
+save("cppls_gamma.svg", cppls_gamma_plt)
+nothing # hide
+```
+
+![](cppls_gamma.svg)
+
 ### Observation weights and auxiliary responses
 
-The  dataset contains two ingredients that were deliberately ignored in the gamma examples 
-above: strong class imbalance and an auxiliary response block `Y_aux`. Those become 
-relevant once the focus shifts from choosing `gamma` to understanding how the fitted score 
-space changes when class prevalence is rebalanced and auxiliary supervision is modeled 
-explicitly.
+The dataset contains two ingredients that were deliberately ignored in the gamma examples
+above: strong class imbalance and an auxiliary response block `Y_aux`. Those become
+relevant once the focus shifts from choosing `gamma` to understanding how the fitted
+score space changes when class prevalence is rebalanced and auxiliary supervision is
+modeled explicitly.
 
 For the remainder of this section, we keep `gamma=0.84` fixed so that the main differences
 between the fits come from the inclusion or omission of observation weights and auxiliary

@@ -28,43 +28,24 @@ interval, which is useful for comparing intervals but is not itself a dense land
 trace. If the goal is to visualize the shape of the gamma objective, prefer a grid. If
 the goal is robust optimization over subranges, prefer intervals.
 
-The following worked example uses a synthetic discriminant-analysis dataset. It first
-focuses on choosing `gamma` in an otherwise plain CPPLS-DA fit, and only afterwards
-introduces observation weights and auxiliary responses.
-
-## Choosing Gamma
-
-In practice, it is useful to separate two questions:
-
-1. What does the objective look like across gamma?
-2. Which gamma should the model actually use?
-
-For the first question, fit a model with a grid such as `gamma=0:0.01:1` and plot
-`gamma_search_gammas(model, 1)` against `gamma_search_rhos(model, 1)`. This yields a
-sampled overview of the landscape for the first latent variable and makes it easier to
-see broad maxima, flat regions, or multiple promising ranges.
-
-For the second question, pass explicit intervals such as
-`gamma=intervalize(0:0.01:1)`. This asks `CPPLS` to optimize once inside each adjacent
-closed interval and then choose the best interval-wise optimum. Plotting the stored search
-values is still possible in that case, but the result should be interpreted as one point
-per interval rather than as a continuous landscape.
+If observation weights or auxiliary responses are part of the intended analysis, they
+should be specified before `gamma` is selected, because both can change the supervised
+objective and therefore the `gamma` values that are most useful.
 
 ## Example
 
 In this example, we use a synthetic dataset that ships with the package. The dataset
 contains 100 samples: 10 belong to the minority class `minor` and 90 to the majority
 class `major`. Accordingly, the predictor matrix has 100 rows and 14 columns,
-representing 14 measured traits. The classes differ across these traits, which makes the
-dataset useful for illustrating how different `gamma` choices affect a CPPLS-DA model.
-Later in the section, we return to the same dataset to discuss class imbalance and the
-auxiliary response block `Y_aux`, but we keep those confounding ingredients out of the
-initial gamma discussion so that the role of `gamma` stays easy to see.
+representing 14 measured traits. The dataset is useful for illustrating three modeling
+choices that interact in practice: inverse-frequency observation weighting, the
+auxiliary response block `Y_aux`, and the selection of `gamma` once those ingredients
+are in place.
 
 The dataset was constructed so that a plain PCA score plot is dominated by nuisance
 structure, whereas CPPLS-DA recovers the class contrast more clearly. That makes it a
-useful benchmark for both gamma selection and, later, for showing how observation
-weighting and auxiliary responses change the fitted score space.
+useful benchmark for showing how observation weighting and auxiliary responses change the
+fitted score space and how `gamma` should then be chosen for that full model.
 
 In addition to `CPPLS`, the example uses `JLD2` to load the dataset from disk,
 `MultivariateStats` to compute the PCA baseline, `Colors` to convert the auxiliary
@@ -134,217 +115,23 @@ In this synthetic dataset, the first two principal components are not optimized 
 class discrimination, so a substantial part of the visible structure reflects nuisance
 variation rather than the class contrast of interest.
 
-### CPPLS-DA With a Fixed Gamma of 0.5
-
-We begin with a plain CPPLS-DA fit that ignores observation weights and auxiliary
-responses. Setting `gamma=0.5` gives a balanced compromise between predictor variance and
-predictor-response correlation and is a useful first reference point.
-
-```@example fit_da
-spec = CPPLSSpec(
-    n_components=2,
-    gamma=0.5,
-    analysis_mode=:discriminant
-)
-
-m_plain = fit(
-    spec,
-    X,
-    classes;
-    sample_labels=sample_labels
-)
-
-scores_plain = orient_scores(X_scores(m_plain)[:, 1:2], classes)
-
-cppls_plain_plt = scoreplot(
-    sample_labels,
-    classes,
-    scores_plain;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
-    title="CPPLS-DA scores with gamma = 0.5",
-    default_marker=(; markersize=14)
-)
-save("cppls_plain.svg", cppls_plain_plt)
-nothing # hide
-```
-
-![](cppls_plain.svg)
-
-Fitting CPPLS-DA directly to the class labels already yields a more class-oriented score
-space than a variance-only baseline. Because `gamma` is fixed at `0.5`, however, this fit
-does not tell us whether nearby `gamma` values would perform similarly or whether a
-different region of the parameter space might be preferable. To get a better overview of
-how the leading squared canonical correlation responds to different values of `gamma`,
-we next fit a model over a dense grid of gamma values, here using `0:0.001:1`.
-
-### Objective Landscape Over Gamma
-
-```@example fit_da
-grid_spec = CPPLSSpec(
-    n_components=1,
-    gamma=0:0.001:1,
-    analysis_mode=:discriminant
-)
-
-grid_model = fit(
-    grid_spec,
-    X,
-    classes
-)
-
-grid_gammas = gamma_search_gammas(grid_model, 1)
-grid_rhos = gamma_search_rhos(grid_model, 1)
-selected_grid_gamma = gamma(grid_model)[1]
-
-println("Best gamma: ", selected_grid_gamma)
-i = findfirst(==(selected_grid_gamma), grid_gammas)
-println("Associated rho^2: ", grid_rhos[i])
-
-gamma_grid_fig = Figure(size=(900, 450))
-gamma_grid_ax = Axis(
-    gamma_grid_fig[1, 1],
-    xlabel="Gamma",
-    ylabel="Leading Squared Canonical Correlation",
-    title="Objective landscape over gamma"
-)
-
-lines!(gamma_grid_ax, grid_gammas, grid_rhos; color=:steelblue, linewidth=3)
-vlines!(gamma_grid_ax, [selected_grid_gamma]; color=:black, linestyle=:dash)
-
-save("gamma_grid.svg", gamma_grid_fig)
-nothing # hide
-```
-
-![](gamma_grid.svg)
-
-Using a grid gives a sampled view of the objective for the first latent variable. The
-dashed line marks the `gamma` value ultimately selected from that grid. This kind of plot
-is the right tool when the main goal is to understand the overall shape of the search
-landscape.
-
-### Gamma Optimization Over Intervals
-
-If the goal is optimization rather than visualization, it can be more efficient to search
-over a smaller number of intervals. The right choice depends on the objective landscape,
-which in turn depends on the data. If the landscape is very rugged, a finer interval
-partition may be needed to increase the chance of finding the global maximum. If the
-landscape mainly shows a single broad optimum, a smaller number of intervals may be
-sufficient.
-
-In the next fit, we divide `[0, 1]` into adjacent subranges with `intervalize(0:0.25:1)`
-and optimize once inside each of those intervals.
-
-```@example fit_da
-interval_spec = CPPLSSpec(
-    n_components=1,
-    gamma=intervalize(0:0.25:1),
-    analysis_mode=:discriminant
-)
-
-interval_model = fit(
-    interval_spec,
-    X,
-    classes
-)
-
-interval_gammas = gamma_search_gammas(interval_model, 1)
-interval_rhos = gamma_search_rhos(interval_model, 1)
-selected_interval_gamma = gamma(interval_model)[1]
-
-println("Best gamma: ", selected_interval_gamma)
-i = findfirst(==(selected_interval_gamma), interval_gammas)
-println("Associated rho^2: ", interval_rhos[i])
-
-gamma_interval_fig = Figure(size=(900, 450))
-gamma_interval_ax = Axis(
-    gamma_interval_fig[1, 1],
-    xlabel="Gamma",
-    ylabel="Leading Squared Canonical Correlation",
-    title="Interval-wise gamma optimization"
-)
-
-lines!(gamma_interval_ax, grid_gammas, grid_rhos; color=:grey70, linewidth=3)
-scatter!(gamma_interval_ax, interval_gammas, interval_rhos; color=:firebrick, markersize=10)
-vlines!(gamma_interval_ax, [selected_interval_gamma]; color=:firebrick, linestyle=:dash)
-
-save("gamma_intervals.svg", gamma_interval_fig)
-nothing # hide
-```
-
-![](gamma_intervals.svg)
-
-In this plot, the grey curve is the same grid-based landscape as before, the red points
-show the single optimum retained from each interval, and the dashed line marks the
-overall winner among those interval-wise optima. In this dataset, the interval-wise
-optimized gamma is close to the one found by the very dense grid, but it is not
-identical, and the dense grid samples a marginally larger `rho^2` value. Whether that
-difference matters in practice depends on the analysis. However, a full dense grid search
-may be too expensive, especially inside cross-validation, so a focused interval search
-can be a useful compromise.
-
-We now set `gamma=0.84`, as suggested by the preceding gamma search, and examine how
-this choice affects the separation of the two groups in the score plot.
-
-```@example fit_da
-spec = CPPLSSpec(
-    n_components=2,
-    gamma=0.84,
-    analysis_mode=:discriminant
-)
-
-m_plain = fit(
-    spec,
-    X,
-    classes;
-    sample_labels=sample_labels
-)
-
-scores_plain = orient_scores(X_scores(m_plain)[:, 1:2], classes)
-
-cppls_gamma_plt = scoreplot(
-    sample_labels,
-    classes,
-    scores_plain;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
-    title="CPPLS-DA scores with gamma = 0.84",
-    default_marker=(; markersize=14)
-)
-save("cppls_gamma.svg", cppls_gamma_plt)
-nothing # hide
-```
-
-![](cppls_gamma.svg)
-
-Changing gamma from 0.50 to 0.84 has a substantial effect on the separation of the two
-classes: the groups are now much better separated along the first latent variable, with
-considerably less overlap than in the score plot obtained with `gamma=0.5`. However,
-the origin of the first latent variable still falls squarely within the major-class
-cluster, which directly reflects the class imbalance in the dataset. Observation
-weights allow us to correct for that.
-
 ### Observation Weights and Auxiliary Responses
 
-The example dataset contains two ingredients that were deliberately ignored in the gamma
-examples above: strong class imbalance and an auxiliary response block `Y_aux`. They were
-set aside temporarily so that the effect of `gamma` could be examined in isolation. In a
-practical analysis, however, these ingredients should be considered together, since class
-weighting and auxiliary supervision can also influence which `gamma` values are most
-useful.
+In a practical DA analysis, class imbalance and auxiliary supervision should be handled
+before `gamma` is tuned, because both affect the supervised structure that `gamma`
+balances. We therefore begin with a simple working value, `gamma=0.5`, and first add the
+other modeling ingredients that are already known to matter in this dataset. For visual
+comparability across plots, we orient each latent variable so that the mean score of
+class `major` is positive; this only fixes the sign indeterminacy of the latent variables
+and does not change the fit itself.
 
-For the remainder of this section, we keep `gamma=0.5` fixed so that the main differences
-between the fits come from the inclusion or omission of observation weights and auxiliary
-responses rather than from additional changes in `gamma`. For visual comparability across
-plots, we orient each latent variable so that the mean score of class `major` is positive;
-this only fixes the sign indeterminacy of the latent variables and does not change the fit
-itself.
-
-We now add inverse-frequency observation weights. This gives the two classes the same
+We first add inverse-frequency observation weights. This gives the two classes the same
 total influence on the fitted model and reduces the bias introduced by unequal class
 sizes.
 
 ```@example fit_da
+class_weights = invfreqweights(classes)
+
 spec = CPPLSSpec(
     n_components=2,
     gamma=0.5,
@@ -355,7 +142,7 @@ m_weighted = fit(
     spec,
     X,
     classes;
-    obs_weights=invfreqweights(classes),  # give both classes equal total weight
+    obs_weights=class_weights,
     sample_labels=sample_labels
 )
 
@@ -393,7 +180,7 @@ m_weighted_yaux = fit(
     spec,
     X,
     classes;
-    obs_weights=invfreqweights(classes),  # give both classes equal total weight
+    obs_weights=class_weights,
     Y_aux=Y_aux,                          # model auxiliary responses explicitly
     sample_labels=sample_labels
 )
@@ -470,20 +257,13 @@ With the auxiliary response information included, as shown in the second plot, t
 auxiliary structure is much less pronounced in the fitted scores, as indicated by
 the grayscale values being more evenly distributed across the plot.
 
-### Re-optimizing Gamma With Observation Weights and Auxiliary Responses
+### Choosing Gamma for the Weighted + Auxiliary Model
 
-The weighted and auxiliary-response fits above deliberately kept `gamma=0.5` fixed so
-that the effect of those two ingredients remained easy to isolate. If the goal is the
-strongest DA fit obtainable within this example, however, `gamma` should be revisited
-under the same `obs_weights` and `Y_aux` settings, because both ingredients change the
-objective that CPPLS optimizes.
-
-We therefore plot the gamma landscape again, now for a model that includes both
-inverse-frequency observation weights and the auxiliary response block.
+With observation weights and `Y_aux` in place, we can now choose `gamma` for the model we
+actually want to interpret. We first inspect the objective landscape on a dense grid and
+then use interval-based optimization to obtain a practical two-component fit.
 
 ```@example fit_da
-class_weights = invfreqweights(classes)
-
 weighted_yaux_grid_spec = CPPLSSpec(
     n_components=1,
     gamma=0:0.001:1,
@@ -624,10 +404,10 @@ nothing # hide
 
 ![](cppls_weighted_yaux_best.svg)
 
-Overall, the example shows how `gamma` can be explored and optimized, how observation
-weights can rebalance class influence, how auxiliary responses can help separate
-auxiliary structure from the signal that is genuinely relevant to group membership, and
-how `gamma` can be re-optimized after those ingredients are introduced.
+Overall, the example shows how observation weights can rebalance class influence, how
+auxiliary responses can help separate auxiliary structure from the signal that is
+genuinely relevant to group membership, and how `gamma` should be chosen only after
+those ingredients are in place.
 
 ## API
 

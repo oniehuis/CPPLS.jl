@@ -94,6 +94,7 @@ separation of the two classes based on variance alone.
 M = fit(PCA, X'; maxoutdim=2)
 scores_pca = permutedims(predict(M, X'))
 
+wong = Makie.wong_colors()
 pca_plt = scoreplot(
     sample_labels,
     classes,
@@ -103,6 +104,8 @@ pca_plt = scoreplot(
     title="PCA scores",
     xlabel="Principal Component 1", 
     ylabel="Principal Component 2",
+    group_order=["minor", "major"],
+    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
     default_marker=(; markersize=14)
 )
 save("pca.svg", pca_plt)
@@ -155,6 +158,8 @@ cppls_weighted_plt = scoreplot(
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="CPPLS-DA scores from an inverse-frequency-weighted model",
+    group_order=["minor", "major"],
+    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
     default_marker=(; markersize=14)
 )
 save("cppls_weighted.svg", cppls_weighted_plt)
@@ -194,6 +199,8 @@ cppls_weighted_yaux_plt = scoreplot(
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses",
+    group_order=["minor", "major"],
+    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
     default_marker=(; markersize=14)
 )
 save("cppls_weighted_yaux.svg", cppls_weighted_yaux_plt)
@@ -396,6 +403,8 @@ cppls_weighted_yaux_best_plt = scoreplot(
     backend=backend,
     figure_kwargs=figure_kwargs,
     title="CPPLS-DA scores with weights, Y_aux, and optimized gamma",
+    group_order=["minor", "major"],
+    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
     default_marker=(; markersize=14)
 )
 save("cppls_weighted_yaux_best.svg", cppls_weighted_yaux_best_plt)

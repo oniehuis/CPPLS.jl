@@ -34,6 +34,7 @@ section.
 ```@example project
 using CPPLS
 using JLD2
+using CairoMakie
 
 sample_labels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
@@ -87,6 +88,7 @@ held-out sample and one column per latent component.
 ```@example project
 heldout_scores = project(model, X_holdout)
 
+wong = Makie.wong_colors()
 projected_plt = scoreplot(
     vcat(labels_train, labels_holdout),
     vcat(classes_train, plot_classes_holdout),
@@ -94,6 +96,13 @@ projected_plt = scoreplot(
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores",
+    group_order=["minor", "projected minor", "major", "projected major"],
+    group_marker=Dict(
+        "minor" => (; color=wong[2]), 
+        "projected minor" => (; color=wong[2], marker=:x, markersize=16, strokecolor=:black, strokewidth=1),
+        "major" => (; color=wong[1]),
+        "projected major" => (; color=wong[1], marker=:x, markersize=16, strokecolor=:black, strokewidth=1)
+    ),
     default_marker=(; markersize=14)
 )
 save("projected.svg", projected_plt)

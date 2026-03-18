@@ -277,7 +277,7 @@ weighted_yaux_grid_spec = CPPLSSpec(
     analysis_mode=:discriminant
 )
 
-weighted_yaux_grid_model = fit(
+@time weighted_yaux_grid_model = fit(
     weighted_yaux_grid_spec,
     X,
     classes;
@@ -324,7 +324,7 @@ weighted_yaux_interval_spec = CPPLSSpec(
     analysis_mode=:discriminant
 )
 
-weighted_yaux_interval_model = fit(
+@time weighted_yaux_interval_model = fit(
     weighted_yaux_interval_spec,
     X,
     classes;
@@ -360,6 +360,15 @@ nothing # hide
 ```
 
 ![](gamma_weighted_yaux_intervals.svg)
+
+In this example, the interval-based optimization returns almost the same `gamma` value as
+the dense grid search, so the difference is negligible in practice. That agreement should
+not be taken for granted, however. If the objective landscape is rugged or contains
+multiple local optima, an interval-based search can miss a narrow global maximum or favor
+different local solutions depending on how the interval partition is chosen. It is
+therefore advisable to first inspect the landscape on a grid and then decide whether a
+coarse or dense interval partition is appropriate for downstream analyses such as cross-
+validation and permutation testing.
 
 Finally, we fit the two-component discriminant model with interval-optimized `gamma`
 while keeping both inverse-frequency weights and `Y_aux`. This is the most favorable DA

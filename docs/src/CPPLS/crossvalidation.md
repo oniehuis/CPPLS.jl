@@ -375,17 +375,15 @@ nothing
 
 ![](outlier_scoreplot.svg)
 
-This view makes the diagnostic easier to interpret. The four samples with error rates of
-at least `0.75` occupy a localized part of the score space rather than being scattered
-uniformly across both classes. That does not prove that they are mislabeled, but it does
-show exactly which points in the score plot deserve follow-up inspection first.
-
-In the current example, the overall model accuracy is fairly low, so several samples show
-non-negligible flagging rates. None of these samples is actually mislabeled. This
-illustrates an important point: these rates do not constitute formal proof that a sample
-is mislabeled. They are instead a practical way to prioritize follow-up inspection of
-samples that repeatedly fail when they are held out, which is often exactly the situation
-in which class-assignment problems or unusual sample behavior become visible.
+This view makes the diagnostic easier to interpret because it shows where the repeatedly
+flagged samples fall in the fitted score space. In this synthetic dataset, many of the
+highlighted samples belong to the minority class. That pattern is likely driven by class
+imbalance and the resulting instability of fold-wise classification, rather than by true
+mislabeling. In the current example, none of these samples is actually mislabeled, so the
+plot should be read as a visualization of which samples are hardest to classify
+consistently. The outlier-scan rates are therefore best understood as a practical way to
+prioritize follow-up inspection, not as proof that the highlighted samples are genuine
+outliers or incorrectly labeled.
 
 The functions discussed above are documented in full below.
 

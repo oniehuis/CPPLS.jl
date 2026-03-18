@@ -376,7 +376,7 @@ nothing
 ![](outlier_scoreplot.svg)
 
 This view makes the diagnostic easier to interpret because it shows where the repeatedly
-flagged samples fall in the fitted score space. In this synthetic dataset, many of the
+flagged samples fall in the fitted score space. In this synthetic dataset, all
 highlighted samples belong to the minority class. That pattern is likely driven by class
 imbalance and the resulting instability of fold-wise classification, rather than by true
 mislabeling. In the current example, none of these samples is actually mislabeled, so the

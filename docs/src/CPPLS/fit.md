@@ -302,7 +302,7 @@ weighted_yaux_gamma_ax = Axis(
 )
 
 lines!(weighted_yaux_gamma_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rhos;
-    color=:darkgreen, linewidth=3)
+    color=:grey70, linewidth=3)
 vlines!(weighted_yaux_gamma_ax, [selected_weighted_yaux_grid_gamma];
     color=:black, linestyle=:dash)
 

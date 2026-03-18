@@ -123,21 +123,18 @@ nothing # hide
 
 The most common use case is simply `scoreplot(model)`, where the function extracts the
 stored sample labels, sample classes, and first two latent variables directly from the
-fitted model. With the Makie backend, the result is a static figure that can be embedded
-directly into the documentation.
+fitted model. In that situation, no further arguments are required unless you want to
+customize the appearance. Titles, marker sizes, class order, colors, and other styling
+options can all be set explicitly, but it is useful to first see the minimal form. The
+more advanced example below then illustrates how those options can be used in practice.
+
+With the Makie backend, the result is a static figure that can be embedded directly into
+the documentation.
 
 ```@example visualization
 basic_makie = scoreplot(
 	basic_model;
-	backend=:makie,
-	figure_kwargs=(; size=(900, 600)),
-	title="CPPLS-DA scores",
-	group_order=["minor", "major"],
-	group_marker=Dict(
-		"minor" => (; color=wong[2]),
-		"major" => (; color=wong[1])
-	),
-	default_marker=(; markersize=14)
+	backend=:makie
 )
 save("scoreplot_basic_makie.svg", basic_makie)
 nothing # hide
@@ -152,14 +149,7 @@ to it.
 ```@example visualization
 basic_plotly = scoreplot(
 	basic_model;
-	backend=:plotly,
-	title="CPPLS-DA scores",
-	group_order=["minor", "major"],
-	group_marker=Dict(
-		"minor" => (; color=wong_plotly["minor"]),
-		"major" => (; color=wong_plotly["major"])
-	),
-	default_marker=(; size=11)
+	backend=:plotly
 )
 PlotlyJS.savefig(basic_plotly, "scoreplot_basic_plotly.html")
 nothing # hide

@@ -1,5 +1,5 @@
 """
-    CPPLS.intervalize(values::AbstractVector{<:Real})
+    intervalize(values::AbstractVector{<:Real})
 
 Convert a sequence of numeric values into adjacent `(lo, hi)` intervals by pairing
 consecutive entries. This is useful for building gamma intervals from a range. If
@@ -12,7 +12,7 @@ See also
 
 # Examples
 ```jldoctest
-julia> CPPLS.intervalize(0:0.5:1) == [(0.0, 0.5), (0.5, 1.0)]
+julia> intervalize(0:0.5:1) == [(0.0, 0.5), (0.5, 1.0)]
 true
 ```
 """

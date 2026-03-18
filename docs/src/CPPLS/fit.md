@@ -277,7 +277,7 @@ weighted_yaux_grid_spec = CPPLSSpec(
     analysis_mode=:discriminant
 )
 
-@time weighted_yaux_grid_model = fit(
+weighted_yaux_grid_model = fit(
     weighted_yaux_grid_spec,
     X,
     classes;
@@ -324,7 +324,7 @@ weighted_yaux_interval_spec = CPPLSSpec(
     analysis_mode=:discriminant
 )
 
-@time weighted_yaux_interval_model = fit(
+weighted_yaux_interval_model = fit(
     weighted_yaux_interval_spec,
     X,
     classes;

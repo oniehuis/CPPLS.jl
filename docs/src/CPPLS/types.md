@@ -12,9 +12,9 @@ information needed for cross-validation. It is mainly an internal optimization a
 typically not accessed directly by users.
 
 The package also provides getters for fields that are commonly useful in downstream
-work. For [`CPPLSSpec`](@ref), the getters are [`analysis_mode`](@ref), [`gamma`](@ref), 
+work. For [`CPPLSSpec`](@ref), the getters are [`mode`](@ref), [`gamma`](@ref), 
 and [`ncomponents`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
-[`analysis_mode`](@ref), [`fitted`](@ref), [`gamma`](@ref),
+[`mode`](@ref), [`fitted`](@ref), [`gamma`](@ref),
 [`gammas`](@ref), [`rhos`](@ref),
 [`predictorlabels`](@ref), [`responselabels`](@ref), [`residuals`](@ref),
 [`sampleclasses`](@ref), [`samplelabels`](@ref), and [`xscores`](@ref).
@@ -28,7 +28,7 @@ Both container types expose additional named fields. You can inspect them with
 
 ```@docs
 CPPLS.CPPLSSpec
-CPPLS.analysis_mode(::CPPLSSpec)
+CPPLS.mode(::CPPLSSpec)
 CPPLS.gamma(::CPPLSSpec)
 CPPLS.ncomponents(::CPPLSSpec)
 ```
@@ -47,7 +47,7 @@ CPPLS.ybar(::AbstractCPPLSFit)
 
 ```@docs
 CPPLS.CPPLSFit
-CPPLS.analysis_mode(::CPPLSFit)
+CPPLS.mode(::CPPLSFit)
 StatsAPI.fitted(::CPPLSFit)
 CPPLS.gamma(::CPPLSFit)
 CPPLS.gammas

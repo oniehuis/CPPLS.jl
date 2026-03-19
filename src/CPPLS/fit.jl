@@ -23,7 +23,7 @@ optional weights, auxiliary responses, and label metadata.
 When `Y_prim` is provided, it is treated as the primary response block. When
 `sampleclasses` is provided, the labels are converted to a one-hot response matrix,
 class names are inferred as response labels, and the fit is forced to discriminant
-analysis; `model.analysis_mode` must be `:discriminant` or an ArgumentError is thrown.
+analysis; `model.mode` must be `:discriminant` or an ArgumentError is thrown.
 
 The `gamma` setting in `model` may be a fixed scalar, a `(lo, hi)` tuple, or a vector
 mixing scalars and tuples. Non-scalar settings trigger per-component selection by
@@ -70,24 +70,24 @@ julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
 julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
 CPPLSSpec
   ncomponents: 2
   gamma: 0.01:0.01:1.0
   center: true
-  analysis_mode: discriminant
+  mode: discriminant
 
 julia> model = fit(spec, X, classes; samplelabels=labels);
 
 julia> size(CPPLS.xscores(model))
 (100, 2)
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.75, analysis_mode=:discriminant)
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.75, mode=:discriminant)
 CPPLSSpec
   ncomponents: 2
   gamma: 0.75
   center: true
-  analysis_mode: discriminant
+  mode: discriminant
 
 julia> model = fit(spec, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
 CPPLSFit
@@ -154,7 +154,7 @@ function fit_cppls(
     samplelabels::T9=String[],
     predictorlabels::T10=String[],
     responselabels::T11=String[],
-    analysis_mode::Symbol = :regression,
+    mode::Symbol = :regression,
     sampleclasses::T12=nothing,
 ) where {
     T1<:Union{
@@ -175,10 +175,10 @@ function fit_cppls(
     T12<:Union{AbstractVector, Nothing}
 }
 
-    analysis_mode in (:discriminant, :regression) || throw(ArgumentError(
-        "analysis_mode must be :discriminant or :regression, got $analysis_mode"))
+    mode in (:discriminant, :regression) || throw(ArgumentError(
+        "mode must be :discriminant or :regression, got $mode"))
 
-    analysis_mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
+    mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
         "sampleclasses can only be provided for discriminant analysis"))
 
     n_predictors = size(X, 2)
@@ -192,7 +192,7 @@ function fit_cppls(
     predictorlabels = validate_label_length(predictorlabels, n_predictors, 
         "predictorlabels")
     responselabels = validate_response_labels(responselabels, n_targets_Y)
-    if analysis_mode ≡ :discriminant && isempty(responselabels)
+    if mode ≡ :discriminant && isempty(responselabels)
         throw(ArgumentError(
             "responselabels must list class names for discriminant analysis"))
     end
@@ -243,7 +243,7 @@ function fit_cppls(
         gamma_vals, rho, gammas, rhos, zero_mask, a, b, W0,
         Z; samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels,
-        analysis_mode=analysis_mode, sampleclasses=sampleclasses)
+        mode=mode, sampleclasses=sampleclasses)
 end
 
 function fit_cppls(
@@ -322,7 +322,7 @@ function fit_cppls(
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
         samplelabels=samplelabels, predictorlabels=predictorlabels, 
-        responselabels=responselabels, analysis_mode=:regression
+        responselabels=responselabels, mode=:regression
     )
 end
 
@@ -379,8 +379,8 @@ function fit_cppls(
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
-    model.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
+    model.mode ≡ :discriminant || throw(ArgumentError(
+        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
@@ -392,8 +392,8 @@ function fit_cppls(
     sampleclasses::AbstractVector;
     kwargs...
 )
-    model.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
+    model.mode ≡ :discriminant || throw(ArgumentError(
+        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
@@ -454,7 +454,7 @@ function fit_cppls_from_sample_classes(
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
         samplelabels=samplelabels, predictorlabels=predictorlabels, 
-        responselabels=classes, analysis_mode=:discriminant, 
+        responselabels=classes, mode=:discriminant, 
         sampleclasses=copy(sampleclasses)
     )
 end
@@ -483,11 +483,11 @@ end
 """
     cppls_model_fit_kwargs_with_mode(model::CPPLSSpec)
 
-Return the same NamedTuple as `cppls_model_fit_kwargs` but include `analysis_mode` to
+Return the same NamedTuple as `cppls_model_fit_kwargs` but include `mode` to
 preserve regression versus discriminant intent in wrapper calls.
 """
 function cppls_model_fit_kwargs_with_mode(model::CPPLSSpec)
-    merge(cppls_model_fit_kwargs(model), (analysis_mode = analysis_mode(model),))
+    merge(cppls_model_fit_kwargs(model), (mode = mode(model),))
 end
 
 """

@@ -161,7 +161,7 @@ end
 spec = CPPLSSpec(
     ncomponents=2,
     gamma=0.69,
-    analysis_mode=:discriminant
+    mode=:discriminant
 )
 
 fit_kwargs = (

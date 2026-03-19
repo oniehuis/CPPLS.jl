@@ -34,8 +34,10 @@ export cvreg
 export fit
 export fitted
 export gamma
+export gammas
 export intervalize
 export invfreqweights
+export mode
 export ncomponents
 export nestedcv
 export nestedcvperm
@@ -43,7 +45,9 @@ export outlierscan
 export permda
 export permreg
 export predict
+export predictonehot
 export predictorlabels
+export predictsampleclasses
 export project
 export projectionmatrix
 export pvalue
@@ -57,17 +61,10 @@ export xbar
 export xscores
 export ybar
 
-
-export predictonehot
-export predictsampleclasses
 export predictions_to_onehot
 export predictions_to_sampleclasses
 export labels_to_one_hot
 export one_hot_to_labels
-export gammas
-
-export analysis_mode
-
 
 export nmc
 

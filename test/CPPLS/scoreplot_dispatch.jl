@@ -107,7 +107,7 @@ end
             samplelabels = samplelabels,
             predictorlabels = predictorlabels,
             responselabels = responselabels,
-            analysis_mode = :discriminant,
+            mode = :discriminant,
             sampleclasses = sampleclasses,
         )
 
@@ -149,7 +149,7 @@ end
             samplelabels = samplelabels,
             predictorlabels = predictorlabels,
             responselabels = String[],
-            analysis_mode = :regression,
+            mode = :regression,
             sampleclasses = nothing,
         )
 

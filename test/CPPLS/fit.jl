@@ -172,7 +172,7 @@ end
         Y,
         1;
         gamma = 0.5,
-        analysis_mode = :discriminant,
+        mode = :discriminant,
     )
 
     @test_throws ArgumentError CPPLS.fit_cppls(
@@ -188,7 +188,7 @@ end
         Y,
         1;
         gamma = 0.5,
-        analysis_mode = :unsupported_mode,
+        mode = :unsupported_mode,
         responselabels = responselabels,
     )
 end
@@ -202,11 +202,11 @@ end
     ]
     labels = categorical(["classA", "classB", "classA", "classB"])
 
-    spec = CPPLS.CPPLSSpec(ncomponents = 2, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 2, gamma = 0.5, mode = :discriminant)
     model = CPPLS.fit_cppls(spec, X, labels)
-    @test model.analysis_mode === :discriminant
+    @test model.mode === :discriminant
 
-    bad_spec = CPPLS.CPPLSSpec(ncomponents = 2, gamma = 0.5, analysis_mode = :regression)
+    bad_spec = CPPLS.CPPLSSpec(ncomponents = 2, gamma = 0.5, mode = :regression)
     @test_throws ArgumentError CPPLS.fit_cppls(bad_spec, X, labels)
 end
 
@@ -250,13 +250,13 @@ end
     Y, inferred = CPPLS.labels_to_one_hot(labels)
 
     model = CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
-    @test model.analysis_mode === :discriminant
+    @test model.mode === :discriminant
     @test Set(model.responselabels) == Set(inferred)
     @test model.sampleclasses == labels
     @test !(model.sampleclasses === labels)
     plain_labels = ["red", "blue", "red", "blue"]
     plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
-    @test plain_model.analysis_mode === :discriminant
+    @test plain_model.mode === :discriminant
     @test Set(plain_model.responselabels) == Set(unique(plain_labels))
     @test plain_model.sampleclasses == plain_labels
     @test !(plain_model.sampleclasses === plain_labels)
@@ -274,7 +274,7 @@ end
     mat_model = CPPLS.fit_cppls(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
 
     @test vec_model.B ≈ mat_model.B
-    @test vec_model.analysis_mode === :regression
+    @test vec_model.mode === :regression
 end
 
 @testset "fit_cppls categorical dispatch method" begin
@@ -295,7 +295,7 @@ end
     cat_model = CPPLS.fit_cppls(X, cat_labels, 2; gamma = 0.5)
     plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
 
-    @test cat_model.analysis_mode === :discriminant
+    @test cat_model.mode === :discriminant
     @test cat_model.B ≈ plain_model.B
     @test cat_model.X_bar ≈ plain_model.X_bar
     @test cat_model.Y_bar ≈ plain_model.Y_bar
@@ -316,13 +316,13 @@ end
     ]
 
     light = CPPLS.fit_cppls_light(X, Y, 2; gamma = 0.5)
-    @test light.analysis_mode === :regression
+    @test light.mode === :regression
     @test_throws ArgumentError CPPLS.fit_cppls_light(
         X,
         Y,
         2;
         gamma = 0.5,
-        analysis_mode = :invalid_mode,
+        mode = :invalid_mode,
     )
 
     labels = categorical(["a", "b", "a", "b"])
@@ -334,10 +334,10 @@ end
         Y_one_hot,
         2;
         gamma = 0.5,
-        analysis_mode = :discriminant,
+        mode = :discriminant,
     )
 
-    @test light_from_labels.analysis_mode === :discriminant
+    @test light_from_labels.mode === :discriminant
     @test light_from_labels.B ≈
           manual_discriminant.B
     @test light_from_labels.X_bar ≈ manual_discriminant.X_bar
@@ -345,7 +345,7 @@ end
     plain_labels = ["a", "b", "a", "b"]
     light_from_plain =
         CPPLS.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
-    @test light_from_plain.analysis_mode === :discriminant
+    @test light_from_plain.mode === :discriminant
     @test light_from_plain.B ≈
           light_from_labels.B
     @test light_from_plain.X_bar ≈ light_from_labels.X_bar
@@ -380,7 +380,7 @@ end
     cat_light = CPPLS.fit_cppls_light(X, cat_labels, 2; gamma = 0.5)
     plain_light = CPPLS.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
 
-    @test cat_light.analysis_mode === :discriminant
+    @test cat_light.mode === :discriminant
     @test cat_light.B ≈ plain_light.B
     @test cat_light.X_bar ≈ plain_light.X_bar
     @test cat_light.Y_bar ≈ plain_light.Y_bar

@@ -66,7 +66,7 @@ selected during fitting.
 spec = CPPLSSpec(
     ncomponents=2,
     gamma=intervalize(0:0.25:1),
-    analysis_mode=:discriminant
+    mode=:discriminant
 )
 
 model = fit(

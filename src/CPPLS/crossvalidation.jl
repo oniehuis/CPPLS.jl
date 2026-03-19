@@ -236,7 +236,7 @@ Arguments
 - `Y`: response matrix with one row per sample.
 
 Keyword arguments
-- `spec`: CPPLS specification. `spec.analysis_mode` must be `:regression`.
+- `spec`: CPPLS specification. `spec.mode` must be `:regression`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`.
 - `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
     `num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`,
@@ -262,7 +262,7 @@ julia> X = reshape(collect(1.0:16.0), :, 1);
 
 julia> Y = reshape(2 .* vec(X) .+ 1, :, 1);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:regression);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:regression);
 
 julia> scores, best_k = cvreg(
            X,
@@ -304,8 +304,8 @@ function cvreg(
     T4<:Integer,
     T5<:Integer
 }
-    spec.analysis_mode ≡ :regression || throw(ArgumentError(
-        "cvreg expects spec.analysis_mode = :regression"))
+    spec.mode ≡ :regression || throw(ArgumentError(
+        "cvreg expects spec.mode = :regression"))
 
     cb = cv_regression()
 
@@ -428,7 +428,7 @@ julia> X = reshape(collect(1.0:16.0), :, 1);
 
 julia> y = 2 .* vec(X) .+ 1;
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:regression);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:regression);
 
 julia> permutation_scores = permreg(
            X,
@@ -470,8 +470,8 @@ function permreg(
     T5<:Integer,
     T6<:Integer
 }
-    spec.analysis_mode ≡ :regression || throw(ArgumentError(
-        "permreg expects spec.analysis_mode = :regression"))
+    spec.mode ≡ :regression || throw(ArgumentError(
+        "permreg expects spec.mode = :regression"))
 
     cb = cv_regression()
 
@@ -578,7 +578,7 @@ Arguments
 - `Y`: one-hot response matrix with one row per sample and one column per class.
 
 Keyword arguments
-- `spec`: CPPLS specification. `spec.analysis_mode` must be `:discriminant`.
+- `spec`: CPPLS specification. `spec.mode` must be `:discriminant`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. If
     `responselabels` are absent, default labels are injected automatically.
 - `weighted`: passed to `CPPLS.cv_classification(; weighted=weighted)` to control whether
@@ -608,7 +608,7 @@ julia> classes = repeat(["A", "B"], inner=6);
 
 julia> Y, responselabels = labels_to_one_hot(classes);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> scores, best_k = cvda(
            X,
@@ -655,8 +655,8 @@ function cvda(
     T4<:Integer,
     T5<:Integer
 }
-    spec.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "cvda expects spec.analysis_mode = :discriminant"))
+    spec.mode ≡ :discriminant || throw(ArgumentError(
+        "cvda expects spec.mode = :discriminant"))
 
     cb = cv_classification(; weighted=weighted)
     strata = one_hot_to_labels(Y)
@@ -854,7 +854,7 @@ julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
 
 julia> classes = repeat(["A", "B"], inner=6);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> permutation_scores = permda(
            X,
@@ -900,8 +900,8 @@ function permda(
     T5<:Integer,
     T6<:Integer
 }
-    spec.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "permda expects spec.analysis_mode = :discriminant"))
+    spec.mode ≡ :discriminant || throw(ArgumentError(
+        "permda expects spec.mode = :discriminant"))
 
     cb = cv_classification(; weighted=weighted)
     strata = one_hot_to_labels(Y)
@@ -1086,7 +1086,7 @@ For standard use, `score_fn`, `predict_fn`, and `select_fn` can be obtained from
 `CPPLS.cv_classification()` or `CPPLS.cv_regression()`. In contrast, `obs_weight_fn` is an 
 optional user-supplied callback when fold-specific observation weighting is needed.
 
-When `spec.analysis_mode == :discriminant`, default `responselabels` are injected if
+When `spec.mode == :discriminant`, default `responselabels` are injected if
 they are not already present in `fit_kwargs`.
 
 Arguments
@@ -1193,7 +1193,7 @@ julia> Y, responselabels = labels_to_one_hot(classes)
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
 
@@ -1305,7 +1305,7 @@ function nestedcv(
             spec,
         )
         inner_strata = isnothing(strata) ? nothing : strata[train_indices]
-        if spec.analysis_mode ≡ :discriminant
+        if spec.mode ≡ :discriminant
             fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
         end
 
@@ -1417,7 +1417,7 @@ julia> Y, responselabels = labels_to_one_hot(classes);
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
 
@@ -1539,7 +1539,7 @@ number of latent variables by repeated inner cross-validation, predicts the held
 samples, and records which of those samples were misclassified. Across repeats, each sample
 accumulates a test count and a misclassification count.
 
-This method expects discriminant-analysis settings, so `spec.analysis_mode` must be
+This method expects discriminant-analysis settings, so `spec.mode` must be
 `:discriminant` and `Y` must be a one-hot response matrix. Stratification is derived
 automatically from `Y` via `one_hot_to_labels(Y)`.
 
@@ -1610,7 +1610,7 @@ julia> classes = repeat(["A", "B"], inner=6);
 
 julia> Y, responselabels = labels_to_one_hot(classes);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> out = outlierscan(
            X,
@@ -1657,8 +1657,8 @@ function outlierscan(
     T4<:Integer,
     T5<:Integer
 }
-    spec.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "outlierscan expects spec.analysis_mode = :discriminant"))
+    spec.mode ≡ :discriminant || throw(ArgumentError(
+        "outlierscan expects spec.mode = :discriminant"))
 
     n_samples = size(X, 1)
     size(Y, 1) == n_samples || throw(DimensionMismatch(
@@ -1861,7 +1861,7 @@ function optimize_num_latent_variables(
             fold_sample_indices,
             spec
         )
-        if spec.analysis_mode ≡ :discriminant
+        if spec.mode ≡ :discriminant
             fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
         end
         spec_max = with_n_components(spec, max_components)
@@ -2132,6 +2132,6 @@ function with_n_components(spec::CPPLSSpec, ncomponents::Integer)
         X_loading_weight_tolerance=spec.X_loading_weight_tolerance,
         t_squared_norm_tolerance=spec.t_squared_norm_tolerance,
         gamma_rel_tol=spec.gamma_rel_tol, gamma_abs_tol=spec.gamma_abs_tol,
-        analysis_mode=spec.analysis_mode
+        mode=spec.mode
     )
 end

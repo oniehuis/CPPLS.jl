@@ -114,7 +114,7 @@ end
 end
 
 @testset "optimize_num_latent_variables selects component count" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     cfg = CPPLS.cv_classification()
     selected = CPPLS.optimize_num_latent_variables(
         CROSSVAL_X,
@@ -137,7 +137,7 @@ end
 
 @testset "resolve_obs_weights combines fixed and fold-local weights" begin
     fit_kwargs = (; obs_weights = [1.0, 2.0])
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     resolved = CPPLS.resolve_obs_weights(
         fit_kwargs,
         (X, Y; kwargs...) -> [0.5, 0.25],
@@ -151,7 +151,7 @@ end
 end
 
 @testset "nestedcv returns scores and component choices" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     cfg = CPPLS.cv_classification()
     weight_calls = Ref(0)
     scores, components = suppress_info() do
@@ -185,7 +185,7 @@ end
 end
 
 @testset "nestedcvperm shuffles responses" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     cfg = CPPLS.cv_classification()
     perms = suppress_info() do
         CPPLS.nestedcvperm(
@@ -214,7 +214,7 @@ end
 end
 
 @testset "cvreg applies regression defaults" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :regression)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :regression)
 
     scores, components = suppress_info() do
         CPPLS.cvreg(
@@ -256,12 +256,12 @@ end
     @test_throws ArgumentError CPPLS.cvreg(
         CROSSVAL_X,
         CROSSVAL_Y_REG;
-        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant),
+        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant),
     )
 end
 
 @testset "permreg applies regression defaults" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :regression)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :regression)
 
     permutation_scores = suppress_info() do
         CPPLS.permreg(
@@ -285,12 +285,12 @@ end
     @test_throws ArgumentError CPPLS.permreg(
         CROSSVAL_X,
         CROSSVAL_Y_REG;
-        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant),
+        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant),
     )
 end
 
 @testset "cvda applies DA defaults and limits control" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
 
     scores, components = suppress_info() do
@@ -347,13 +347,13 @@ end
     @test_throws ArgumentError CPPLS.cvda(
         CROSSVAL_X,
         classes;
-        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :regression),
+        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :regression),
     )
     @test_throws ArgumentError CPPLS.cvda(CROSSVAL_X, collect(1:size(CROSSVAL_X, 1)); spec = spec)
 end
 
 @testset "permda applies DA defaults and limits control" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
 
     permutation_scores = suppress_info() do
@@ -390,13 +390,13 @@ end
     @test_throws ArgumentError CPPLS.permda(
         CROSSVAL_X,
         classes;
-        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :regression),
+        spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :regression),
     )
     @test_throws ArgumentError CPPLS.permda(CROSSVAL_X, collect(1:size(CROSSVAL_X, 1)); spec = spec)
 end
 
 @testset "outlierscan returns per-sample counts" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     out = suppress_info() do
         CPPLS.outlierscan(
             CROSSVAL_X,

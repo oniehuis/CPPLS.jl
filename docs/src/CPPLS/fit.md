@@ -138,7 +138,7 @@ class_weights = invfreqweights(classes)
 spec = CPPLSSpec(
     ncomponents=2,
     gamma=0.5,
-    analysis_mode=:discriminant
+    mode=:discriminant
 )
 
 m_weighted = fit(
@@ -274,7 +274,7 @@ then use interval-based optimization to obtain a practical two-component fit.
 weighted_yaux_grid_spec = CPPLSSpec(
     ncomponents=1,
     gamma=0:0.001:1,
-    analysis_mode=:discriminant
+    mode=:discriminant
 )
 
 weighted_yaux_grid_model = fit(
@@ -321,7 +321,7 @@ winner.
 weighted_yaux_interval_spec = CPPLSSpec(
     ncomponents=1,
     gamma=intervalize(0:0.05:1),
-    analysis_mode=:discriminant
+    mode=:discriminant
 )
 
 weighted_yaux_interval_model = fit(
@@ -379,7 +379,7 @@ selection are all aligned with the same objective.
 weighted_yaux_best_spec = CPPLSSpec(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
-    analysis_mode=:discriminant
+    mode=:discriminant
 )
 
 m_weighted_yaux_best = fit(

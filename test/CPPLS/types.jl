@@ -113,7 +113,7 @@
             samplelabels = samplelabels,
             predictorlabels = predictorlabels,
             responselabels = responselabels,
-            analysis_mode = :regression,
+            mode = :regression,
             sampleclasses = nothing,
         )
 
@@ -149,7 +149,7 @@
         @test cppls.samplelabels === samplelabels
         @test cppls.predictorlabels === predictorlabels
         @test cppls.responselabels === responselabels
-        @test cppls.analysis_mode === :regression
+        @test cppls.mode === :regression
         @test cppls.sampleclasses === nothing
         @test size(cppls.B) ==
               (n_predictors, n_responses, ncomponents)
@@ -188,7 +188,7 @@
         @test isempty(cppls_default.samplelabels)
         @test isempty(cppls_default.predictorlabels)
         @test isempty(cppls_default.responselabels)
-        @test cppls_default.analysis_mode === :regression
+        @test cppls_default.mode === :regression
         @test cppls_default.sampleclasses === nothing
 
         cppls_da = CPPLS.CPPLSFit(
@@ -217,10 +217,10 @@
             samplelabels = samplelabels,
             predictorlabels = predictorlabels,
             responselabels = responselabels,
-            analysis_mode = :discriminant,
+            mode = :discriminant,
             sampleclasses = sampleclasses,
         )
-        @test cppls_da.analysis_mode === :discriminant
+        @test cppls_da.mode === :discriminant
         @test cppls_da.sampleclasses === sampleclasses
     end
 end
@@ -253,13 +253,13 @@ end
         @test light_model.B === B
         @test light_model.X_bar === X_bar
         @test light_model.Y_bar === Y_bar
-        @test light_model.analysis_mode === :regression
+        @test light_model.mode === :regression
         @test size(light_model.B) ==
               (n_predictors, n_responses, ncomponents)
         @test size(light_model.X_bar) == (1, n_predictors)
         @test size(light_model.Y_bar) == (1, n_responses)
         light_da = CPPLSFitLight(B, X_bar, Y_bar, :discriminant)
-        @test light_da.analysis_mode === :discriminant
+        @test light_da.mode === :discriminant
     end
 end
 
@@ -268,7 +268,7 @@ end
     @test spec.ncomponents == 2
     @test spec.gamma == 0.5
     @test spec.center === true
-    @test spec.analysis_mode === :regression
+    @test spec.mode === :regression
 
     tuned = CPPLS.CPPLSSpec(
         ncomponents = 3,
@@ -279,27 +279,27 @@ end
         t_squared_norm_tolerance = 1e-7,
         gamma_rel_tol = 1e-5,
         gamma_abs_tol = 1e-9,
-        analysis_mode = :discriminant,
+        mode = :discriminant,
     )
     @test tuned.ncomponents == 3
     @test tuned.gamma == (0.2, 0.8)
     @test tuned.center === false
-    @test tuned.analysis_mode === :discriminant
+    @test tuned.mode === :discriminant
 
     @test_throws ArgumentError CPPLS.CPPLSSpec(ncomponents = 0)
-    @test_throws ArgumentError CPPLS.CPPLSSpec(analysis_mode = :unsupported)
+    @test_throws ArgumentError CPPLS.CPPLSSpec(mode = :unsupported)
 end
 
 @testset "custom show methods summarize CPPLS types" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 3, gamma = (0.2, 0.8), analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 3, gamma = (0.2, 0.8), mode = :discriminant)
     spec_inline = sprint(show, spec)
     spec_plain = sprint(io -> show(io, MIME"text/plain"(), spec))
     @test occursin("CPPLSSpec(", spec_inline)
     @test occursin("ncomponents=3", spec_inline)
-    @test occursin("analysis_mode=discriminant", spec_inline)
+    @test occursin("mode=discriminant", spec_inline)
     @test occursin("CPPLSSpec", spec_plain)
     @test occursin("ncomponents: 3", spec_plain)
-    @test occursin("analysis_mode: discriminant", spec_plain)
+    @test occursin("mode: discriminant", spec_plain)
 
     B = reshape(Float64.(1:8), 2, 2, 2)
     T_scores = reshape(Float64.(1:6), 3, 2)

@@ -16,7 +16,7 @@
         gamma_rel_tol::Real=1e-6,
         gamma_abs_tol::Real=1e-12,
         t_squared_norm_tolerance::Real=1e-10,
-        analysis_mode::Symbol=:regression
+        mode::Symbol=:regression
     )
 
 Low-level CPPLS fitting routine used by internal cross-validation helpers that returns
@@ -36,7 +36,7 @@ function fit_cppls_light(
     gamma_rel_tol::T6=1e-6,
     gamma_abs_tol::T7=1e-12,
     t_squared_norm_tolerance::T8=1e-10,
-    analysis_mode::Symbol=:regression,
+    mode::Symbol=:regression,
 ) where {
     T1<:Union{
         <:Real, 
@@ -63,10 +63,10 @@ function fit_cppls_light(
             X_loading_weight_tolerance, t_squared_norm_tolerance)
     end
 
-    analysis_mode in (:discriminant, :regression) || throw( ArgumentError(
-        "analysis_mode must be :discriminant or :regression, got $analysis_mode"))
+    mode in (:discriminant, :regression) || throw( ArgumentError(
+        "mode must be :discriminant or :regression, got $mode"))
 
-    CPPLSFitLight(B, X_bar, Y_bar, analysis_mode)
+    CPPLSFitLight(B, X_bar, Y_bar, mode)
 end
 
 """
@@ -114,8 +114,8 @@ function fit_cppls_light(
     kwargs...
 ) where {T,R,V,C,U}
     
-    analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
+    mode(model) ≡ :discriminant || throw(ArgumentError(
+        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_light_from_sample_classes(X, sampleclasses, model.ncomponents;
         cppls_model_fit_kwargs(model)..., kwargs...)
@@ -127,8 +127,8 @@ function fit_cppls_light(
     sampleclasses::AbstractVector;
     kwargs...,
 )
-    analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
+    mode(model) ≡ :discriminant || throw(ArgumentError(
+        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
@@ -167,7 +167,7 @@ function fit_cppls_light_from_sample_classes(
         Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
-        analysis_mode=:discriminant)
+        mode=:discriminant)
 end
 
 """
@@ -215,7 +215,7 @@ function fit_cppls_light(
         Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
-        analysis_mode=:regression)
+        mode=:regression)
 end
 
 function fit_cppls_light(

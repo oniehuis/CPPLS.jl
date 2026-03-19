@@ -27,7 +27,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -86,7 +86,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -129,7 +129,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -180,7 +180,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -209,7 +209,7 @@ stored `responselabels` ordering.
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
-[`analysis_mode`](@ref CPPLS.analysis_mode)
+[`mode`](@ref CPPLS.mode)
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 [`predict`](@ref CPPLS.predict), 
 [`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
@@ -223,7 +223,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -239,7 +239,7 @@ function predictions_to_sampleclasses(
     model::CPPLSFit,
     predictions::AbstractArray{<:Real,3}
 )
-    analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
+    mode(model) ≡ :discriminant || throw(ArgumentError(
         "predictions_to_sampleclasses is only defined for discriminant CPPLS models"))
 
     isempty(responselabels(model)) && throw(ArgumentError(
@@ -273,7 +273,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 

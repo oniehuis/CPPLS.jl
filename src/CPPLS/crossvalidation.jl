@@ -85,26 +85,26 @@ largest score; and
 `flag_fn(Y_true, Y_pred) = one_hot_to_labels(Y_pred) .≠ one_hot_to_labels(Y_true)`,
 which returns a per-sample misclassification mask.
 
-This helper is meant to supply the callback interface expected by `nested_cv`,
-`nested_cv_permutation`, and `cv_outlier_scan`. In particular, `score_fn`, `predict_fn`, 
-and `select_fn` can be passed directly to `nested_cv` and `nested_cv_permutation`, while 
-`flag_fn` is used by `cv_outlier_scan` to count misclassified samples across repeated 
+This helper is meant to supply the callback interface expected by `nestedcv`,
+`nestedcvperm`, and `outlierscan`. In particular, `score_fn`, `predict_fn`, 
+and `select_fn` can be passed directly to `nestedcv` and `nestedcvperm`, while 
+`flag_fn` is used by `outlierscan` to count misclassified samples across repeated 
 outer folds.
 
 The higher-level DA workflow built on these callbacks is exposed through `cvda` and
 `permda`. In ordinary discriminant-analysis use, those wrappers are the preferred public
 entry points, while `cv_classification` remains the lower-level helper for direct calls
-to `nested_cv`, `nested_cv_permutation`, or related internals.
+to `nestedcv`, `nestedcvperm`, or related internals.
 
 See also
 [`cvda`](@ref CPPLS.cvda),
 [`permda`](@ref CPPLS.permda),
-[`cv_outlier_scan`](@ref CPPLS.cv_outlier_scan),
+[`outlierscan`](@ref CPPLS.outlierscan),
 [`CPPLS.cv_regression`](@ref CPPLS.cv_regression), 
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`nmc`](@ref CPPLS.nmc), 
-[`nested_cv`](@ref CPPLS.nested_cv), 
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
+[`nestedcv`](@ref CPPLS.nestedcv), 
+[`nestedcvperm`](@ref CPPLS.nestedcvperm)
 [`predict`](@ref CPPLS.predict)
 
 ```jldoctest
@@ -155,21 +155,21 @@ by `predict`; and
 `select_fn = argmin`, so inner cross-validation chooses the component count with the
 smallest score.
 
-This helper is meant to supply the callback interface expected by `nested_cv` and
-`nested_cv_permutation` for regression problems. The returned `predict_fn` extracts the
+This helper is meant to supply the callback interface expected by `nestedcv` and
+`nestedcvperm` for regression problems. The returned `predict_fn` extracts the
 prediction matrix corresponding to the requested number of components.
 
 The higher-level regression workflow built on these callbacks is exposed through `cvreg`
 and `permreg`. In ordinary regression use, those wrappers are the preferred public entry
 points, while `CPPLS.cv_regression` remains the lower-level helper for direct calls to
-`nested_cv`, `nested_cv_permutation`, or related internals.
+`nestedcv`, `nestedcvperm`, or related internals.
 
 See also
 [`CPPLSFitLight`](@ref CPPLS.CPPLSFitLight),
 [`cv_classification`](@ref CPPLS.cv_classification),
 [`cvreg`](@ref CPPLS.cvreg),
-[`nested_cv`](@ref CPPLS.nested_cv),
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation),
+[`nestedcv`](@ref CPPLS.nestedcv),
+[`nestedcvperm`](@ref CPPLS.nestedcvperm),
 [`permreg`](@ref CPPLS.permreg),
 [`predict`](@ref CPPLS.predict)
 
@@ -223,13 +223,13 @@ end
     )
 
 Run nested cross-validation for CPPLS regression with the standard regression defaults
-wired in automatically. This wrapper is a convenience layer over `nested_cv` that fixes
+wired in automatically. This wrapper is a convenience layer over `nestedcv` that fixes
 the regression callbacks returned by `CPPLS.cv_regression()`.
 
 The positional arguments `X` and `Y`, and the keyword arguments `spec`, `fit_kwargs`,
 `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
 `num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`, and
-`verbose` have the same meaning as in `nested_cv`.
+`verbose` have the same meaning as in `nestedcv`.
 
 Arguments
 - `X`: predictor matrix with one row per sample.
@@ -240,19 +240,19 @@ Keyword arguments
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`.
 - `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
     `num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`,
-    `verbose`: forwarded to `nested_cv`.
+    `verbose`: forwarded to `nestedcv`.
 
 Returns
 - `outer_fold_scores`: one regression score per outer repeat.
 - `optimal_num_latent_variables`: one selected component count per outer repeat.
 
-Use `nested_cv` directly when you need custom callbacks, fold-local observation
+Use `nestedcv` directly when you need custom callbacks, fold-local observation
 weighting, stratification, or any other lower-level control that is not exposed by this
 wrapper.
 
 See also
 [`CPPLS.cv_regression`](@ref CPPLS.cv_regression),
-[`nested_cv`](@ref CPPLS.nested_cv),
+[`nestedcv`](@ref CPPLS.nestedcv),
 [`permreg`](@ref CPPLS.permreg)
 
 ```jldoctest
@@ -309,7 +309,7 @@ function cvreg(
 
     cb = cv_regression()
 
-    nested_cv(
+    nestedcv(
         X,
         Y;
         spec=spec,
@@ -392,7 +392,7 @@ end
 
 Run permutation-based nested cross-validation for CPPLS regression with the same
 defaults as [`cvreg`](@ref CPPLS.cvreg). Internally, `permreg` uses the same regression
-callbacks as `cvreg`, but places that workflow inside `nested_cv_permutation`.
+callbacks as `cvreg`, but places that workflow inside `nestedcvperm`.
 
 The positional arguments `X` and `Y`, and the shared keyword arguments `spec`,
 `fit_kwargs`, `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
@@ -405,20 +405,20 @@ Arguments
 
 Additional keyword arguments
 - `num_permutations`: number of response permutations evaluated by
-    `nested_cv_permutation`.
+    `nestedcvperm`.
 
 Returns
 - `permutation_scores`: vector whose entries are the mean outer-fold regression scores
     from each permutation run.
 
-Use `nested_cv_permutation` directly when you need custom callbacks, fold-local
+Use `nestedcvperm` directly when you need custom callbacks, fold-local
 observation weighting, stratification, or any other lower-level control that is not
 exposed by this wrapper.
 
 See also
-[`calculate_p_value`](@ref CPPLS.calculate_p_value),
+[`pvalue`](@ref CPPLS.pvalue),
 [`cvreg`](@ref CPPLS.cvreg),
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation),
+[`nestedcvperm`](@ref CPPLS.nestedcvperm),
 [`predict`](@ref CPPLS.predict)
 
 ```jldoctest
@@ -475,7 +475,7 @@ function permreg(
 
     cb = cv_regression()
 
-    nested_cv_permutation(
+    nestedcvperm(
         X,
         Y;
         spec=spec,
@@ -561,7 +561,7 @@ end
     )
 
 Run nested cross-validation for CPPLS discriminant analysis with the standard DA
-defaults wired in automatically. This wrapper is a convenience layer over `nested_cv`
+defaults wired in automatically. This wrapper is a convenience layer over `nestedcv`
 that fixes the classification callbacks, recomputes inverse-frequency observation
 weights inside each training split, and derives stratified folds from `Y`.
 
@@ -570,7 +570,7 @@ the same fold-local weighting rule commonly used in CPPLS-DA workflows:
 `obs_weight_fn(X_train, Y_train; kwargs...) = invfreqweights(one_hot_to_labels(Y_train))`.
 The stratification vector is always `one_hot_to_labels(Y)`.
 
-Use `nested_cv` directly when you need custom callbacks, custom fold weighting, custom
+Use `nestedcv` directly when you need custom callbacks, custom fold weighting, custom
 stratification, or any other lower-level control that is not exposed by this wrapper.
 
 Arguments
@@ -580,12 +580,12 @@ Arguments
 Keyword arguments
 - `spec`: CPPLS specification. `spec.analysis_mode` must be `:discriminant`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. If
-    `response_labels` are absent, default labels are injected automatically.
+    `responselabels` are absent, default labels are injected automatically.
 - `weighted`: passed to `CPPLS.cv_classification(; weighted=weighted)` to control whether
     the outer and inner scores use inverse-frequency class weighting.
 - `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
     `num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`,
-    `verbose`: forwarded to `nested_cv`.
+    `verbose`: forwarded to `nestedcv`.
 
 Returns
 - `outer_fold_scores`: one DA score per outer repeat.
@@ -593,8 +593,8 @@ Returns
 
 See also
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
-[`cv_outlier_scan`](@ref CPPLS.cv_outlier_scan),
-[`nested_cv`](@ref CPPLS.nested_cv),
+[`outlierscan`](@ref CPPLS.outlierscan),
+[`nestedcv`](@ref CPPLS.nestedcv),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels),
 [`permda`](@ref CPPLS.permda)
 
@@ -606,7 +606,7 @@ julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
 
 julia> classes = repeat(["A", "B"], inner=6);
 
-julia> Y, response_labels = labels_to_one_hot(classes);
+julia> Y, responselabels = labels_to_one_hot(classes);
 
 julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
 
@@ -614,7 +614,7 @@ julia> scores, best_k = cvda(
            X,
            Y;
            spec=spec,
-           fit_kwargs=(; response_labels=response_labels),
+           fit_kwargs=(; responselabels=responselabels),
            num_outer_folds=3,
            num_outer_folds_repeats=3,
            num_inner_folds=2,
@@ -661,7 +661,7 @@ function cvda(
     cb = cv_classification(; weighted=weighted)
     strata = one_hot_to_labels(Y)
 
-    nested_cv(
+    nestedcv(
         X,
         Y;
         spec=spec,
@@ -685,17 +685,17 @@ end
 """
     cvda(
         X::AbstractMatrix{<:Real},
-        sample_classes::AbstractCategoricalArray;
+        sampleclasses::AbstractCategoricalArray;
         kwargs...
     )
 
 Convert categorical class labels to one-hot form and forward to `cvda`. If
-`fit_kwargs.response_labels` is absent, the observed class labels are injected
+`fit_kwargs.responselabels` is absent, the observed class labels are injected
 automatically.
 """
 function cvda(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T, 1, R, V, C, U};
+    sampleclasses::AbstractCategoricalArray{T, 1, R, V, C, U};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
@@ -720,8 +720,8 @@ function cvda(
     T5<:Integer
 }
 
-    Y, response_labels = labels_to_one_hot(sample_classes)
-    fit_kwargs = with_response_labels(fit_kwargs, response_labels)
+    Y, responselabels = labels_to_one_hot(sampleclasses)
+    fit_kwargs = with_response_labels(fit_kwargs, responselabels)
     
     cvda(
         X,
@@ -743,7 +743,7 @@ end
 """
     cvda(
         X::AbstractMatrix{<:Real},
-        sample_classes::AbstractVector;
+        sampleclasses::AbstractVector;
         kwargs...
     )
 
@@ -752,7 +752,7 @@ are rejected because they are ambiguous with regression targets.
 """
 function cvda(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector;
+    sampleclasses::AbstractVector;
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
@@ -771,11 +771,11 @@ function cvda(
     T4<:Integer,
     T5<:Integer
 }
-    eltype(sample_classes) <: Real && throw(ArgumentError(
-        "cvda expects categorical sample_classes or one-hot Y."))
+    eltype(sampleclasses) <: Real && throw(ArgumentError(
+        "cvda expects categorical sampleclasses or one-hot Y."))
 
-    Y, response_labels = labels_to_one_hot(sample_classes)
-    fit_kwargs = with_response_labels(fit_kwargs, response_labels)
+    Y, responselabels = labels_to_one_hot(sampleclasses)
+    fit_kwargs = with_response_labels(fit_kwargs, responselabels)
 
     cvda(
         X,
@@ -816,7 +816,7 @@ Run permutation-based nested cross-validation for CPPLS discriminant analysis wi
 same DA defaults as [`cvda`](@ref CPPLS.cvda). Internally, `permda` uses the same
 classification callbacks, the same fold-local inverse-frequency weighting rule, and the
 same class-based stratification as `cvda`, but places that workflow inside
-`nested_cv_permutation`.
+`nestedcvperm`.
 
 The positional arguments `X` and `Y`, and the shared keyword arguments `spec`,
 `fit_kwargs`, `weighted`, `num_outer_folds`, `num_outer_folds_repeats`,
@@ -829,21 +829,21 @@ Arguments
 
 Additional keyword arguments
 - `num_permutations`: number of response permutations evaluated by
-    `nested_cv_permutation`.
+    `nestedcvperm`.
 
 Returns
 - `permutation_scores`: vector whose entries are the mean outer-fold DA scores from each
     permutation run.
 
-Use `nested_cv_permutation` directly when you need custom callbacks, custom fold
+Use `nestedcvperm` directly when you need custom callbacks, custom fold
 weighting, custom stratification, or any other lower-level control that is not exposed
 by this wrapper.
 
 See also
-[`calculate_p_value`](@ref CPPLS.calculate_p_value),
+[`pvalue`](@ref CPPLS.pvalue),
 [`cvda`](@ref CPPLS.cvda),
-[`nested_cv`](@ref CPPLS.nested_cv),
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation),
+[`nestedcv`](@ref CPPLS.nestedcv),
+[`nestedcvperm`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
 ```jldoctest
@@ -906,7 +906,7 @@ function permda(
     cb = cv_classification(; weighted=weighted)
     strata = one_hot_to_labels(Y)
 
-    nested_cv_permutation(
+    nestedcvperm(
         X,
         Y;
         spec=spec,
@@ -931,17 +931,17 @@ end
 """
     permda(
         X::AbstractMatrix{<:Real},
-        sample_classes::AbstractCategoricalArray;
+        sampleclasses::AbstractCategoricalArray;
         kwargs...
     )
 
 Convert categorical class labels to one-hot form and forward to `permda`. If
-`fit_kwargs.response_labels` is absent, the observed class labels are injected
+`fit_kwargs.responselabels` is absent, the observed class labels are injected
 automatically.
 """
 function permda(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T, 1, R, V, C, U};
+    sampleclasses::AbstractCategoricalArray{T, 1, R, V, C, U};
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
@@ -967,8 +967,8 @@ function permda(
     T5<:Integer,
     T6<:Integer
 }
-    Y, response_labels = labels_to_one_hot(sample_classes)
-    fit_kwargs = with_response_labels(fit_kwargs, response_labels)
+    Y, responselabels = labels_to_one_hot(sampleclasses)
+    fit_kwargs = with_response_labels(fit_kwargs, responselabels)
 
     permda(
         X,
@@ -991,7 +991,7 @@ end
 """
     permda(
         X::AbstractMatrix{<:Real},
-        sample_classes::AbstractVector;
+        sampleclasses::AbstractVector;
         kwargs...
     )
 
@@ -1000,7 +1000,7 @@ vectors are rejected because they are ambiguous with regression targets.
 """
 function permda(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector;
+    sampleclasses::AbstractVector;
     spec::CPPLSSpec,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
@@ -1022,11 +1022,11 @@ function permda(
     T6<:Integer
 
 }
-    eltype(sample_classes) <: Real && throw(ArgumentError(
-        "permda expects categorical sample_classes or one-hot Y."))
+    eltype(sampleclasses) <: Real && throw(ArgumentError(
+        "permda expects categorical sampleclasses or one-hot Y."))
 
-    Y, response_labels = labels_to_one_hot(sample_classes)
-    fit_kwargs = with_response_labels(fit_kwargs, response_labels)
+    Y, responselabels = labels_to_one_hot(sampleclasses)
+    fit_kwargs = with_response_labels(fit_kwargs, responselabels)
 
     permda(
         X,
@@ -1051,7 +1051,7 @@ end
 ############################################################################################
 
 """
-    nested_cv(
+    nestedcv(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
@@ -1086,7 +1086,7 @@ For standard use, `score_fn`, `predict_fn`, and `select_fn` can be obtained from
 `CPPLS.cv_classification()` or `CPPLS.cv_regression()`. In contrast, `obs_weight_fn` is an 
 optional user-supplied callback when fold-specific observation weighting is needed.
 
-When `spec.analysis_mode == :discriminant`, default `response_labels` are injected if
+When `spec.analysis_mode == :discriminant`, default `responselabels` are injected if
 they are not already present in `fit_kwargs`.
 
 Arguments
@@ -1099,7 +1099,7 @@ Keyword arguments
     routine evaluates component counts `1:max_components` by replacing `spec.n_components`
     on temporary copies of `spec`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
-    sample axis, namely `obs_weights`, `sample_labels`, `sample_classes`, `Y_aux`, and
+    sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Y_aux`, and
     `Y_auxiliary`, are subset automatically to the current training split.
 - `obs_weight_fn`: optional callback for fold-local observation weights. It receives
     `X_train` and `Y_train` for the current training split, and may also inspect
@@ -1141,7 +1141,7 @@ Keyword arguments
     `false`, build one outer partition and reuse its folds, which is the standard nested
     cross-validation setup. If `true`, perform repeated nested cross-validation by
     drawing a new outer partition on each repeat. This is especially useful for
-    diagnostics such as `cv_outlier_scan`, but it can also be used in ordinary nested CV
+    diagnostics such as `outlierscan`, but it can also be used in ordinary nested CV
     when repeated random outer splits are desired. For permutation testing, however, the
     observed run and all permuted runs must use the same `reshuffle_outer_folds` setting
     and the same score aggregation; otherwise the resulting p-value is not comparable.
@@ -1158,13 +1158,13 @@ Returns
 See also
 [`CPPLSSpec`](@ref CPPLS.CPPLSSpec),
 [`fit`](@ref CPPLS.fit),
-[`calculate_p_value`](@ref CPPLS.calculate_p_value),
+[`pvalue`](@ref CPPLS.pvalue),
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
-[`cv_outlier_scan`](@ref CPPLS.cv_outlier_scan),
+[`outlierscan`](@ref CPPLS.outlierscan),
 [`CPPLS.cv_regression`](@ref CPPLS.cv_regression), 
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot),
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation),
+[`nestedcvperm`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
 ```jldoctest
@@ -1188,7 +1188,7 @@ julia> classes = repeat(["A", "B"], inner=6)
  "B"
  "B"
 
-julia> Y, response_labels = labels_to_one_hot(classes)
+julia> Y, responselabels = labels_to_one_hot(classes)
 ([1 0; 1 0; … ; 0 1; 0 1], ["A", "B"])
 
 julia> cb = CPPLS.cv_classification();
@@ -1197,11 +1197,11 @@ julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
 
-julia> scores, best_k = nested_cv(
+julia> scores, best_k = nestedcv(
            X,
            Y;
            spec=spec,
-           fit_kwargs=(; response_labels=response_labels),
+           fit_kwargs=(; responselabels=responselabels),
            obs_weight_fn=obs_weight_fn,
            score_fn=cb.score_fn,
            predict_fn=cb.predict_fn,
@@ -1226,7 +1226,7 @@ julia> best_k == fill(1, 3)
 true
 ```
 """
-function nested_cv(
+function nestedcv(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
     spec::CPPLSSpec,
@@ -1331,7 +1331,7 @@ function nested_cv(
 end
 
 """
-    nested_cv_permutation(
+    nestedcvperm(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
@@ -1352,20 +1352,20 @@ end
         verbose::Bool=true
     )
 
-Run a permutation test around `nested_cv` by repeatedly permuting the rows of `Y` and
+Run a permutation test around `nestedcv` by repeatedly permuting the rows of `Y` and
 recomputing the nested cross-validation score. The result is a vector of mean scores,
 one for each permutation. Each permutation reruns the full nested-CV pipeline, so the
 null distribution reflects outer-fold assessment, inner-loop model selection, and any
 fold-local observation weighting supplied through `obs_weight_fn`.
 
-This function takes the same core callbacks as `nested_cv`: `score_fn`, `predict_fn`,
+This function takes the same core callbacks as `nestedcv`: `score_fn`, `predict_fn`,
 and `select_fn` can be obtained from `CPPLS.cv_classification()` or 
 `CPPLS.cv_regression()`, while `obs_weight_fn` remains an optional user-supplied callback.
 
 The positional arguments `X` and `Y`, and the shared keyword arguments `spec`,
 `fit_kwargs`, `obs_weight_fn`, the callback trio, the fold controls,
 `max_components`, `reshuffle_outer_folds`, `rng`, and `verbose` have the same meaning
-as in `nested_cv`. Here, `num_permutations` additionally controls how many shuffled
+as in `nestedcv`. Here, `num_permutations` additionally controls how many shuffled
 response runs are performed.
 
 When `strata` are provided, the same row permutation applied to `Y` is also applied to
@@ -1374,22 +1374,22 @@ permuted responses.
 
 Returns
 - `permutation_scores`: vector whose `i`th entry is `mean(scores)` from the `i`th call to
-    `nested_cv` on permuted responses.
+    `nestedcv` on permuted responses.
 
-To compare these scores with an observed score using `calculate_p_value`, the observed
+To compare these scores with an observed score using `pvalue`, the observed
 analysis must use the same `score_fn`, `predict_fn`, `select_fn`, fold settings,
 `reshuffle_outer_folds` choice, and score aggregation.
 
 See also
 [`CPPLSSpec`](@ref CPPLS.CPPLSSpec),
 [`fit`](@ref CPPLS.fit),
-[`calculate_p_value`](@ref CPPLS.calculate_p_value),
+[`pvalue`](@ref CPPLS.pvalue),
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
-[`cv_outlier_scan`](@ref CPPLS.cv_outlier_scan),
+[`outlierscan`](@ref CPPLS.outlierscan),
 [`CPPLS.cv_regression`](@ref CPPLS.cv_regression), 
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot),
-[`nested_cv`](@ref CPPLS.nested_cv_permutation),
+[`nestedcv`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
 ```jldoctest
@@ -1413,7 +1413,7 @@ julia> classes = repeat(["A", "B"], inner=6)
  "B"
  "B"
 
-julia> Y, response_labels = labels_to_one_hot(classes);
+julia> Y, responselabels = labels_to_one_hot(classes);
 
 julia> cb = CPPLS.cv_classification();
 
@@ -1421,11 +1421,11 @@ julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
 
-julia> permutation_scores = nested_cv_permutation(
+julia> permutation_scores = nestedcvperm(
                      X,
                      Y;
                      spec=spec,
-                     fit_kwargs=(; response_labels=response_labels),
+                     fit_kwargs=(; responselabels=responselabels),
                      obs_weight_fn=obs_weight_fn,
                      score_fn=cb.score_fn,
                      predict_fn=cb.predict_fn,
@@ -1448,7 +1448,7 @@ julia> all(0.0 .≤ permutation_scores .≤ 1.0)
 true
 ```
 """
-function nested_cv_permutation(
+function nestedcvperm(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
     spec::CPPLSSpec,
@@ -1494,7 +1494,7 @@ function nested_cv_permutation(
 
         verbose && println("Permutation: ", perm_idx, " / ", num_permutations)
 
-        scores, _ = nested_cv(X, Y_perm; spec=spec, fit_kwargs=fit_kwargs, 
+        scores, _ = nestedcv(X, Y_perm; spec=spec, fit_kwargs=fit_kwargs, 
             obs_weight_fn=obs_weight_fn, score_fn=score_fn, predict_fn=predict_fn,
             select_fn=select_fn,
             num_outer_folds=num_outer_folds, 
@@ -1511,7 +1511,7 @@ function nested_cv_permutation(
 end
 
 """
-    cv_outlier_scan(
+    outlierscan(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real};
         spec::CPPLSSpec,
@@ -1528,12 +1528,12 @@ end
     )
 
 Run repeated nested cross-validation for discriminant analysis and count how often each
-sample is tested and misclassified. This is a diagnostic companion to `nested_cv`, not a
+sample is tested and misclassified. This is a diagnostic companion to `nestedcv`, not a
 replacement for it: the goal is to identify samples that repeatedly fail when held out,
 which can be useful when screening for mislabeled, contaminated, atypical, or otherwise
 problematic observations.
 
-Unlike `nested_cv`, this routine fixes the cross-validation callbacks internally by using
+Unlike `nestedcv`, this routine fixes the cross-validation callbacks internally by using
 the bundle returned by `CPPLS.cv_classification()`. On each outer split it selects the 
 number of latent variables by repeated inner cross-validation, predicts the held-out 
 samples, and records which of those samples were misclassified. Across repeats, each sample
@@ -1552,9 +1552,9 @@ Keyword arguments
     routine evaluates component counts `1:max_components` by replacing `spec.n_components`
     on temporary copies of `spec`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
-    sample axis, namely `obs_weights`, `sample_labels`, `sample_classes`, `Y_aux`, and
+    sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Y_aux`, and
     `Y_auxiliary`, are subset automatically to the current training split. If
-    `response_labels` are not supplied, they are inferred from the number of columns in
+    `responselabels` are not supplied, they are inferred from the number of columns in
     `Y`.
 - `obs_weight_fn`: callback for fold-local observation weights. By default this is
     `default_da_obs_weight_fn`, which applies `invfreqweights(one_hot_to_labels(Y_train))`
@@ -1597,7 +1597,7 @@ See also
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot),
-[`nested_cv`](@ref CPPLS.nested_cv_permutation),
+[`nestedcv`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
 ```jldoctest
@@ -1608,15 +1608,15 @@ julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
 
 julia> classes = repeat(["A", "B"], inner=6);
 
-julia> Y, response_labels = labels_to_one_hot(classes);
+julia> Y, responselabels = labels_to_one_hot(classes);
 
 julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
 
-julia> out = cv_outlier_scan(
+julia> out = outlierscan(
            X,
            Y;
            spec=spec,
-           fit_kwargs=(; response_labels=response_labels),
+           fit_kwargs=(; responselabels=responselabels),
            num_outer_folds=3,
            num_outer_folds_repeats=3,
            num_inner_folds=2,
@@ -1636,7 +1636,7 @@ julia> all(0.0 .≤ out.rate .≤ 1.0)
 true
 ```
 """
-function cv_outlier_scan(
+function outlierscan(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
     spec::CPPLSSpec,
@@ -1658,7 +1658,7 @@ function cv_outlier_scan(
     T5<:Integer
 }
     spec.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "cv_outlier_scan expects spec.analysis_mode = :discriminant"))
+        "outlierscan expects spec.analysis_mode = :discriminant"))
 
     n_samples = size(X, 1)
     size(Y, 1) == n_samples || throw(DimensionMismatch(
@@ -1726,17 +1726,17 @@ function cv_outlier_scan(
 end
 
 """
-    cv_outlier_scan(
+    outlierscan(
         X::AbstractMatrix{<:Real},
-        sample_classes::AbstractCategoricalArray; 
+        sampleclasses::AbstractCategoricalArray; 
         kwargs...
     )
 
-Convert categorical sample classes to one-hot form and forward to `cv_outlier_scan`.
+Convert categorical sample classes to one-hot form and forward to `outlierscan`.
 """
-function cv_outlier_scan(
+function outlierscan(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T, 1, R, V, C, U};
+    sampleclasses::AbstractCategoricalArray{T, 1, R, V, C, U};
     kwargs...
 ) where {
     T,
@@ -1745,32 +1745,32 @@ function cv_outlier_scan(
     C,
     U
 }
-    Y, _ = labels_to_one_hot(sample_classes)
-    cv_outlier_scan(X, Y; kwargs...)
+    Y, _ = labels_to_one_hot(sampleclasses)
+    outlierscan(X, Y; kwargs...)
 end
 
 """
-    cv_outlier_scan(
+    outlierscan(
         X::AbstractMatrix{<:Real}, 
-        sample_classes::AbstractVector; 
+        sampleclasses::AbstractVector; 
         kwargs...
     )
 
-Convert non-numeric sample classes to one-hot form and forward to `cv_outlier_scan`.
+Convert non-numeric sample classes to one-hot form and forward to `outlierscan`.
 Numeric vectors are rejected because they are ambiguous with regression targets.
 """
-function cv_outlier_scan(
+function outlierscan(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector;
+    sampleclasses::AbstractVector;
     kwargs...
 )
-    if eltype(sample_classes) <: Real
+    if eltype(sampleclasses) <: Real
         throw(ArgumentError(
-            "cv_outlier_scan expects categorical sample_classes or one-hot Y."))
+            "outlierscan expects categorical sampleclasses or one-hot Y."))
     end
 
-    Y, _ = labels_to_one_hot(sample_classes)
-    cv_outlier_scan(X, Y; kwargs...)
+    Y, _ = labels_to_one_hot(sampleclasses)
+    outlierscan(X, Y; kwargs...)
 end
 
 ############################################################################################
@@ -1957,10 +1957,10 @@ default_da_obs_weight_fn(X_train, Y_train; kwargs...) =
 
 function with_response_labels(
     fit_kwargs::NamedTuple,
-    response_labels::AbstractVector
+    responselabels::AbstractVector
 )
-    haskey(fit_kwargs, :response_labels) && return fit_kwargs
-    merge(fit_kwargs, (; response_labels=response_labels))
+    haskey(fit_kwargs, :responselabels) && return fit_kwargs
+    merge(fit_kwargs, (; responselabels=responselabels))
 end
 
 """
@@ -2028,7 +2028,7 @@ function subset_fit_kwargs(
 
     out_pairs = Pair{Symbol, Any}[]
     for (key, value) in Base.pairs(fit_kwargs)
-        adjusted = if key in (:obs_weights, :sample_labels, :sample_classes)
+        adjusted = if key in (:obs_weights, :samplelabels, :sampleclasses)
             subset_vector_like(value, train_indices, n_samples, key)
         elseif key in (:Y_aux, :Y_auxiliary)
             subset_matrix_like(value, train_indices, n_samples, key)
@@ -2043,16 +2043,16 @@ end
 """
     ensure_response_labels(fit_kwargs::NamedTuple, Y::AbstractMatrix{<:Real})
 
-Ensure that discriminant fits have `response_labels` in `fit_kwargs`, injecting default
+Ensure that discriminant fits have `responselabels` in `fit_kwargs`, injecting default
 labels `"1"`, `"2"`, and so on when necessary.
 """
 function ensure_response_labels(
     fit_kwargs::NamedTuple,
     Y::AbstractMatrix{<:Real}
 )
-    haskey(fit_kwargs, :response_labels) && return fit_kwargs
+    haskey(fit_kwargs, :responselabels) && return fit_kwargs
     labels = string.(1:size(Y, 2))
-    merge(fit_kwargs, (response_labels = labels,))
+    merge(fit_kwargs, (responselabels = labels,))
 end
 
 """

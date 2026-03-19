@@ -16,8 +16,8 @@ work. For [`CPPLSSpec`](@ref), the getters are [`analysis_mode`](@ref), [`gamma`
 and [`n_components`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
 [`analysis_mode`](@ref), [`fitted`](@ref), [`gamma`](@ref),
 [`gamma_search_gammas`](@ref), [`gamma_search_rhos`](@ref),
-[`predictor_labels`](@ref), [`response_labels`](@ref), [`residuals`](@ref),
-[`sample_classes`](@ref), [`sample_labels`](@ref), and [`X_scores`](@ref).
+[`predictorlabels`](@ref), [`responselabels`](@ref), [`residuals`](@ref),
+[`sampleclasses`](@ref), [`samplelabels`](@ref), and [`X_scores`](@ref).
 
 Both container types expose additional named fields. You can inspect them with
 `names(spec)` or `names(model)` and access them via dot notation, for example
@@ -52,12 +52,12 @@ StatsAPI.fitted(::CPPLSFit)
 CPPLS.gamma(::CPPLSFit)
 CPPLS.gamma_search_gammas
 CPPLS.gamma_search_rhos
-CPPLS.predictor_labels(::CPPLSFit)
-CPPLS.projection_matrix(::CPPLSFit)
-CPPLS.response_labels(::CPPLSFit)
+CPPLS.predictorlabels(::CPPLSFit)
+CPPLS.projectionmatrix(::CPPLSFit)
+CPPLS.responselabels(::CPPLSFit)
 StatsAPI.residuals(::CPPLSFit)
-CPPLS.sample_classes(::CPPLSFit)
-CPPLS.sample_labels(::CPPLSFit)
+CPPLS.sampleclasses(::CPPLSFit)
+CPPLS.samplelabels(::CPPLSFit)
 CPPLS.X_scores(::CPPLSFit)
 ```
 

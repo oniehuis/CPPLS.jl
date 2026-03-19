@@ -31,9 +31,9 @@ using CairoMakie
 using PlotlyJS
 using Statistics
 
-sample_labels, X, classes, Y_aux = load(
+samplelabels, X, classes, Y_aux = load(
 	CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
-	"sample_labels",
+	"samplelabels",
 	"X",
 	"classes",
 	"Y_aux"
@@ -82,7 +82,7 @@ basic_model = fit(
 	classes;
 	obs_weights=invfreqweights(classes),
 	Y_aux=Y_aux,
-	sample_labels=sample_labels
+	samplelabels=samplelabels
 )
 
 holdout_idx = [findlast(==("minor"), classes), findlast(==("major"), classes)]
@@ -91,11 +91,11 @@ train_idx = setdiff(collect(axes(X, 1)), holdout_idx)
 X_train = X[train_idx, :]
 classes_train = classes[train_idx]
 Y_aux_train = Y_aux[train_idx, :]
-labels_train = sample_labels[train_idx]
+labels_train = samplelabels[train_idx]
 
 X_holdout = X[holdout_idx, :]
 classes_holdout = classes[holdout_idx]
-labels_holdout = sample_labels[holdout_idx]
+labels_holdout = samplelabels[holdout_idx]
 plot_classes_holdout = ["projected $class" for class in classes_holdout]
 
 advanced_spec = CPPLSSpec(
@@ -110,7 +110,7 @@ advanced_model = fit(
 	classes_train;
 	obs_weights=invfreqweights(classes_train),
 	Y_aux=Y_aux_train,
-	sample_labels=labels_train
+	samplelabels=labels_train
 )
 
 train_scores = orient_scores(X_scores(advanced_model)[:, 1:2], classes_train)

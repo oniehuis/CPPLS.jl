@@ -76,10 +76,10 @@ end
         Z = reshape(collect(9.0:(8+n_samples*n_responses*n_components)),
             n_samples, n_responses, n_components)
 
-        sample_labels = [SubString("a", 1:1), SubString("b", 1:1)]
-        predictor_labels = ["x1", "x2"]
-        response_labels = ["class1", "class2"]
-        sample_classes = categorical(["class1", "class2"])
+        samplelabels = [SubString("a", 1:1), SubString("b", 1:1)]
+        predictorlabels = ["x1", "x2"]
+        responselabels = ["class1", "class2"]
+        sampleclasses = categorical(["class1", "class2"])
 
         cppls = CPPLS.CPPLSFit(
             B,
@@ -104,23 +104,23 @@ end
             b,
             W0,
             Z;
-            sample_labels = sample_labels,
-            predictor_labels = predictor_labels,
-            response_labels = response_labels,
+            samplelabels = samplelabels,
+            predictorlabels = predictorlabels,
+            responselabels = responselabels,
             analysis_mode = :discriminant,
-            sample_classes = sample_classes,
+            sampleclasses = sampleclasses,
         )
 
         res = CPPLS.scoreplot(cppls; backend = :makie)
         @test res[1] == :makie
-        @test res[2] == cppls.sample_labels
-        @test res[3] == cppls.sample_classes
+        @test res[2] == cppls.samplelabels
+        @test res[3] == cppls.sampleclasses
         @test res[4] == cppls.T[:, 1:2]
 
         res = CPPLS.scoreplot(cppls; backend = :plotly)
         @test res[1] == :plotly
-        @test res[2] == cppls.sample_labels
-        @test res[3] == cppls.sample_classes
+        @test res[2] == cppls.samplelabels
+        @test res[3] == cppls.sampleclasses
         @test res[4] == cppls.T[:, 1:2]
 
         cppls_no_groups = CPPLS.CPPLSFit(
@@ -146,11 +146,11 @@ end
             b,
             W0,
             Z;
-            sample_labels = sample_labels,
-            predictor_labels = predictor_labels,
-            response_labels = String[],
+            samplelabels = samplelabels,
+            predictorlabels = predictorlabels,
+            responselabels = String[],
             analysis_mode = :regression,
-            sample_classes = nothing,
+            sampleclasses = nothing,
         )
 
         @test_throws ArgumentError CPPLS.scoreplot(cppls_no_groups; backend = :plotly)

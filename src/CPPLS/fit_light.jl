@@ -72,14 +72,14 @@ end
 """
     fit_cppls_light(
         X::AbstractMatrix{<:Real}, 
-        sample_classes::AbstractCategoricalArray, 
+        sampleclasses::AbstractCategoricalArray, 
         n_components::Int=2; 
         kwargs...
     )
     
     fit_cppls_light(
         X::AbstractMatrix{<:Real}, 
-        sample_classes::AbstractVector,
+        sampleclasses::AbstractVector,
         n_components:Int=2; 
         kwargs...
     )
@@ -90,53 +90,53 @@ for the public entry point and full docs.
 """
 function fit_cppls_light(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T,1,R,V,C,U},
+    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U},
     n_components::Int=2;
     kwargs...
 ) where {T,R,V,C,U}
     
-    fit_cppls_light_from_sample_classes(X, sample_classes, n_components; kwargs...)
+    fit_cppls_light_from_sample_classes(X, sampleclasses, n_components; kwargs...)
 end
 
 function fit_cppls_light(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector,
+    sampleclasses::AbstractVector,
     n_components::Int=2;
     kwargs...
 )
-    fit_cppls_light_from_sample_classes(X, sample_classes, n_components; kwargs...)
+    fit_cppls_light_from_sample_classes(X, sampleclasses, n_components; kwargs...)
 end
 
 function fit_cppls_light(
     model::CPPLSSpec,
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T,1,R,V,C,U};
+    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
     
     analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sample_classes."))
+        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_light_from_sample_classes(X, sample_classes, model.n_components;
+    fit_cppls_light_from_sample_classes(X, sampleclasses, model.n_components;
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 function fit_cppls_light(
     model::CPPLSSpec,
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector;
+    sampleclasses::AbstractVector;
     kwargs...,
 )
     analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sample_classes."))
+        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_light_from_sample_classes(X, sample_classes, n_components(model);
+    fit_cppls_light_from_sample_classes(X, sampleclasses, n_components(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 function fit_cppls_light_from_sample_classes(
     X::AbstractMatrix{<:Real},
-    sample_classes,
+    sampleclasses,
     n_components::Int;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
@@ -161,7 +161,7 @@ function fit_cppls_light_from_sample_classes(
     T7<:Real,
     T8<:Real
 }
-    Y_prim, _ = labels_to_one_hot(sample_classes)
+    Y_prim, _ = labels_to_one_hot(sampleclasses)
 
     fit_cppls_light(X, Y_prim, n_components; gamma=gamma, obs_weights=obs_weights,
         Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 

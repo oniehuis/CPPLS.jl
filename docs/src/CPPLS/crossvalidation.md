@@ -14,7 +14,7 @@ model and reduces optimistic bias.
 
 ## How Nested Cross-Validation Is Implemented in CPPLS
 
-[`nested_cv`](@ref) uses disjoint outer folds for performance assessment and disjoint
+[`nestedcv`](@ref) uses disjoint outer folds for performance assessment and disjoint
 inner folds for model selection. For each outer repeat, one fold is held out as a test
 set and the remaining samples are used for training. Within that outer training set, an
 inner cross-validation determines the number of latent variables. A final model is then
@@ -42,7 +42,7 @@ callbacks, using root mean squared error by default.
 
 Even a carefully cross-validated supervised model can appear predictive if the response is
 weakly structured, the sample size is small, or the predictor matrix is high-dimensional.
-To address that question, CPPLS provides [`nested_cv_permutation`](@ref), which places the
+To address that question, CPPLS provides [`nestedcvperm`](@ref), which places the
 entire nested cross-validation workflow inside a permutation test.
 
 The idea is to destroy the real link between predictors and response while keeping the
@@ -59,7 +59,7 @@ model. The null distribution therefore includes the effect of repeated fold spli
 inner-loop model selection, and final outer-loop evaluation. If the score from the real,
 unpermuted data lies well outside what is typical under permutation, the result is more
 consistent with genuine predictive structure than with chance alignment. The helper
-[`calculate_p_value`](@ref) can then be used to summarize the observed score relative to
+[`pvalue`](@ref) can then be used to summarize the observed score relative to
 the permutation distribution. This comparison is only valid if the score from the real
 data is aggregated in exactly the same way, that is, as the mean of the outer-fold
 scores.
@@ -77,7 +77,7 @@ that assumption may be reasonable, but in experimental settings it is not guaran
 Samples can be mislabeled, contaminated, technically compromised, or simply atypical in a
 way that makes them behave poorly under the fitted model.
 
-For that reason, CPPLS also provides [`cv_outlier_scan`](@ref). This routine is not a
+For that reason, CPPLS also provides [`outlierscan`](@ref). This routine is not a
 replacement for nested CV; instead, it is a diagnostic extension for discriminant
 analysis. It repeatedly:
 
@@ -97,7 +97,7 @@ such samples may indicate possible class-assignment problems, outlying biology, 
 measurement behavior, or incompatibility between the sample and the fitted latent
 structure.
 
-This makes `cv_outlier_scan` especially useful in experimental DA applications, where the
+This makes `outlierscan` especially useful in experimental DA applications, where the
 goal is often not only to estimate classification performance but also to identify samples
 that deserve follow-up quality control.
 
@@ -116,7 +116,7 @@ In this example, we use the higher-level discriminant-analysis wrappers [`cvda`]
 and [`permda`](@ref). These functions apply the standard DA defaults automatically:
 they use the callback bundle from [`CPPLS.cv_classification`](@ref), recompute
 inverse-frequency observation weights inside each training fold, derive the
-stratification from the class labels, and inject `response_labels` into `fit_kwargs`
+stratification from the class labels, and inject `responselabels` into `fit_kwargs`
 when needed. If you instead want fixed sample-specific weights, pass them through
 `fit_kwargs=(; obs_weights=...)` and they will simply be subsetted to each training split.
 
@@ -136,9 +136,9 @@ using Random
 using Statistics
 using CairoMakie
 
-sample_labels, X, classes, Y_aux = load(
+samplelabels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
-    "sample_labels",
+    "samplelabels",
     "X",
     "classes",
     "Y_aux"
@@ -166,7 +166,7 @@ spec = CPPLSSpec(
 
 fit_kwargs = (
     Y_aux=Y_aux,
-    sample_labels=sample_labels
+    samplelabels=samplelabels
 )
 
 scores, best_components = cvda(
@@ -235,14 +235,14 @@ nothing
 As we can see, the permutation accuracies are mostly distributed around and below `0.55`, 
 with only few being as large as or larger than the observed accuracy from the real data. 
 This shows that even a modest mean accuracy can still be statistically significant. We can 
-quantify that more formally with [`calculate_p_value`](@ref), using the permutation scores 
+quantify that more formally with [`pvalue`](@ref), using the permutation scores 
 and the observed accuracy. Because classification uses an accuracy-like score here,
-`calculate_p_value` is called with `tail=:upper`, corresponding to a one-sided
+`pvalue` is called with `tail=:upper`, corresponding to a one-sided
 upper-tail test in which the p-value is the probability, under the null model, of
 observing a score at least as large as the observed one.
 
 ```@example crossvalidation
-p_value = calculate_p_value(permutation_scores, observed_accuracy; tail=:upper)
+p_value = pvalue(permutation_scores, observed_accuracy; tail=:upper)
 ```
 
 In this example, the resulting p-value indicates statistical significance at an
@@ -254,7 +254,7 @@ traits, especially when `gamma` is optimized, the computation becomes much more 
 In that situation it can make sense to distribute the permutation runs. For example, one 
 could run `50` separate calls to [`CPPLS.permda`](@ref) on `20` different nodes, then 
 concatenate the stored  `permutation_scores` vectors before passing them to 
-[`calculate_p_value`](@ref).
+[`pvalue`](@ref).
 
 !!! warning
     When permutation runs are distributed across multiple jobs or nodes, each run should
@@ -262,17 +262,17 @@ concatenate the stored  `permutation_scores` vectors before passing them to
     permutation sequences and therefore to a biased null distribution.
 
 When the focus shifts from global performance to potentially problematic samples,
-[`cv_outlier_scan`](@ref) can be used as a follow-up diagnostic. By default it uses the
+[`outlierscan`](@ref) can be used as a follow-up diagnostic. By default it uses the
 same fold-local inverse-frequency weighting rule as `cvda` and `permda`, although you can
 still override that behavior with a custom `obs_weight_fn` or disable it by passing
 `obs_weight_fn=nothing`.
 
 ```@example crossvalidation
-outlier_scan = cv_outlier_scan(
+outlier_scan = outlierscan(
     X,
     classes;
     spec=spec,
-    fit_kwargs=(; Y_aux=Y_aux, sample_labels=sample_labels),
+    fit_kwargs=(; Y_aux=Y_aux, samplelabels=samplelabels),
     num_outer_folds=5,
     num_outer_folds_repeats=500,
     num_inner_folds=4,
@@ -293,7 +293,7 @@ rounded to three decimal places and sorted in descending order.
 suspect_idx = sortperm(outlier_scan.rate, rev=true)[1:10]
 rate = round.(outlier_scan.rate[suspect_idx]; digits=3)
 for (j, i) in enumerate(suspect_idx)
-    println("Sample: ", sample_labels[i], "; error rate: ", rate[j])
+    println("Sample: ", samplelabels[i], "; error rate: ", rate[j])
 end
 ```
 
@@ -315,7 +315,7 @@ outlier_view_model = fit(
     classes;
     obs_weights=class_weights,
     Y_aux=Y_aux,
-    sample_labels=sample_labels
+    samplelabels=samplelabels
 )
 
 outlier_view_scores = orient_scores(X_scores(outlier_view_model)[:, 1:2], classes)
@@ -329,7 +329,7 @@ outlier_ax = Axis(
 )
 
 scoreplot(
-    sample_labels,
+    samplelabels,
     classes,
     outlier_view_scores;
     backend=backend,
@@ -361,7 +361,7 @@ text!(
     outlier_ax,
     major_outlier_scores[:, 1] .+ label_dx,
     major_outlier_scores[:, 2] .+ label_dy;
-    text=sample_labels[major_outlier_idx],
+    text=samplelabels[major_outlier_idx],
     color=:crimson,
     fontsize=14,
     align=(:left, :bottom)
@@ -389,12 +389,12 @@ The functions discussed above are documented in full below.
 # API
 
 ```@docs
-CPPLS.calculate_p_value
+CPPLS.pvalue
 CPPLS.cvda
 CPPLS.cvreg
-CPPLS.cv_outlier_scan
-CPPLS.nested_cv
-CPPLS.nested_cv_permutation
+CPPLS.outlierscan
+CPPLS.nestedcv
+CPPLS.nestedcvperm
 CPPLS.nmc
 CPPLS.permda
 CPPLS.permreg

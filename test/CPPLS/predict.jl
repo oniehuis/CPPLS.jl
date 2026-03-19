@@ -100,7 +100,7 @@ end
 
     preds = CPPLS.predict(model, X, 1)
     expected =
-        model.response_labels[
+        model.responselabels[
             CPPLS.one_hot_to_labels(CPPLS.predictions_to_onehot(model, preds)),
         ]
 

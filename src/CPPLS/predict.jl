@@ -164,7 +164,7 @@ end
     ) -> AbstractVector
 
 Generate predicted class labels from a discriminant CPPLS model and predictors `X`.
-The returned vector follows the ordering in `response_labels`.
+The returned vector follows the ordering in `responselabels`.
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
@@ -205,7 +205,7 @@ end
     ) -> AbstractVector
 
 Convert a 3D prediction tensor (as returned by `predict`) into class labels using the 
-stored `response_labels` ordering.
+stored `responselabels` ordering.
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
@@ -215,7 +215,7 @@ See also
 [`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
 [`predictonehot`](@ref CPPLS.predictonehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
-[`response_labels`](@ref CPPLS.response_labels)
+[`responselabels`](@ref CPPLS.responselabels)
 
 # Examples
 ```jldoctest
@@ -242,16 +242,16 @@ function predictions_to_sampleclasses(
     analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
         "predictions_to_sampleclasses is only defined for discriminant CPPLS models"))
 
-    isempty(response_labels(model)) && throw(ArgumentError(
-        "response_labels must be provided to map predictions to class labels"))
+    isempty(responselabels(model)) && throw(ArgumentError(
+        "responselabels must be provided to map predictions to class labels"))
 
     n_classes = size(predictions, 2)
-    length(response_labels(model)) == n_classes || throw(DimensionMismatch(
-        "response_labels must have length $n_classes, " * 
-        "got $(length(response_labels(model)))"))
+    length(responselabels(model)) == n_classes || throw(DimensionMismatch(
+        "responselabels must have length $n_classes, " * 
+        "got $(length(responselabels(model)))"))
 
     class_indices = one_hot_to_labels(predictions_to_onehot(model, predictions))
-    response_labels(model)[class_indices]
+    responselabels(model)[class_indices]
 end
 
 """
@@ -259,12 +259,12 @@ end
 
 Compute latent component X scores by projecting new predictors `X` with a CPPLSFit
 model. The predictors are centered using `X_bar`(@ref CPPLS.X_bar^) and multiplied by 
-`projection_matrix`(@ref CPPLS.projection_matrix), returning an 
+`projectionmatrix`(@ref CPPLS.projectionmatrix), returning an 
 `(n_samples, n_components)` X score matrix.
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
-[`projection_matrix`](@ref CPPLS.projection_matrix),
+[`projectionmatrix`](@ref CPPLS.projectionmatrix),
 [`X_bar`](@ref CPPLS.X_bar)
 
 # Examples
@@ -286,4 +286,4 @@ julia> size(Xscores)
 ```
 """
 project(model::CPPLSFit, X::AbstractMatrix{<:Real}) = 
-    (X .- X_bar(model)) * projection_matrix(model)
+    (X .- X_bar(model)) * projectionmatrix(model)

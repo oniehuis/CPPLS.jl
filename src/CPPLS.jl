@@ -25,48 +25,48 @@ include("Utils/paths.jl")
 include("Utils/statistics.jl")
 
 export AbstractCPPLSFit
-export CPPLSSpec
 export CPPLSFit
 export CPPLSFitLight
+export CPPLSSpec
+export coef
+export cvda
+export cvreg
 export fit
+export fitted
+export gamma
+export intervalize
+export invfreqweights
+export nestedcv
+export nestedcvperm
+export outlierscan
+export permda
+export permreg
 export predict
+export predictorlabels
+export project
+export projectionmatrix
+export pvalue
+export residuals
+export responselabels
+export sampleclasses
+export samplelabels
+export scoreplot
+
 export predictonehot
 export predictsampleclasses
 export predictions_to_onehot
 export predictions_to_sampleclasses
-export project
-export scoreplot
-export cvreg
-export cvda
-export cv_outlier_scan
-export permda
-export permreg
-export nested_cv_permutation
-export nested_cv
-export calculate_p_value
-export invfreqweights
 export labels_to_one_hot
 export one_hot_to_labels
-export gamma
 export gamma_search_gammas
 export gamma_search_rhos
-export predictor_labels
-export response_labels
-export sample_classes
-export sample_labels
 export X_scores
 export X_bar
 export Y_bar
 export analysis_mode
 export n_components
-export coef
-export fitted
-export residuals
-export projection_matrix
-export nmc
-export intervalize
 
-# Testing
+export nmc
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """
@@ -193,13 +193,13 @@ function scoreplot(
     backend::Symbol = :plotly,
     kwargs...,
 )
-    groups = cppls.sample_classes
+    groups = cppls.sampleclasses
     isnothing(groups) && throw(ArgumentError(
-        "scoreplot(cppls) requires sample_classes in the fitted model. " *
+        "scoreplot(cppls) requires sampleclasses in the fitted model. " *
         "Use discriminant fits from class labels or call scoreplot(samples, groups, scores) directly."
     ))
 
-    samples = cppls.sample_labels
+    samples = cppls.samplelabels
     scores = cppls.T[:, 1:2]
     if backend === :plotly
       _require_extension_ref[](:PlotlyJSExtension, "PlotlyJS")

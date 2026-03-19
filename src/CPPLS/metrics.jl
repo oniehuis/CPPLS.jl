@@ -15,8 +15,8 @@ classes contribute equally. Returns a `Float64` between 0 and 1.
 
 See also
 [`cv_classification`](@ref CPPLS.cv_classification), 
-[`nested_cv`](@ref CPPLS.nested_cv), 
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
+[`nestedcv`](@ref CPPLS.nestedcv), 
+[`nestedcvperm`](@ref CPPLS.nestedcvperm)
 
 # Example
 ```jldoctest
@@ -58,7 +58,7 @@ end
 
 
 """
-    calculate_p_value(
+    pvalue(
         null_scores::AbstractVector{<:Real},
         observed_score::Real;
         tail::Symbol=:upper
@@ -83,19 +83,19 @@ P-values when permutations are randomly drawn. Statistical Applications in Genet
 Molecular Biology 9: 39. https://doi.org/10.2202/1544-6115.1585
 
 See also
-[`nested_cv`](@ref CPPLS.nested_cv),
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
+[`nestedcv`](@ref CPPLS.nestedcv),
+[`nestedcvperm`](@ref CPPLS.nestedcvperm)
 
 # Example
 ```jldoctest
-julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.4
+julia> pvalue([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.4
 true
 
-julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58; tail=:lower) ≈ 0.8
+julia> pvalue([0.4, 0.5, 0.55, 0.6], 0.58; tail=:lower) ≈ 0.8
 true
 ```
 """
-function calculate_p_value(
+function pvalue(
     null_scores::AbstractVector{<:Real},
     observed_score::Real;
     tail::Symbol=:upper,

@@ -188,11 +188,11 @@ struct CPPLSFit{
     b::Matrix{T1}
     W0::Array{T1,3}
     Z::Array{T1,3}
-    sample_labels::T3
-    predictor_labels::T4
-    response_labels::T5
+    samplelabels::T3
+    predictorlabels::T4
+    responselabels::T5
     analysis_mode::Symbol
-    sample_classes::T6
+    sampleclasses::T6
 end
 
 function CPPLSFit(
@@ -218,11 +218,11 @@ function CPPLSFit(
     b::Matrix{T1},
     W0::Array{T1,3},
     Z::Array{T1,3};
-    sample_labels::T3=String[],
-    predictor_labels::T4=String[],
-    response_labels::T5=String[],
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
     analysis_mode::Symbol=:regression,
-    sample_classes::T6=nothing
+    sampleclasses::T6=nothing
 ) where {
         T1<:Real,
         T2<:Integer,
@@ -235,13 +235,13 @@ function CPPLSFit(
     analysis_mode in (:regression, :discriminant) || throw(ArgumentError(
             "analysis_mode must be :regression or :discriminant, got $analysis_mode"))
 
-    analysis_mode ≡ :discriminant || isnothing(sample_classes) || throw(ArgumentError(
-        "sample_classes are only stored for discriminant analysis models"))
+    analysis_mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
+        "sampleclasses are only stored for discriminant analysis models"))
 
     CPPLSFit{T1, T2, T3, T4, T5, T6}(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, 
         X_var, X_var_total, gamma, rho, gamma_search_gammas, gamma_search_rhos,
-        zero_mask, a, b, W0, Z, sample_labels, predictor_labels, response_labels,
-        analysis_mode, sample_classes)
+        zero_mask, a, b, W0, Z, samplelabels, predictorlabels, responselabels,
+        analysis_mode, sampleclasses)
 end
 
 function Base.show(io::IO, model::CPPLSFit)
@@ -311,18 +311,18 @@ gamma_search_rhos(cpplsfit::CPPLSFit, latent_variable::Integer) =
     @views cpplsfit.gamma_search_rhos[:, latent_variable]
 
 """
-    predictor_labels(cpplsfit::CPPLSFit)
+    predictorlabels(cpplsfit::CPPLSFit)
 
 Return the stored predictor labels for the fitted model.
 """
-predictor_labels(cpplsfit::CPPLSFit) = cpplsfit.predictor_labels
+predictorlabels(cpplsfit::CPPLSFit) = cpplsfit.predictorlabels
 
 """
-    projection_matrix(cpplsfit::CPPLSFit)
+    projectionmatrix(cpplsfit::CPPLSFit)
 
 Return the projection matrix `R` for the fitted model.
 """
-projection_matrix(cpplsfit::CPPLSFit) = cpplsfit.R
+projectionmatrix(cpplsfit::CPPLSFit) = cpplsfit.R
 
 """
     residuals(model::CPPLSFit)
@@ -334,26 +334,26 @@ residuals(model::CPPLSFit) = @views model.F[:, :, end]
 residuals(model::CPPLSFit, n_components::Integer) = @views model.F[:, :, n_components]
 
 """
-    response_labels(cpplsfit::CPPLSFit)
+    responselabels(cpplsfit::CPPLSFit)
 
 Return the response labels (response names or class names) for the fitted model.
 """
-response_labels(cpplsfit::CPPLSFit) = cpplsfit.response_labels
+responselabels(cpplsfit::CPPLSFit) = cpplsfit.responselabels
 
 """
-    sample_classes(cpplsfit::CPPLSFit)
+    sampleclasses(cpplsfit::CPPLSFit)
 
 Return the per-sample class labels stored for discriminant analysis models, or `nothing`
 for regression fits.
 """
-sample_classes(cpplsfit::CPPLSFit) = cpplsfit.sample_classes
+sampleclasses(cpplsfit::CPPLSFit) = cpplsfit.sampleclasses
 
 """
-    sample_labels(cpplsfit::CPPLSFit)
+    samplelabels(cpplsfit::CPPLSFit)
 
 Return the stored sample labels for the fitted model.
 """
-sample_labels(cpplsfit::CPPLSFit) = cpplsfit.sample_labels
+samplelabels(cpplsfit::CPPLSFit) = cpplsfit.samplelabels
 
 """
     X_scores(cpplsfit::CPPLSFit)

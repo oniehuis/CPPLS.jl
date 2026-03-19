@@ -37,12 +37,12 @@ multivariate workflows.
 The cross-validation interface is designed around explicit evaluation callbacks, so the
 same machinery can be used for either discriminant analysis or regression. Standard
 callback bundles are provided by `CPPLS.cv_classification()` and `CPPLS.cv_regression()`,
-and can be supplied directly to `nested_cv` and `nested_cv_permutation`. For classification
-workflows, `cv_outlier_scan` performs repeated outer-fold evaluation to quantify how often
+and can be supplied directly to `nestedcv` and `nestedcvperm`. For classification
+workflows, `outlierscan` performs repeated outer-fold evaluation to quantify how often
 individual samples are misclassified.
 
 Permutation-based significance assessment is available through
-`nested_cv_permutation` together with `calculate_p_value`, allowing empirical evaluation
+`nestedcvperm` together with `pvalue`, allowing empirical evaluation
 of whether observed predictive performance exceeds what would be expected under response
 permutation.
 

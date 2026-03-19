@@ -82,10 +82,10 @@
             n_responses,
             n_components,
         )
-        sample_labels = ["sample_$i" for i = 1:n_samples]
-        predictor_labels = collect(1:n_predictors)
-        response_labels = [Symbol("resp_$i") for i = 1:n_responses]
-        sample_classes = ["class_$(1 + (i % 2))" for i = 1:n_samples]
+        samplelabels = ["sample_$i" for i = 1:n_samples]
+        predictorlabels = collect(1:n_predictors)
+        responselabels = [Symbol("resp_$i") for i = 1:n_responses]
+        sampleclasses = ["class_$(1 + (i % 2))" for i = 1:n_samples]
 
         cppls = CPPLS.CPPLSFit(
             B,
@@ -110,20 +110,20 @@
             b,
             W0,
             Z;
-            sample_labels = sample_labels,
-            predictor_labels = predictor_labels,
-            response_labels = response_labels,
+            samplelabels = samplelabels,
+            predictorlabels = predictorlabels,
+            responselabels = responselabels,
             analysis_mode = :regression,
-            sample_classes = nothing,
+            sampleclasses = nothing,
         )
 
         @test cppls isa CPPLS.AbstractCPPLSFit
         @test cppls isa CPPLS.CPPLSFit{
             T_el,
             Tmask,
-            typeof(sample_labels),
-            typeof(predictor_labels),
-            typeof(response_labels),
+            typeof(samplelabels),
+            typeof(predictorlabels),
+            typeof(responselabels),
             Nothing,
         }
         @test cppls.B === B
@@ -146,11 +146,11 @@
         @test cppls.b === b
         @test cppls.W0 === W0
         @test cppls.Z === Z
-        @test cppls.sample_labels === sample_labels
-        @test cppls.predictor_labels === predictor_labels
-        @test cppls.response_labels === response_labels
+        @test cppls.samplelabels === samplelabels
+        @test cppls.predictorlabels === predictorlabels
+        @test cppls.responselabels === responselabels
         @test cppls.analysis_mode === :regression
-        @test cppls.sample_classes === nothing
+        @test cppls.sampleclasses === nothing
         @test size(cppls.B) ==
               (n_predictors, n_responses, n_components)
         @test size(cppls.Y_hat) == (n_samples, n_responses, n_components)
@@ -185,11 +185,11 @@
             W0,
             Z,
         )
-        @test isempty(cppls_default.sample_labels)
-        @test isempty(cppls_default.predictor_labels)
-        @test isempty(cppls_default.response_labels)
+        @test isempty(cppls_default.samplelabels)
+        @test isempty(cppls_default.predictorlabels)
+        @test isempty(cppls_default.responselabels)
         @test cppls_default.analysis_mode === :regression
-        @test cppls_default.sample_classes === nothing
+        @test cppls_default.sampleclasses === nothing
 
         cppls_da = CPPLS.CPPLSFit(
             B,
@@ -214,14 +214,14 @@
             b,
             W0,
             Z;
-            sample_labels = sample_labels,
-            predictor_labels = predictor_labels,
-            response_labels = response_labels,
+            samplelabels = samplelabels,
+            predictorlabels = predictorlabels,
+            responselabels = responselabels,
             analysis_mode = :discriminant,
-            sample_classes = sample_classes,
+            sampleclasses = sampleclasses,
         )
         @test cppls_da.analysis_mode === :discriminant
-        @test cppls_da.sample_classes === sample_classes
+        @test cppls_da.sampleclasses === sampleclasses
     end
 end
 
@@ -323,15 +323,15 @@ end
     b = reshape(Float64.(101:104), 2, 2)
     W0 = reshape(Float64.(111:118), 2, 2, 2)
     Z = reshape(Float64.(121:132), 3, 2, 2)
-    sample_labels = String[]
-    predictor_labels = String[]
-    response_labels = String[]
-    sample_classes = nothing
+    samplelabels = String[]
+    predictorlabels = String[]
+    responselabels = String[]
+    sampleclasses = nothing
 
     model = CPPLS.CPPLSFit(
         B, T_scores, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
         gamma, rho, gamma_search_gammas, gamma_search_rhos, zero_mask, a, b, W0, Z,
-        sample_labels, predictor_labels, response_labels, :regression, sample_classes,
+        samplelabels, predictorlabels, responselabels, :regression, sampleclasses,
     )
     model_inline = sprint(show, model)
     model_plain = sprint(io -> show(io, MIME"text/plain"(), model))

@@ -35,14 +35,14 @@ using StatsAPI
     @test CPPLS.gamma_search_rhos(model, 1) ≈ [model.rho[1]]
     @test length(model.X_var) == 2
     @test model.X_var_total > 0
-    @test model.sample_labels == ["1", "2", "3", "4", "5"]
+    @test model.samplelabels == ["1", "2", "3", "4", "5"]
 
     spec = CPPLS.CPPLSSpec(n_components = 2, gamma = 0.5)
     model_from_spec = CPPLS.fit_cppls(spec, X, Y)
     @test model_from_spec isa CPPLS.CPPLSFit
     @test size(model_from_spec.B) ==
           (size(X, 2), size(Y, 2), 2)
-    @test model_from_spec.sample_labels == ["1", "2", "3", "4", "5"]
+    @test model_from_spec.samplelabels == ["1", "2", "3", "4", "5"]
 end
 
 @testset "fit_cppls stores gamma search matrices" begin
@@ -125,38 +125,30 @@ end
         0 1
         1 1
     ]
-    sample_labels = ["s1", "s2", "s3"]
-    predictor_labels = [:p1, :p2]
-    response_labels = ["r1", "r2"]
+    samplelabels = ["s1", "s2", "s3"]
+    predictorlabels = [:p1, :p2]
+    responselabels = ["r1", "r2"]
 
     model = CPPLS.fit_cppls(
         X,
         Y,
         1;
         gamma = 0.5,
-        sample_labels = sample_labels,
-        predictor_labels = predictor_labels,
-        response_labels = response_labels,
+        samplelabels = samplelabels,
+        predictorlabels = predictorlabels,
+        responselabels = responselabels,
     )
 
-    @test model.sample_labels == sample_labels
-    @test model.predictor_labels == predictor_labels
-    @test model.response_labels == response_labels
+    @test model.samplelabels == samplelabels
+    @test model.predictorlabels == predictorlabels
+    @test model.responselabels == responselabels
 
     @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         Y,
         1;
         gamma = 0.5,
-        sample_labels = ["only_two"],
-    )
-
-    @test_throws ArgumentError CPPLS.fit_cppls(
-        X,
-        Y,
-        1;
-        gamma = 0.5,
-        predictor_labels = [:p1],
+        samplelabels = ["only_two"],
     )
 
     @test_throws ArgumentError CPPLS.fit_cppls(
@@ -164,7 +156,15 @@ end
         Y,
         1;
         gamma = 0.5,
-        response_labels = ["r1"],
+        predictorlabels = [:p1],
+    )
+
+    @test_throws ArgumentError CPPLS.fit_cppls(
+        X,
+        Y,
+        1;
+        gamma = 0.5,
+        responselabels = ["r1"],
     )
 
     @test_throws ArgumentError CPPLS.fit_cppls(
@@ -180,7 +180,7 @@ end
         Y,
         1;
         gamma = 0.5,
-        sample_classes = ["classA"],
+        sampleclasses = ["classA"],
     )
 
     @test_throws ArgumentError CPPLS.fit_cppls(
@@ -189,7 +189,7 @@ end
         1;
         gamma = 0.5,
         analysis_mode = :unsupported_mode,
-        response_labels = response_labels,
+        responselabels = responselabels,
     )
 end
 
@@ -251,22 +251,22 @@ end
 
     model = CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
     @test model.analysis_mode === :discriminant
-    @test Set(model.response_labels) == Set(inferred)
-    @test model.sample_classes == labels
-    @test !(model.sample_classes === labels)
+    @test Set(model.responselabels) == Set(inferred)
+    @test model.sampleclasses == labels
+    @test !(model.sampleclasses === labels)
     plain_labels = ["red", "blue", "red", "blue"]
     plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
     @test plain_model.analysis_mode === :discriminant
-    @test Set(plain_model.response_labels) == Set(unique(plain_labels))
-    @test plain_model.sample_classes == plain_labels
-    @test !(plain_model.sample_classes === plain_labels)
+    @test Set(plain_model.responselabels) == Set(unique(plain_labels))
+    @test plain_model.sampleclasses == plain_labels
+    @test !(plain_model.sampleclasses === plain_labels)
     @test plain_model.B ≈ model.B
 
     @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         labels,
         2;
-        response_labels = ["other"],
+        responselabels = ["other"],
     )
 
     Y_vec = Float64[1, 0, 1, 0]

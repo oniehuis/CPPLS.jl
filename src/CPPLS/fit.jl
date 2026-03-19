@@ -6,12 +6,12 @@
     )
     fit(model::CPPLSSpec,
         X::AbstractMatrix{<:Real},
-        sample_classes::AbstractCategoricalArray{T,1,R,V,C,U};
+        sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
         kwargs...
     ) where {T,R,V,C,U}
     fit(model::CPPLSSpec,
         X::AbstractMatrix{<:Real},
-        sample_classes::AbstractVector;
+        sampleclasses::AbstractVector;
         kwargs...
     )
 
@@ -21,7 +21,7 @@ analysis mode, and all numerical tolerances, while the call to `fit` supplies da
 optional weights, auxiliary responses, and label metadata.
 
 When `Y_prim` is provided, it is treated as the primary response block. When
-`sample_classes` is provided, the labels are converted to a one-hot response matrix,
+`sampleclasses` is provided, the labels are converted to a one-hot response matrix,
 class names are inferred as response labels, and the fit is forced to discriminant
 analysis; `model.analysis_mode` must be `:discriminant` or an ArgumentError is thrown.
 
@@ -39,8 +39,8 @@ are treated as closed intervals: both endpoints are evaluated explicitly, and th
 choice is the best among the two endpoints and the interior Brent minimizer.
 
 Keyword arguments accepted by `fit` include `obs_weights` for per-sample weighting,
-`Y_aux` for auxiliary response columns, and optional `sample_labels`, `predictor_labels`,
-`response_labels`, and `sample_classes` metadata for diagnostics and plotting. `Y_aux`
+`Y_aux` for auxiliary response columns, and optional `samplelabels`, `predictorlabels`,
+`responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Y_aux`
 must have the same number of rows as `X` and is concatenated to `Y_prim` internally to
 build the supervised projection, while prediction targets always remain the primary
 responses.
@@ -57,18 +57,18 @@ See also
 [`gamma`](@ref CPPLS.gamma(::CPPLSFit)), 
 [`intervalize`](@ref),
 [`invfreqweights`](@ref invfreqweights(::AbstractVector)),
-[`predictor_labels`](@ref predictor_labels(::CPPLSFit)),
-[`response_labels`](@ref response_labels(::CPPLSFit)),
+[`predictorlabels`](@ref predictorlabels(::CPPLSFit)),
+[`responselabels`](@ref responselabels(::CPPLSFit)),
 [`residuals`](@ref residuals(::CPPLSFit)),
-[`sample_classes`](@ref sample_classes(::CPPLSFit)),
-[`sample_labels`](@ref sample_labels(::CPPLSFit)),
+[`sampleclasses`](@ref sampleclasses(::CPPLSFit)),
+[`samplelabels`](@ref samplelabels(::CPPLSFit)),
 [`X_scores`](@ref X_scores(::CPPLSFit))
 
 # Examples
 ```jldoctest
 julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
-julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
+julia> labels, X, classes, Y_aux = load(file, "samplelabels", "X", "classes", "Y_aux");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
 CPPLSSpec
@@ -77,7 +77,7 @@ CPPLSSpec
   center: true
   analysis_mode: discriminant
 
-julia> model = fit(spec, X, classes; sample_labels=labels);
+julia> model = fit(spec, X, classes; samplelabels=labels);
 
 julia> size(CPPLS.X_scores(model))
 (100, 2)
@@ -111,20 +111,20 @@ end
 function fit(
     model::CPPLSSpec,
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T,1,R,V,C,U};
+    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
 
-    fit_cppls(model, X, sample_classes; kwargs...)
+    fit_cppls(model, X, sampleclasses; kwargs...)
 end
 
 function fit(
     model::CPPLSSpec,
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector;
+    sampleclasses::AbstractVector;
     kwargs...
 )
-    fit_cppls(model, X, sample_classes; kwargs...)
+    fit_cppls(model, X, sampleclasses; kwargs...)
 end
 
 """
@@ -151,11 +151,11 @@ function fit_cppls(
     gamma_rel_tol::T6=1e-6,
     gamma_abs_tol::T7=1e-12,
     t_squared_norm_tolerance::T8=1e-10,
-    sample_labels::T9=String[],
-    predictor_labels::T10=String[],
-    response_labels::T11=String[],
+    samplelabels::T9=String[],
+    predictorlabels::T10=String[],
+    responselabels::T11=String[],
     analysis_mode::Symbol = :regression,
-    sample_classes::T12=nothing,
+    sampleclasses::T12=nothing,
 ) where {
     T1<:Union{
         <:Real, 
@@ -178,8 +178,8 @@ function fit_cppls(
     analysis_mode in (:discriminant, :regression) || throw(ArgumentError(
         "analysis_mode must be :discriminant or :regression, got $analysis_mode"))
 
-    analysis_mode ≡ :discriminant || sample_classes ≡ nothing || throw(ArgumentError(
-        "sample_classes can only be provided for discriminant analysis"))
+    analysis_mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
+        "sampleclasses can only be provided for discriminant analysis"))
 
     n_predictors = size(X, 2)
 
@@ -187,14 +187,14 @@ function fit_cppls(
         n_samples_X, n_targets_Y) = cppls_prepare_data(X, Y_prim, n_components, Y_aux,
         obs_weights, center)
 
-    sample_labels = default_sample_labels(validate_label_length(sample_labels, n_samples_X,
-        "sample_labels"), n_samples_X)
-    predictor_labels = validate_label_length(predictor_labels, n_predictors, 
-        "predictor_labels")
-    response_labels = validate_response_labels(response_labels, n_targets_Y)
-    if analysis_mode ≡ :discriminant && isempty(response_labels)
+    samplelabels = default_sample_labels(validate_label_length(samplelabels, n_samples_X,
+        "samplelabels"), n_samples_X)
+    predictorlabels = validate_label_length(predictorlabels, n_predictors, 
+        "predictorlabels")
+    responselabels = validate_response_labels(responselabels, n_targets_Y)
+    if analysis_mode ≡ :discriminant && isempty(responselabels)
         throw(ArgumentError(
-            "response_labels must list class names for discriminant analysis"))
+            "responselabels must list class names for discriminant analysis"))
     end
 
     T = Matrix{Float64}(undef, n_samples_X, n_components)
@@ -241,9 +241,9 @@ function fit_cppls(
 
     CPPLSFit(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
         gamma_vals, rho, gamma_search_gammas, gamma_search_rhos, zero_mask, a, b, W0,
-        Z; sample_labels=sample_labels,
-        predictor_labels=predictor_labels, response_labels=response_labels,
-        analysis_mode=analysis_mode, sample_classes=sample_classes)
+        Z; samplelabels=samplelabels,
+        predictorlabels=predictorlabels, responselabels=responselabels,
+        analysis_mode=analysis_mode, sampleclasses=sampleclasses)
 end
 
 function fit_cppls(
@@ -252,10 +252,10 @@ function fit_cppls(
     Y_prim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
     Y_aux::T2=nothing,
-    sample_labels::T3=String[],
-    predictor_labels::T4=String[],
-    response_labels::T5=String[],
-    sample_classes::T6=nothing
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
+    sampleclasses::T6=nothing
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
@@ -265,9 +265,9 @@ function fit_cppls(
     T6<:Union{AbstractVector, Nothing}  
 }
     fit_cppls(X, Y_prim, n_components(model); cppls_model_fit_kwargs_with_mode(model)...,
-        obs_weights=obs_weights, Y_aux=Y_aux, sample_labels=sample_labels,
-        predictor_labels=predictor_labels, response_labels=response_labels,
-        sample_classes=sample_classes)
+        obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
+        predictorlabels=predictorlabels, responselabels=responselabels,
+        sampleclasses=sampleclasses)
 end
 
 """
@@ -294,9 +294,9 @@ function fit_cppls(
     gamma_rel_tol::T6=1e-6,
     gamma_abs_tol::T7=1e-12,
     t_squared_norm_tolerance::T8=1e-10,
-    sample_labels::T9=String[],
-    predictor_labels::T10=String[],
-    response_labels::T11=String[],
+    samplelabels::T9=String[],
+    predictorlabels::T10=String[],
+    responselabels::T11=String[],
 ) where {
     T1<:Union{
         <:Real,
@@ -321,8 +321,8 @@ function fit_cppls(
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
-        sample_labels=sample_labels, predictor_labels=predictor_labels, 
-        response_labels=response_labels, analysis_mode=:regression
+        samplelabels=samplelabels, predictorlabels=predictorlabels, 
+        responselabels=responselabels, analysis_mode=:regression
     )
 end
 
@@ -332,9 +332,9 @@ function fit_cppls(
     Y_prim::AbstractVector{<:Real};
     obs_weights::T1=nothing,
     Y_aux::T2=nothing,
-    sample_labels::T3=String[],
-    predictor_labels::T4=String[],
-    response_labels::T5=String[],
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat, Nothing},
@@ -344,65 +344,65 @@ function fit_cppls(
 }
 
     fit_cppls(X, Y_prim, n_components(model); cppls_model_fit_kwargs_with_mode(model)...,
-        obs_weights=obs_weights, Y_aux=Y_aux, sample_labels=sample_labels,
-        predictor_labels=predictor_labels, response_labels=response_labels)
+        obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
+        predictorlabels=predictorlabels, responselabels=responselabels)
 end
 
 """
-    fit_cppls(X, sample_classes::AbstractCategoricalArray, n_components::Int=2; kwargs...)
-    fit_cppls(X, sample_classes::AbstractVector, n_component::Int=2; kwargs...)
+    fit_cppls(X, sampleclasses::AbstractCategoricalArray, n_components::Int=2; kwargs...)
+    fit_cppls(X, sampleclasses::AbstractVector, n_component::Int=2; kwargs...)
 
 Label-based convenience wrappers that convert class labels to a one-hot response matrix
 and forward into `fit_cppls`. Prefer `fit` for the public entry point and full docs.
 """
 function fit_cppls(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T,1,R,V,C,U},
+    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U},
     n_components::Int=2;
     kwargs...
 ) where {T,R,V,C,U}
-    fit_cppls_from_sample_classes(X, sample_classes, n_components; kwargs...)
+    fit_cppls_from_sample_classes(X, sampleclasses, n_components; kwargs...)
 end
 
 function fit_cppls(
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector,
+    sampleclasses::AbstractVector,
     n_components::Int=2;
     kwargs...
 )
-    fit_cppls_from_sample_classes(X, sample_classes, n_components; kwargs...)
+    fit_cppls_from_sample_classes(X, sampleclasses, n_components; kwargs...)
 end
 
 function fit_cppls(
     model::CPPLSSpec,
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractCategoricalArray{T,1,R,V,C,U};
+    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
     model.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sample_classes."))
+        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(X, sample_classes, n_components(model);
+    fit_cppls_from_sample_classes(X, sampleclasses, n_components(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 function fit_cppls(
     model::CPPLSSpec,
     X::AbstractMatrix{<:Real},
-    sample_classes::AbstractVector;
+    sampleclasses::AbstractVector;
     kwargs...
 )
     model.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sample_classes."))
+        "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(X, sample_classes, n_components(model);
+    fit_cppls_from_sample_classes(X, sampleclasses, n_components(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 """
     fit_cppls_from_sample_classes(
         X::AbstractMatrix{<:Real},
-        sample_classes,
+        sampleclasses,
         n_components::Int=2;
         kwargs...
     )
@@ -413,7 +413,7 @@ documentation and public entry points.
 """
 function fit_cppls_from_sample_classes(
     X::AbstractMatrix{<:Real},
-    sample_classes,
+    sampleclasses,
     n_components::Int=2;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
@@ -424,9 +424,9 @@ function fit_cppls_from_sample_classes(
     gamma_rel_tol::T6=1e-6,
     gamma_abs_tol::T7=1e-12,
     t_squared_norm_tolerance::T8=1e-10,
-    sample_labels::T9=String[],
-    predictor_labels::T10=String[],
-    response_labels::T11=String[]
+    samplelabels::T9=String[],
+    predictorlabels::T10=String[],
+    responselabels::T11=String[]
 ) where {
     T1<:Union{
         <:Real, 
@@ -444,18 +444,18 @@ function fit_cppls_from_sample_classes(
     T10<:AbstractVector,
     T11<:AbstractVector
 }
-    isempty(response_labels) || throw(ArgumentError("`response_labels` cannot be provided" *
+    isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
         " when passing sample classes; response labels are inferred automatically."))
 
-    Y_prim, classes = labels_to_one_hot(sample_classes)
+    Y_prim, classes = labels_to_one_hot(sampleclasses)
 
     fit_cppls(X, Y_prim, n_components; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
-        sample_labels=sample_labels, predictor_labels=predictor_labels, 
-        response_labels=classes, analysis_mode=:discriminant, 
-        sample_classes=copy(sample_classes)
+        samplelabels=samplelabels, predictorlabels=predictorlabels, 
+        responselabels=classes, analysis_mode=:discriminant, 
+        sampleclasses=copy(sampleclasses)
     )
 end
 
@@ -529,7 +529,7 @@ to ensure the provided response names align with the response matrix.
 """
 function validate_response_labels(labels::AbstractVector, n_targets::Integer)
     isempty(labels) || length(labels) == n_targets || throw(ArgumentError(
-        "`response_labels` must have length $n_targets, got $(length(labels))"))
+        "`responselabels` must have length $n_targets, got $(length(labels))"))
     labels
 end
 

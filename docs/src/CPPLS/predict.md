@@ -36,9 +36,9 @@ using CPPLS
 using JLD2
 using CairoMakie
 
-sample_labels, X, classes, Y_aux = load(
+samplelabels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
-    "sample_labels",
+    "samplelabels",
     "X",
     "classes",
     "Y_aux"
@@ -50,11 +50,11 @@ train_idx = setdiff(collect(axes(X, 1)), holdout_idx)
 X_train = X[train_idx, :]
 classes_train = classes[train_idx]
 Y_aux_train = Y_aux[train_idx, :]
-labels_train = sample_labels[train_idx]
+labels_train = samplelabels[train_idx]
 
 X_holdout = X[holdout_idx, :]
 classes_holdout = classes[holdout_idx]
-labels_holdout = sample_labels[holdout_idx]
+labels_holdout = samplelabels[holdout_idx]
 plot_classes_holdout = ["projected $class" for class in classes_holdout]
 nothing # hide
 ```
@@ -75,7 +75,7 @@ model = fit(
     classes_train;
     obs_weights=invfreqweights(classes_train),
     Y_aux=Y_aux_train,
-    sample_labels=labels_train
+    samplelabels=labels_train
 )
 nothing # hide
 ```

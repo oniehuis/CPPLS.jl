@@ -33,12 +33,12 @@ end
     )
 end
 
-@testset "calculate_p_value supports upper and lower tails" begin
+@testset "pvalue supports upper and lower tails" begin
     perms = [0.4, 0.6, 0.5, 0.55]
     model_acc = 0.5
 
-    @test CPPLS.calculate_p_value(perms, model_acc) == 4 / (length(perms) + 1)
-    @test CPPLS.calculate_p_value(perms, model_acc; tail=:lower) ==
+    @test CPPLS.pvalue(perms, model_acc) == 4 / (length(perms) + 1)
+    @test CPPLS.pvalue(perms, model_acc; tail=:lower) ==
         3 / (length(perms) + 1)
-    @test_throws ArgumentError CPPLS.calculate_p_value(perms, model_acc; tail=:sideways)
+    @test_throws ArgumentError CPPLS.pvalue(perms, model_acc; tail=:sideways)
 end

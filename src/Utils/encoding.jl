@@ -47,8 +47,8 @@ encoded matrix. The result is a tuple containing the encoded matrix and the orde
 labels, so predictions can be mapped back to the original domain.
 
 See also
-[`nested_cv`](@ref CPPLS.nested_cv),
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation),
+[`nestedcv`](@ref CPPLS.nestedcv),
+[`nestedcvperm`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
 # Examples
@@ -83,8 +83,8 @@ each row. An `ArgumentError` is thrown if `one_hot_matrix` contains values other
 See also
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot(::AbstractVector)),
-[`nested_cv`](@ref CPPLS.nested_cv),
-[`nested_cv_permutation`](@ref CPPLS.nested_cv_permutation)
+[`nestedcv`](@ref CPPLS.nestedcv),
+[`nestedcvperm`](@ref CPPLS.nestedcvperm)
 
 # Examples
 ```jldoctest

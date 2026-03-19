@@ -150,12 +150,12 @@ end
     @test resolved.obs_weights ≈ [0.5, 0.5]
 end
 
-@testset "nested_cv returns scores and component choices" begin
+@testset "nestedcv returns scores and component choices" begin
     spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
     cfg = CPPLS.cv_classification()
     weight_calls = Ref(0)
     scores, components = suppress_info() do
-        CPPLS.nested_cv(
+        CPPLS.nestedcv(
             CROSSVAL_X,
             CROSSVAL_Y;
             spec = spec,
@@ -184,11 +184,11 @@ end
     @test weight_calls[] == 6
 end
 
-@testset "nested_cv_permutation shuffles responses" begin
+@testset "nestedcvperm shuffles responses" begin
     spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
     cfg = CPPLS.cv_classification()
     perms = suppress_info() do
-        CPPLS.nested_cv_permutation(
+        CPPLS.nestedcvperm(
             CROSSVAL_X,
             CROSSVAL_Y;
             spec = spec,
@@ -318,7 +318,7 @@ end
             CROSSVAL_X,
             Y;
             spec = spec,
-            fit_kwargs = (; response_labels = labels),
+            fit_kwargs = (; responselabels = labels),
             num_outer_folds = 2,
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
@@ -395,10 +395,10 @@ end
     @test_throws ArgumentError CPPLS.permda(CROSSVAL_X, collect(1:size(CROSSVAL_X, 1)); spec = spec)
 end
 
-@testset "cv_outlier_scan returns per-sample counts" begin
+@testset "outlierscan returns per-sample counts" begin
     spec = CPPLS.CPPLSSpec(n_components = 1, gamma = 0.5, analysis_mode = :discriminant)
     out = suppress_info() do
-        CPPLS.cv_outlier_scan(
+        CPPLS.outlierscan(
             CROSSVAL_X,
             CROSSVAL_Y;
             spec = spec,
@@ -422,7 +422,7 @@ end
     @test all(out.n_flagged .≤ out.n_tested)
 
     out_unweighted = suppress_info() do
-        CPPLS.cv_outlier_scan(
+        CPPLS.outlierscan(
             CROSSVAL_X,
             CROSSVAL_Y;
             spec = spec,

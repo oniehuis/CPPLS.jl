@@ -247,7 +247,7 @@ end
         2 3
     ]
     labels = categorical(["red", "blue", "red", "blue"])
-    Y, inferred = CPPLS.labels_to_one_hot(labels)
+    Y, inferred = CPPLS.onehot(labels)
 
     model = CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
     @test model.mode === :discriminant
@@ -326,7 +326,7 @@ end
     )
 
     labels = categorical(["a", "b", "a", "b"])
-    Y_one_hot, _ = CPPLS.labels_to_one_hot(labels)
+    Y_one_hot, _ = CPPLS.onehot(labels)
 
     light_from_labels = CPPLS.fit_cppls_light(X, labels, 2; gamma = 0.5)
     manual_discriminant = CPPLS.fit_cppls_light(

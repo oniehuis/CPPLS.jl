@@ -1,5 +1,5 @@
 """
-    labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
+    onehot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
 
 Convert 1-based integer label indices to a dense one-hot encoded matrix with `n_labels`
 columns. Each entry in `label_indices` is interpreted as the target column of the `1`
@@ -14,14 +14,14 @@ See also
 
 # Examples
 ```jldoctest
-julia> labels_to_one_hot([4, 3, 2], 5)
+julia> onehot([4, 3, 2], 5)
 3×5 Matrix{Int64}:
  0  0  0  1  0
  0  0  1  0  0
  0  1  0  0  0
 ```
 """
-function labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
+function onehot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
     n_labels ≥ 0 || throw(ArgumentError("n_labels must be nonnegative, got $n_labels"))
     all(≥(1), label_indices) || throw(ArgumentError(
         "label_indices must contain only positive 1-based class indices"))
@@ -38,7 +38,7 @@ function labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::I
 end
 
 """
-    labels_to_one_hot(labels::AbstractVector)
+    onehot(labels::AbstractVector)
 
 Encode arbitrary labels such as strings, integers, or symbols into a one-hot matrix.
 The function removes duplicate labels, sorts the unique labels using Julia's default
@@ -53,11 +53,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> matrix, classes = labels_to_one_hot(["dog", "cat", "cat"])
+julia> matrix, classes = onehot(["dog", "cat", "cat"])
 ([0 1; 1 0; 1 0], ["cat", "dog"])
 ```
 """
-function labels_to_one_hot(labels::AbstractVector)
+function onehot(labels::AbstractVector)
     unique_labels = sort(collect(Set(labels)))  # consistent label order
     label_to_index = Dict(label => i for (i, label) in enumerate(unique_labels))
 
@@ -82,7 +82,7 @@ each row. An `ArgumentError` is thrown if `one_hot_matrix` contains values other
 
 See also
 [`invfreqweights`](@ref CPPLS.invfreqweights),
-[`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot(::AbstractVector)),
+[`onehot`](@ref CPPLS.onehot(::AbstractVector)),
 [`nestedcv`](@ref CPPLS.nestedcv),
 [`nestedcvperm`](@ref CPPLS.nestedcvperm)
 

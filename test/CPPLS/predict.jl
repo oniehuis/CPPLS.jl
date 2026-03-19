@@ -32,7 +32,7 @@
     @test_throws DimensionMismatch CPPLS.predict(cppls, X, 3)
 end
 
-@testset "predictions_to_onehot converts summed predictions to labels" begin
+@testset "onehot converts summed predictions to labels" begin
     B = ones(Float64, 1, 2, 1)
     X_bar = reshape([0.0], 1, 1)
     Y_bar = reshape([0.1, -0.2], 1, :)
@@ -64,7 +64,7 @@ end
         expected_one_hot[row, label] = 1
     end
 
-    result = CPPLS.predictions_to_onehot(cppls, predictions)
+    result = CPPLS.onehot(cppls, predictions)
     @test result == expected_one_hot
 end
 
@@ -82,7 +82,7 @@ end
         -0.5 0.4
     ]
 
-    expected = CPPLS.predictions_to_onehot(cppls, CPPLS.predict(cppls, X, 2))
+    expected = CPPLS.onehot(cppls, CPPLS.predict(cppls, X, 2))
     result = CPPLS.predictonehot(cppls, X, 2)
 
     @test result == expected
@@ -101,7 +101,7 @@ end
     preds = CPPLS.predict(model, X, 1)
     expected =
         model.responselabels[
-            CPPLS.one_hot_to_labels(CPPLS.predictions_to_onehot(model, preds)),
+            CPPLS.one_hot_to_labels(CPPLS.onehot(model, preds)),
         ]
 
     @test CPPLS.predictions_to_sampleclasses(model, preds) == expected

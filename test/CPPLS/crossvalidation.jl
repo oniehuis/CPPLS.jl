@@ -312,7 +312,7 @@ end
     @test components == [1, 1]
     @test all(0.0 ≤ acc ≤ 1.0 for acc in scores)
 
-    Y, labels = CPPLS.labels_to_one_hot(classes)
+    Y, labels = CPPLS.onehot(classes)
     scores_matrix, components_matrix = suppress_info() do
         CPPLS.cvda(
             CROSSVAL_X,

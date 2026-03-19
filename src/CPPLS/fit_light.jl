@@ -161,7 +161,7 @@ function fit_cppls_light_from_sample_classes(
     T7<:Real,
     T8<:Real
 }
-    Y_prim, _ = labels_to_one_hot(sampleclasses)
+    Y_prim, _ = onehot(sampleclasses)
 
     fit_cppls_light(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights,
         Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 

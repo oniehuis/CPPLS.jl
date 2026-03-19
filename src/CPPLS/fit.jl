@@ -447,7 +447,7 @@ function fit_cppls_from_sample_classes(
     isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
         " when passing sample classes; response labels are inferred automatically."))
 
-    Y_prim, classes = labels_to_one_hot(sampleclasses)
+    Y_prim, classes = onehot(sampleclasses)
 
     fit_cppls(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 

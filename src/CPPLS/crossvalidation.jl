@@ -606,7 +606,7 @@ julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
 
 julia> classes = repeat(["A", "B"], inner=6);
 
-julia> Y, responselabels = labels_to_one_hot(classes);
+julia> Y, responselabels = onehot(classes);
 
 julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
@@ -720,7 +720,7 @@ function cvda(
     T5<:Integer
 }
 
-    Y, responselabels = labels_to_one_hot(sampleclasses)
+    Y, responselabels = onehot(sampleclasses)
     fit_kwargs = with_response_labels(fit_kwargs, responselabels)
     
     cvda(
@@ -774,7 +774,7 @@ function cvda(
     eltype(sampleclasses) <: Real && throw(ArgumentError(
         "cvda expects categorical sampleclasses or one-hot Y."))
 
-    Y, responselabels = labels_to_one_hot(sampleclasses)
+    Y, responselabels = onehot(sampleclasses)
     fit_kwargs = with_response_labels(fit_kwargs, responselabels)
 
     cvda(
@@ -967,7 +967,7 @@ function permda(
     T5<:Integer,
     T6<:Integer
 }
-    Y, responselabels = labels_to_one_hot(sampleclasses)
+    Y, responselabels = onehot(sampleclasses)
     fit_kwargs = with_response_labels(fit_kwargs, responselabels)
 
     permda(
@@ -1025,7 +1025,7 @@ function permda(
     eltype(sampleclasses) <: Real && throw(ArgumentError(
         "permda expects categorical sampleclasses or one-hot Y."))
 
-    Y, responselabels = labels_to_one_hot(sampleclasses)
+    Y, responselabels = onehot(sampleclasses)
     fit_kwargs = with_response_labels(fit_kwargs, responselabels)
 
     permda(
@@ -1163,7 +1163,7 @@ See also
 [`outlierscan`](@ref CPPLS.outlierscan),
 [`CPPLS.cv_regression`](@ref CPPLS.cv_regression), 
 [`invfreqweights`](@ref CPPLS.invfreqweights),
-[`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot),
+[`onehot`](@ref CPPLS.onehot),
 [`nestedcvperm`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
@@ -1188,7 +1188,7 @@ julia> classes = repeat(["A", "B"], inner=6)
  "B"
  "B"
 
-julia> Y, responselabels = labels_to_one_hot(classes)
+julia> Y, responselabels = onehot(classes)
 ([1 0; 1 0; … ; 0 1; 0 1], ["A", "B"])
 
 julia> cb = CPPLS.cv_classification();
@@ -1388,7 +1388,7 @@ See also
 [`outlierscan`](@ref CPPLS.outlierscan),
 [`CPPLS.cv_regression`](@ref CPPLS.cv_regression), 
 [`invfreqweights`](@ref CPPLS.invfreqweights),
-[`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot),
+[`onehot`](@ref CPPLS.onehot),
 [`nestedcv`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
@@ -1413,7 +1413,7 @@ julia> classes = repeat(["A", "B"], inner=6)
  "B"
  "B"
 
-julia> Y, responselabels = labels_to_one_hot(classes);
+julia> Y, responselabels = onehot(classes);
 
 julia> cb = CPPLS.cv_classification();
 
@@ -1596,7 +1596,7 @@ See also
 [`fit`](@ref CPPLS.fit),
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
 [`invfreqweights`](@ref CPPLS.invfreqweights),
-[`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot),
+[`onehot`](@ref CPPLS.onehot),
 [`nestedcv`](@ref CPPLS.nestedcvperm),
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 
@@ -1608,7 +1608,7 @@ julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
 
 julia> classes = repeat(["A", "B"], inner=6);
 
-julia> Y, responselabels = labels_to_one_hot(classes);
+julia> Y, responselabels = onehot(classes);
 
 julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
@@ -1745,7 +1745,7 @@ function outlierscan(
     C,
     U
 }
-    Y, _ = labels_to_one_hot(sampleclasses)
+    Y, _ = onehot(sampleclasses)
     outlierscan(X, Y; kwargs...)
 end
 
@@ -1769,7 +1769,7 @@ function outlierscan(
             "outlierscan expects categorical sampleclasses or one-hot Y."))
     end
 
-    Y, _ = labels_to_one_hot(sampleclasses)
+    Y, _ = onehot(sampleclasses)
     outlierscan(X, Y; kwargs...)
 end
 

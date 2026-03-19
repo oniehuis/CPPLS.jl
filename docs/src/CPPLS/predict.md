@@ -6,7 +6,7 @@ model, whereas [`predict`](@ref) generates predicted responses from new predicto
 values.
 
 For discriminant models, CPPLS also provides helpers for turning raw prediction
-arrays into class assignments. [`predictions_to_onehot`](@ref) and
+arrays into class assignments. [`onehot`](@ref) and
 [`predictions_to_sampleclasses`](@ref) perform those conversions when you already
 have the output of [`predict`](@ref). For convenience, [`predictonehot`](@ref) returns 
 one-hot encoded class predictions directly, and [`predictsampleclasses`](@ref) returns 
@@ -149,7 +149,7 @@ predictsampleclasses(model, X_holdout)
 CPPLS.predict
 CPPLS.predictonehot
 CPPLS.predictsampleclasses
-CPPLS.predictions_to_onehot
+CPPLS.onehot
 CPPLS.predictions_to_sampleclasses
 CPPLS.project
 ```

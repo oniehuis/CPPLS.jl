@@ -1,4 +1,4 @@
-@testset "labels_to_one_hot with explicit indices" begin
+@testset "onehot with explicit indices" begin
     label_indices = [1, 3, 2, 3, 1]
     n_labels = 3
     expected = [
@@ -9,17 +9,17 @@
         1 0 0
     ]
 
-    encoded = CPPLS.labels_to_one_hot(label_indices, n_labels)
+    encoded = CPPLS.onehot(label_indices, n_labels)
 
     @test encoded == expected
-    @test_throws ArgumentError CPPLS.labels_to_one_hot([1, 4], 3)
-    @test_throws ArgumentError CPPLS.labels_to_one_hot([0, 1], 3)
-    @test_throws ArgumentError CPPLS.labels_to_one_hot([1, 2], -1)
+    @test_throws ArgumentError CPPLS.onehot([1, 4], 3)
+    @test_throws ArgumentError CPPLS.onehot([0, 1], 3)
+    @test_throws ArgumentError CPPLS.onehot([1, 2], -1)
 end
 
-@testset "labels_to_one_hot discovers label order" begin
+@testset "onehot discovers label order" begin
     raw_labels = ["cat", "dog", "cat", "owl", "dog"]
-    encoded, uniques = CPPLS.labels_to_one_hot(raw_labels)
+    encoded, uniques = CPPLS.onehot(raw_labels)
 
     @test uniques == ["cat", "dog", "owl"]
     @test size(encoded) == (length(raw_labels), length(uniques))

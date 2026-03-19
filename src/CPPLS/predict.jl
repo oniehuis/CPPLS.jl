@@ -17,7 +17,7 @@ See also
 [`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit),
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predictonehot`](@ref CPPLS.predictonehot), 
-[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`onehot`](@ref CPPLS.onehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
 [`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
 
@@ -76,7 +76,7 @@ See also
 [`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
-[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`onehot`](@ref CPPLS.onehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
 [`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
 
@@ -101,11 +101,11 @@ function predictonehot(
     X::AbstractMatrix{<:Real},
     ncomponents::Integer=size(regression_coefficients(model), 3)
 )
-    predictions_to_onehot(model, predict(model, X, ncomponents))
+    onehot(model, predict(model, X, ncomponents))
 end
 
 """
-    predictions_to_onehot(
+    onehot(
         model::AbstractCPPLSFit,
         predictions::AbstractArray{<:Real, 3}
     ) -> Matrix{Int}
@@ -121,7 +121,7 @@ See also
 [`predictonehot`](@ref CPPLS.predictonehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
 [`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
-[`labels_to_one_hot`](@ref CPPLS.labels_to_one_hot)
+[`onehot`](@ref CPPLS.onehot)
 
 # Examples
 ```jldoctest
@@ -137,11 +137,11 @@ julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> raw = predict(model, Xnew);
 
-julia> predictions_to_onehot(model, raw) ≈ [1 0; 0 1]
+julia> onehot(model, raw) ≈ [1 0; 0 1]
 true
 ```
 """
-function predictions_to_onehot(
+function onehot(
   model::AbstractCPPLSFit, 
   predictions::AbstractArray{<:Real, 3}
 )
@@ -153,7 +153,7 @@ function predictions_to_onehot(
 
     predicted_class_indices = argmax.(eachrow(Y_pred_final))
 
-    labels_to_one_hot(predicted_class_indices, n_classes)
+    onehot(predicted_class_indices, n_classes)
 end
 
 """
@@ -170,7 +170,7 @@ See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
 [`predictonehot`](@ref CPPLS.predictonehot), 
-[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`onehot`](@ref CPPLS.onehot), 
 [`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
 [`regression_coefficients`](@ref CPPLS.regression_coefficients), 
 
@@ -212,7 +212,7 @@ See also
 [`mode`](@ref CPPLS.mode)
 [`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
 [`predict`](@ref CPPLS.predict), 
-[`predictions_to_onehot`](@ref CPPLS.predictions_to_onehot), 
+[`onehot`](@ref CPPLS.onehot), 
 [`predictonehot`](@ref CPPLS.predictonehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
 [`responselabels`](@ref CPPLS.responselabels)
@@ -250,7 +250,7 @@ function predictions_to_sampleclasses(
         "responselabels must have length $n_classes, " * 
         "got $(length(responselabels(model)))"))
 
-    class_indices = one_hot_to_labels(predictions_to_onehot(model, predictions))
+    class_indices = one_hot_to_labels(onehot(model, predictions))
     responselabels(model)[class_indices]
 end
 

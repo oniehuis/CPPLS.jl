@@ -41,6 +41,7 @@ export mode
 export ncomponents
 export nestedcv
 export nestedcvperm
+export onehot
 export outlierscan
 export permda
 export permreg
@@ -61,9 +62,7 @@ export xbar
 export xscores
 export ybar
 
-export predictions_to_onehot
 export predictions_to_sampleclasses
-export labels_to_one_hot
 export one_hot_to_labels
 
 export nmc

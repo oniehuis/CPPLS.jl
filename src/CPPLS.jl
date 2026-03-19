@@ -62,10 +62,6 @@ export xbar
 export xscores
 export ybar
 
-export one_hot_to_labels
-
-export nmc
-
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """
     scoreplot(samples, groups, scores; backend=:plotly, kwargs...)

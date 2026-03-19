@@ -49,7 +49,7 @@ labels, so predictions can be mapped back to the original domain.
 See also
 [`nestedcv`](@ref CPPLS.nestedcv),
 [`nestedcvperm`](@ref CPPLS.nestedcvperm),
-[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 # Examples
 ```jldoctest
@@ -74,7 +74,7 @@ function onehot(labels::AbstractVector)
 end
 
 """
-    one_hot_to_labels(one_hot_matrix::AbstractMatrix{<:Integer})
+    sampleclasses(one_hot_matrix::AbstractMatrix{<:Integer})
 
 Decode one-hot rows back into label indices by returning the column index selected in
 each row. An `ArgumentError` is thrown if `one_hot_matrix` contains values other than
@@ -88,14 +88,14 @@ See also
 
 # Examples
 ```jldoctest
-julia> one_hot_to_labels([1 0 0; 0 1 0; 0 0 1])
+julia> sampleclasses([1 0 0; 0 1 0; 0 0 1])
 3-element Vector{Int64}:
  1
  2
  3
 ```
 """
-function one_hot_to_labels(one_hot_matrix::AbstractMatrix{<:Integer})
+function sampleclasses(one_hot_matrix::AbstractMatrix{<:Integer})
     all(value -> value == 0 || value == 1, one_hot_matrix) || throw(ArgumentError(
         "one_hot_matrix must contain only 0/1 entries"))
 

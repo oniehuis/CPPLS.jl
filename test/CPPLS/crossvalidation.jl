@@ -130,7 +130,7 @@ end
         cfg.select_fn,
         CPPLS.MersenneTwister(42),
         false;
-        strata = CPPLS.one_hot_to_labels(CROSSVAL_Y),
+        strata = CPPLS.sampleclasses(CROSSVAL_Y),
     )
     @test selected == 1
 end
@@ -172,7 +172,7 @@ end
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
-            strata = CPPLS.one_hot_to_labels(CROSSVAL_Y),
+            strata = CPPLS.sampleclasses(CROSSVAL_Y),
             rng = CPPLS.MersenneTwister(123),
             verbose = false,
         )
@@ -203,7 +203,7 @@ end
             num_inner_folds_repeats = 2,
             max_components = 1,
             num_permutations = 2,
-            strata = CPPLS.one_hot_to_labels(CROSSVAL_Y),
+            strata = CPPLS.sampleclasses(CROSSVAL_Y),
             rng = CPPLS.MersenneTwister(321),
             verbose = false,
         )

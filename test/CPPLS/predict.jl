@@ -101,7 +101,7 @@ end
     preds = CPPLS.predict(model, X, 1)
     expected =
         model.responselabels[
-            CPPLS.one_hot_to_labels(CPPLS.onehot(model, preds)),
+            CPPLS.sampleclasses(CPPLS.onehot(model, preds)),
         ]
 
     @test CPPLS.predictsampleclasses(model, preds) == expected

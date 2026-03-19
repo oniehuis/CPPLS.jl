@@ -34,7 +34,7 @@ end
     @test encoded == expected
 end
 
-@testset "one_hot_to_labels decodes argmax positions" begin
+@testset "sampleclasses decodes argmax positions" begin
     one_hot = [
         0 1 0
         1 0 0
@@ -42,9 +42,9 @@ end
         0 1 0
     ]
 
-    decoded = CPPLS.one_hot_to_labels(one_hot)
+    decoded = CPPLS.sampleclasses(one_hot)
     @test decoded == [2, 1, 3, 2]
-    @test_throws ArgumentError CPPLS.one_hot_to_labels([1 1 0; 0 1 0])
-    @test_throws ArgumentError CPPLS.one_hot_to_labels([0 0 0; 0 1 0])
-    @test_throws ArgumentError CPPLS.one_hot_to_labels([2 0 0; 0 1 0])
+    @test_throws ArgumentError CPPLS.sampleclasses([1 1 0; 0 1 0])
+    @test_throws ArgumentError CPPLS.sampleclasses([0 0 0; 0 1 0])
+    @test_throws ArgumentError CPPLS.sampleclasses([2 0 0; 0 1 0])
 end

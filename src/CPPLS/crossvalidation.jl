@@ -82,7 +82,7 @@ better and `weighted=true` applies inverse-frequency class weighting;
 predictions from a discriminant CPPLS fit;
 `select_fn = argmax`, so inner cross-validation chooses the component count with the
 largest score; and
-`flag_fn(Y_true, Y_pred) = one_hot_to_labels(Y_pred) .≠ one_hot_to_labels(Y_true)`,
+`flag_fn(Y_true, Y_pred) = sampleclasses(Y_pred) .≠ sampleclasses(Y_true)`,
 which returns a per-sample misclassification mask.
 
 This helper is meant to supply the callback interface expected by `nestedcv`,
@@ -102,7 +102,7 @@ See also
 [`outlierscan`](@ref CPPLS.outlierscan),
 [`CPPLS.cv_regression`](@ref CPPLS.cv_regression), 
 [`invfreqweights`](@ref CPPLS.invfreqweights),
-[`nmc`](@ref CPPLS.nmc), 
+[`CPPLS.nmc`](@ref CPPLS.nmc), 
 [`nestedcv`](@ref CPPLS.nestedcv), 
 [`nestedcvperm`](@ref CPPLS.nestedcvperm)
 [`predict`](@ref CPPLS.predict)
@@ -132,7 +132,7 @@ function cv_classification(; weighted::Bool=true)
     score_fn = (Y_true, Y_pred) -> 1 - nmc(Y_true, Y_pred, weighted)
     predict_fn = (model, X, k) -> predictonehot(model, X, k)
     select_fn = argmax
-    flag_fn = (Y_true, Y_pred) -> one_hot_to_labels(Y_pred) .≠ one_hot_to_labels(Y_true)
+    flag_fn = (Y_true, Y_pred) -> sampleclasses(Y_pred) .≠ sampleclasses(Y_true)
     (score_fn=score_fn, predict_fn=predict_fn, select_fn=select_fn, flag_fn=flag_fn)
 end
 
@@ -567,8 +567,8 @@ weights inside each training split, and derives stratified folds from `Y`.
 
 Internally, `cvda` uses the same callback bundle returned by `CPPLS.cv_classification()` and
 the same fold-local weighting rule commonly used in CPPLS-DA workflows:
-`obs_weight_fn(X_train, Y_train; kwargs...) = invfreqweights(one_hot_to_labels(Y_train))`.
-The stratification vector is always `one_hot_to_labels(Y)`.
+`obs_weight_fn(X_train, Y_train; kwargs...) = invfreqweights(sampleclasses(Y_train))`.
+The stratification vector is always `sampleclasses(Y)`.
 
 Use `nestedcv` directly when you need custom callbacks, custom fold weighting, custom
 stratification, or any other lower-level control that is not exposed by this wrapper.
@@ -595,7 +595,7 @@ See also
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
 [`outlierscan`](@ref CPPLS.outlierscan),
 [`nestedcv`](@ref CPPLS.nestedcv),
-[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels),
+[`sampleclasses`](@ref CPPLS.sampleclasses),
 [`permda`](@ref CPPLS.permda)
 
 ```jldoctest
@@ -659,7 +659,7 @@ function cvda(
         "cvda expects spec.mode = :discriminant"))
 
     cb = cv_classification(; weighted=weighted)
-    strata = one_hot_to_labels(Y)
+    strata = sampleclasses(Y)
 
     nestedcv(
         X,
@@ -844,7 +844,7 @@ See also
 [`cvda`](@ref CPPLS.cvda),
 [`nestedcv`](@ref CPPLS.nestedcv),
 [`nestedcvperm`](@ref CPPLS.nestedcvperm),
-[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 ```jldoctest
 julia> using Random;
@@ -904,7 +904,7 @@ function permda(
         "permda expects spec.mode = :discriminant"))
 
     cb = cv_classification(; weighted=weighted)
-    strata = one_hot_to_labels(Y)
+    strata = sampleclasses(Y)
 
     nestedcvperm(
         X,
@@ -1165,7 +1165,7 @@ See also
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`onehot`](@ref CPPLS.onehot),
 [`nestedcvperm`](@ref CPPLS.nestedcvperm),
-[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 ```jldoctest
 julia> using Random;
@@ -1195,7 +1195,7 @@ julia> cb = CPPLS.cv_classification();
 
 julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
-julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
+julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(sampleclasses(Y_train));
 
 julia> scores, best_k = nestedcv(
            X,
@@ -1211,7 +1211,7 @@ julia> scores, best_k = nestedcv(
            num_inner_folds=2,
            num_inner_folds_repeats=2,
            max_components=1,
-           strata=one_hot_to_labels(Y),
+           strata=sampleclasses(Y),
            rng=MersenneTwister(1),
            verbose=false,
        );
@@ -1390,7 +1390,7 @@ See also
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`onehot`](@ref CPPLS.onehot),
 [`nestedcv`](@ref CPPLS.nestedcvperm),
-[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 ```jldoctest
 julia> using Random;
@@ -1419,7 +1419,7 @@ julia> cb = CPPLS.cv_classification();
 
 julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
 
-julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
+julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(sampleclasses(Y_train));
 
 julia> permutation_scores = nestedcvperm(
                      X,
@@ -1436,7 +1436,7 @@ julia> permutation_scores = nestedcvperm(
                      num_inner_folds=2,
                      num_inner_folds_repeats=2,
                      max_components=1,
-                     strata=one_hot_to_labels(Y),
+                     strata=sampleclasses(Y),
                      rng=MersenneTwister(1),
                      verbose=false,
              );
@@ -1541,7 +1541,7 @@ accumulates a test count and a misclassification count.
 
 This method expects discriminant-analysis settings, so `spec.mode` must be
 `:discriminant` and `Y` must be a one-hot response matrix. Stratification is derived
-automatically from `Y` via `one_hot_to_labels(Y)`.
+automatically from `Y` via `sampleclasses(Y)`.
 
 Arguments
 - `X`: predictor matrix with one row per sample.
@@ -1557,7 +1557,7 @@ Keyword arguments
     `responselabels` are not supplied, they are inferred from the number of columns in
     `Y`.
 - `obs_weight_fn`: callback for fold-local observation weights. By default this is
-    `default_da_obs_weight_fn`, which applies `invfreqweights(one_hot_to_labels(Y_train))`
+    `default_da_obs_weight_fn`, which applies `invfreqweights(sampleclasses(Y_train))`
     inside each outer or inner training split, matching `cvda` and `permda`. It is
     called as `obs_weight_fn(X_train, Y_train; sample_indices=..., fit_kwargs=...,
     spec=...)` and must return either `nothing` or an `AbstractVector` of nonnegative
@@ -1598,7 +1598,7 @@ See also
 [`invfreqweights`](@ref CPPLS.invfreqweights),
 [`onehot`](@ref CPPLS.onehot),
 [`nestedcv`](@ref CPPLS.nestedcvperm),
-[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 ```jldoctest
 julia> using Random;
@@ -1665,7 +1665,7 @@ function outlierscan(
         "Row count mismatch between X and Y"))
 
     cb = cv_classification()
-    strata = one_hot_to_labels(Y)
+    strata = sampleclasses(Y)
 
     n_tested = zeros(Int, n_samples)
     n_flagged = zeros(Int, n_samples)
@@ -1953,7 +1953,7 @@ function combine_obs_weights(
 end
 
 default_da_obs_weight_fn(X_train, Y_train; kwargs...) =
-    invfreqweights(one_hot_to_labels(Y_train))
+    invfreqweights(sampleclasses(Y_train))
 
 function with_response_labels(
     fit_kwargs::NamedTuple,

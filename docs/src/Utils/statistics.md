@@ -1,6 +1,7 @@
 # Statistics
 
 ```@docs
-invfreqweights
+CPPLS.invfreqweights
 CPPLS.intervalize
+CPPLS.nmc
 ```

@@ -210,7 +210,7 @@ stored `responselabels` ordering.
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`mode`](@ref CPPLS.mode)
-[`one_hot_to_labels`](@ref CPPLS.one_hot_to_labels)
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
 [`predictonehot`](@ref CPPLS.predictonehot), 
@@ -250,7 +250,7 @@ function predictsampleclasses(
         "responselabels must have length $n_classes, " * 
         "got $(length(responselabels(model)))"))
 
-    class_indices = one_hot_to_labels(onehot(model, predictions))
+    class_indices = sampleclasses(onehot(model, predictions))
     responselabels(model)[class_indices]
 end
 

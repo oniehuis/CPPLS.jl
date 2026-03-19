@@ -1,5 +1,5 @@
 """
-    nmc(
+    CPPLS.nmc(
         Y_true_one_hot::AbstractMatrix{<:Integer}, 
         Y_pred_one_hot::AbstractMatrix{<:Integer},
         weighted::Bool
@@ -24,10 +24,10 @@ julia> Y_true = [1 0 0; 0 1 0; 0 1 0];
 
 julia> Y_pred = [1 0 0; 0 0 1; 0 1 0];
 
-julia> nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
+julia> CPPLS.nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
 true
 
-julia> nmc(Y_true, Y_pred, true) ≈ 0.25
+julia> CPPLS.nmc(Y_true, Y_pred, true) ≈ 0.25
 true
 ```
 """
@@ -46,8 +46,8 @@ function nmc(
 
     !weighted && return mean(Y_true_one_hot .≠ Y_pred_one_hot)
 
-    true_labels = one_hot_to_labels(Y_true_one_hot)
-    pred_labels = one_hot_to_labels(Y_pred_one_hot)
+    true_labels = sampleclasses(Y_true_one_hot)
+    pred_labels = sampleclasses(Y_pred_one_hot)
 
     sample_weights = invfreqweights(true_labels)
     errors = true_labels .≠ pred_labels

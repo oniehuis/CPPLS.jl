@@ -395,7 +395,6 @@ CPPLS.cvreg
 CPPLS.outlierscan
 CPPLS.nestedcv
 CPPLS.nestedcvperm
-CPPLS.nmc
 CPPLS.permda
 CPPLS.permreg
 ```

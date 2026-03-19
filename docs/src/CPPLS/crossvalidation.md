@@ -390,9 +390,7 @@ The functions discussed above are documented in full below.
 
 ```@docs
 CPPLS.calculate_p_value
-CPPLS.cv_classification
 CPPLS.cvda
-CPPLS.cv_regression
 CPPLS.cvreg
 CPPLS.cv_outlier_scan
 CPPLS.nested_cv

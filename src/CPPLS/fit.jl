@@ -202,9 +202,9 @@ function fit_cppls(
     b = Matrix{Float64}(undef, n_targets_Y, ncomponents)
     rho = Vector{Float64}(undef, ncomponents)
     gamma_vals = fill(0.5, ncomponents)
-    gamma_search_gammas = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
+    gammas = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
         ncomponents)
-    gamma_search_rhos = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
+    rhos = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
         ncomponents)
     t_norms = Vector{Float64}(undef, ncomponents)
     U = Matrix{Float64}(undef, n_samples_X, ncomponents)
@@ -213,8 +213,8 @@ function fit_cppls(
     Z = Array{Float64}(undef, n_samples_X, size(Y, 2), ncomponents)
 
     for i = 1:ncomponents
-        wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gamma_search_gammas[:, i],
-        gamma_search_rhos[:, i] = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
+        wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gammas[:, i],
+        rhos[:, i] = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
             gamma, gamma_rel_tol, gamma_abs_tol)
         
         W0[:, :, i] = W0ᵢ
@@ -240,7 +240,7 @@ function fit_cppls(
     X_var_total = sum(X .* X)
 
     CPPLSFit(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
-        gamma_vals, rho, gamma_search_gammas, gamma_search_rhos, zero_mask, a, b, W0,
+        gamma_vals, rho, gammas, rhos, zero_mask, a, b, W0,
         Z; samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels,
         analysis_mode=analysis_mode, sampleclasses=sampleclasses)

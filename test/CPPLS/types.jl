@@ -51,12 +51,12 @@
         X_var_total = T_el(5.0)
         gamma = T_el.(reverse(1:ncomponents)) ./ T_el(ncomponents + 2)
         rho = T_el.(1:ncomponents) ./ T_el(ncomponents + 3)
-        gamma_search_gammas = reshape(
+        gammas = reshape(
             T_el.(501:(500+ncomponents)),
             1,
             ncomponents,
         )
-        gamma_search_rhos = reshape(
+        rhos = reshape(
             T_el.(601:(600+ncomponents)),
             1,
             ncomponents,
@@ -103,8 +103,8 @@
             X_var_total,
             gamma,
             rho,
-            gamma_search_gammas,
-            gamma_search_rhos,
+            gammas,
+            rhos,
             zero_mask,
             a,
             b,
@@ -177,8 +177,8 @@
             X_var_total,
             gamma,
             rho,
-            gamma_search_gammas,
-            gamma_search_rhos,
+            gammas,
+            rhos,
             zero_mask,
             a,
             b,
@@ -207,8 +207,8 @@
             X_var_total,
             gamma,
             rho,
-            gamma_search_gammas,
-            gamma_search_rhos,
+            gammas,
+            rhos,
             zero_mask,
             a,
             b,
@@ -316,8 +316,8 @@ end
     X_var_total = 1.0
     gamma = [0.5, 0.5]
     rho = [0.9, 0.8]
-    gamma_search_gammas = reshape([0.4, 0.6], 1, 2)
-    gamma_search_rhos = reshape([0.81, 0.64], 1, 2)
+    gammas = reshape([0.4, 0.6], 1, 2)
+    rhos = reshape([0.81, 0.64], 1, 2)
     zero_mask = zeros(Int, 2, 2)
     a = reshape(Float64.(91:94), 2, 2)
     b = reshape(Float64.(101:104), 2, 2)
@@ -330,7 +330,7 @@ end
 
     model = CPPLS.CPPLSFit(
         B, T_scores, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
-        gamma, rho, gamma_search_gammas, gamma_search_rhos, zero_mask, a, b, W0, Z,
+        gamma, rho, gammas, rhos, zero_mask, a, b, W0, Z,
         samplelabels, predictorlabels, responselabels, :regression, sampleclasses,
     )
     model_inline = sprint(show, model)

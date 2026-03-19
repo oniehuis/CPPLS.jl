@@ -15,7 +15,7 @@ The package also provides getters for fields that are commonly useful in downstr
 work. For [`CPPLSSpec`](@ref), the getters are [`analysis_mode`](@ref), [`gamma`](@ref), 
 and [`ncomponents`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
 [`analysis_mode`](@ref), [`fitted`](@ref), [`gamma`](@ref),
-[`gamma_search_gammas`](@ref), [`gamma_search_rhos`](@ref),
+[`gammas`](@ref), [`rhos`](@ref),
 [`predictorlabels`](@ref), [`responselabels`](@ref), [`residuals`](@ref),
 [`sampleclasses`](@ref), [`samplelabels`](@ref), and [`xscores`](@ref).
 
@@ -50,8 +50,8 @@ CPPLS.CPPLSFit
 CPPLS.analysis_mode(::CPPLSFit)
 StatsAPI.fitted(::CPPLSFit)
 CPPLS.gamma(::CPPLSFit)
-CPPLS.gamma_search_gammas
-CPPLS.gamma_search_rhos
+CPPLS.gammas
+CPPLS.rhos
 CPPLS.predictorlabels(::CPPLSFit)
 CPPLS.projectionmatrix(::CPPLSFit)
 CPPLS.responselabels(::CPPLSFit)

@@ -181,8 +181,8 @@ struct CPPLSFit{
     X_var_total::T1
     gamma::Vector{T1}
     rho::Vector{T1}
-    gamma_search_gammas::Matrix{T1}
-    gamma_search_rhos::Matrix{T1}
+    gammas::Matrix{T1}
+    rhos::Matrix{T1}
     zero_mask::Matrix{T2}
     a::Matrix{T1}
     b::Matrix{T1}
@@ -211,8 +211,8 @@ function CPPLSFit(
     X_var_total::T1,
     gamma::Vector{T1},
     rho::Vector{T1},
-    gamma_search_gammas::Matrix{T1},
-    gamma_search_rhos::Matrix{T1},
+    gammas::Matrix{T1},
+    rhos::Matrix{T1},
     zero_mask::Matrix{T2},
     a::Matrix{T1},
     b::Matrix{T1},
@@ -239,7 +239,7 @@ function CPPLSFit(
         "sampleclasses are only stored for discriminant analysis models"))
 
     CPPLSFit{T1, T2, T3, T4, T5, T6}(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, 
-        X_var, X_var_total, gamma, rho, gamma_search_gammas, gamma_search_rhos,
+        X_var, X_var_total, gamma, rho, gammas, rhos,
         zero_mask, a, b, W0, Z, samplelabels, predictorlabels, responselabels,
         analysis_mode, sampleclasses)
 end
@@ -289,26 +289,26 @@ Return the power-parameter values selected during fitting.
 gamma(cpplsfit::CPPLSFit) = cpplsfit.gamma
 
 """
-    gamma_search_gammas(cpplsfit::CPPLSFit)
-    gamma_search_gammas(cpplsfit::CPPLSFit, latent_variable::Integer)
+    gammas(cpplsfit::CPPLSFit)
+    gammas(cpplsfit::CPPLSFit, latent_variable::Integer)
 
 Return the matrix of per-candidate gamma values considered during fitting, or the column
 for a specific latent variable.
 """
-gamma_search_gammas(cpplsfit::CPPLSFit) = cpplsfit.gamma_search_gammas
-gamma_search_gammas(cpplsfit::CPPLSFit, latent_variable::Integer) =
-    @views cpplsfit.gamma_search_gammas[:, latent_variable]
+gammas(cpplsfit::CPPLSFit) = cpplsfit.gammas
+gammas(cpplsfit::CPPLSFit, latent_variable::Integer) =
+    @views cpplsfit.gammas[:, latent_variable]
 
 """
-    gamma_search_rhos(cpplsfit::CPPLSFit)
-    gamma_search_rhos(cpplsfit::CPPLSFit, latent_variable::Integer)
+    rhos(cpplsfit::CPPLSFit)
+    rhos(cpplsfit::CPPLSFit, latent_variable::Integer)
 
 Return the matrix of per-candidate squared canonical correlations considered during
 fitting, or the column for a specific latent variable.
 """
-gamma_search_rhos(cpplsfit::CPPLSFit) = cpplsfit.gamma_search_rhos
-gamma_search_rhos(cpplsfit::CPPLSFit, latent_variable::Integer) =
-    @views cpplsfit.gamma_search_rhos[:, latent_variable]
+rhos(cpplsfit::CPPLSFit) = cpplsfit.rhos
+rhos(cpplsfit::CPPLSFit, latent_variable::Integer) =
+    @views cpplsfit.rhos[:, latent_variable]
 
 """
     predictorlabels(cpplsfit::CPPLSFit)

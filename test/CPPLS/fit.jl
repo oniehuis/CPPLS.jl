@@ -29,10 +29,10 @@ using StatsAPI
     @test model.Y_bar ≈ CPPLS.mean(Y, dims = 1)
     @test model.gamma ≈ fill(0.5, 2)
     @test length(model.rho) == 2
-    @test size(CPPLS.gamma_search_gammas(model)) == (1, 2)
-    @test size(CPPLS.gamma_search_rhos(model)) == (1, 2)
-    @test CPPLS.gamma_search_gammas(model, 1) == [0.5]
-    @test CPPLS.gamma_search_rhos(model, 1) ≈ [model.rho[1]]
+    @test size(CPPLS.gammas(model)) == (1, 2)
+    @test size(CPPLS.rhos(model)) == (1, 2)
+    @test CPPLS.gammas(model, 1) == [0.5]
+    @test CPPLS.rhos(model, 1) ≈ [model.rho[1]]
     @test length(model.X_var) == 2
     @test model.X_var_total > 0
     @test model.samplelabels == ["1", "2", "3", "4", "5"]
@@ -68,15 +68,15 @@ end
 
     model = CPPLS.fit_cppls(X, Y, 1; gamma = gamma_candidates)
 
-    @test size(CPPLS.gamma_search_gammas(model)) == (length(gamma_candidates), 1)
-    @test size(CPPLS.gamma_search_rhos(model)) == (length(gamma_candidates), 1)
-    @test CPPLS.gamma_search_gammas(model, 1) == CPPLS.gamma_search_gammas(model)[:, 1]
-    @test CPPLS.gamma_search_rhos(model, 1) == CPPLS.gamma_search_rhos(model)[:, 1]
+    @test size(CPPLS.gammas(model)) == (length(gamma_candidates), 1)
+    @test size(CPPLS.rhos(model)) == (length(gamma_candidates), 1)
+    @test CPPLS.gammas(model, 1) == CPPLS.gammas(model)[:, 1]
+    @test CPPLS.rhos(model, 1) == CPPLS.rhos(model)[:, 1]
 
     for k = 1:1
-        best_idx = argmax(CPPLS.gamma_search_rhos(model, k))
-        @test model.gamma[k] ≈ CPPLS.gamma_search_gammas(model, k)[best_idx]
-        @test model.rho[k] ≈ CPPLS.gamma_search_rhos(model, k)[best_idx]
+        best_idx = argmax(CPPLS.rhos(model, k))
+        @test model.gamma[k] ≈ CPPLS.gammas(model, k)[best_idx]
+        @test model.rho[k] ≈ CPPLS.rhos(model, k)[best_idx]
     end
 end
 

@@ -49,6 +49,7 @@ export projectionmatrix
 export pvalue
 export residuals
 export responselabels
+export rhos
 export sampleclasses
 export samplelabels
 export scoreplot
@@ -63,8 +64,8 @@ export predictions_to_onehot
 export predictions_to_sampleclasses
 export labels_to_one_hot
 export one_hot_to_labels
-export gamma_search_gammas
-export gamma_search_rhos
+export gammas
+
 export analysis_mode
 
 

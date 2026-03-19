@@ -21,7 +21,7 @@ optimum. The package ships with the helper function
 for example `intervalize(0:0.01:1)`.
 
 That distinction matters for diagnostics. The stored values returned by
-`gamma_search_gammas(model, lv)` and `gamma_search_rhos(model, lv)` contain one point per
+`gammas(model, lv)` and `rhos(model, lv)` contain one point per
 candidate supplied to `gamma`. For a grid, that gives a sampled view of the objective
 curve across gamma. For `intervalize(...)`, it gives one selected optimum per
 interval, which is useful for comparing intervals but is not itself a dense landscape
@@ -285,8 +285,8 @@ weighted_yaux_grid_model = fit(
     Y_aux=Y_aux
 )
 
-weighted_yaux_grid_gammas = gamma_search_gammas(weighted_yaux_grid_model, 1)
-weighted_yaux_grid_rhos = gamma_search_rhos(weighted_yaux_grid_model, 1)
+weighted_yaux_grid_gammas = gammas(weighted_yaux_grid_model, 1)
+weighted_yaux_grid_rhos = rhos(weighted_yaux_grid_model, 1)
 selected_weighted_yaux_grid_gamma = gamma(weighted_yaux_grid_model)[1]
 
 println("Best gamma with obs_weights and Y_aux: ", selected_weighted_yaux_grid_gamma)
@@ -332,8 +332,8 @@ weighted_yaux_interval_model = fit(
     Y_aux=Y_aux
 )
 
-weighted_yaux_interval_gammas = gamma_search_gammas(weighted_yaux_interval_model, 1)
-weighted_yaux_interval_rhos = gamma_search_rhos(weighted_yaux_interval_model, 1)
+weighted_yaux_interval_gammas = gammas(weighted_yaux_interval_model, 1)
+weighted_yaux_interval_rhos = rhos(weighted_yaux_interval_model, 1)
 selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_model)[1]
 
 println("Interval-optimized gamma with obs_weights and Y_aux: ", selected_weighted_yaux_gamma)
@@ -392,9 +392,9 @@ m_weighted_yaux_best = fit(
 )
 
 selected_weighted_yaux_rhos = [
-    gamma_search_rhos(m_weighted_yaux_best, lv)[findfirst(
+    rhos(m_weighted_yaux_best, lv)[findfirst(
         ==(gamma(m_weighted_yaux_best)[lv]),
-        gamma_search_gammas(m_weighted_yaux_best, lv),
+        gammas(m_weighted_yaux_best, lv),
     )]
     for lv in 1:2
 ]

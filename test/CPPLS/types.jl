@@ -3,12 +3,12 @@
         (
             Float32,
             Int8,
-            (; n_samples = 5, n_predictors = 4, n_responses = 3, n_components = 2),
+            (; n_samples = 5, n_predictors = 4, n_responses = 3, ncomponents = 2),
         ),
         (
             Float64,
             Int16,
-            (; n_samples = 3, n_predictors = 2, n_responses = 2, n_components = 1),
+            (; n_samples = 3, n_predictors = 2, n_responses = 2, ncomponents = 1),
         ),
     ]
 
@@ -16,71 +16,71 @@
         n_samples = dims.n_samples
         n_predictors = dims.n_predictors
         n_responses = dims.n_responses
-        n_components = dims.n_components
+        ncomponents = dims.ncomponents
 
         B = reshape(
-            T_el.(1:(n_predictors*n_responses*n_components)),
+            T_el.(1:(n_predictors*n_responses*ncomponents)),
             n_predictors,
             n_responses,
-            n_components,
+            ncomponents,
         )
-        T_scores = reshape(T_el.(1:(n_samples*n_components)), n_samples, n_components)
-        P = reshape(T_el.(1:(n_predictors*n_components)), n_predictors, n_components)
+        T_scores = reshape(T_el.(1:(n_samples*ncomponents)), n_samples, ncomponents)
+        P = reshape(T_el.(1:(n_predictors*ncomponents)), n_predictors, ncomponents)
         W_comp =
-            reshape(T_el.(101:(100+n_predictors*n_components)), n_predictors, n_components)
-        U = reshape(T_el.(1:(n_samples*n_components)), n_samples, n_components)
+            reshape(T_el.(101:(100+n_predictors*ncomponents)), n_predictors, ncomponents)
+        U = reshape(T_el.(1:(n_samples*ncomponents)), n_samples, ncomponents)
         C =
-            reshape(T_el.(51:(50+n_responses*n_components)), n_responses, n_components)
+            reshape(T_el.(51:(50+n_responses*ncomponents)), n_responses, ncomponents)
         R =
-            reshape(T_el.(11:(10+n_predictors*n_components)), n_predictors, n_components)
+            reshape(T_el.(11:(10+n_predictors*ncomponents)), n_predictors, ncomponents)
         X_bar = reshape(T_el.(1:n_predictors), 1, n_predictors)
         Y_bar = reshape(T_el.(1:n_responses), 1, n_responses)
         Y_hat = reshape(
-            T_el.(1:(n_samples*n_responses*n_components)),
+            T_el.(1:(n_samples*n_responses*ncomponents)),
             n_samples,
             n_responses,
-            n_components,
+            ncomponents,
         )
         F = reshape(
-            T_el.(401:(400+n_samples*n_responses*n_components)),
+            T_el.(401:(400+n_samples*n_responses*ncomponents)),
             n_samples,
             n_responses,
-            n_components,
+            ncomponents,
         )
-        X_var = T_el.(1:n_components) ./ T_el(n_components + 1)
+        X_var = T_el.(1:ncomponents) ./ T_el(ncomponents + 1)
         X_var_total = T_el(5.0)
-        gamma = T_el.(reverse(1:n_components)) ./ T_el(n_components + 2)
-        rho = T_el.(1:n_components) ./ T_el(n_components + 3)
+        gamma = T_el.(reverse(1:ncomponents)) ./ T_el(ncomponents + 2)
+        rho = T_el.(1:ncomponents) ./ T_el(ncomponents + 3)
         gamma_search_gammas = reshape(
-            T_el.(501:(500+n_components)),
+            T_el.(501:(500+ncomponents)),
             1,
-            n_components,
+            ncomponents,
         )
         gamma_search_rhos = reshape(
-            T_el.(601:(600+n_components)),
+            T_el.(601:(600+ncomponents)),
             1,
-            n_components,
+            ncomponents,
         )
         zero_mask =
-            reshape(Tmask.(0:(n_components*n_predictors-1)), n_components, n_predictors)
+            reshape(Tmask.(0:(ncomponents*n_predictors-1)), ncomponents, n_predictors)
         a =
-            reshape(T_el.(21:(20+n_responses*n_components)), n_responses, n_components)
+            reshape(T_el.(21:(20+n_responses*ncomponents)), n_responses, ncomponents)
         b = reshape(
-            T_el.(301:(300+n_responses*n_components)),
+            T_el.(301:(300+n_responses*ncomponents)),
             n_responses,
-            n_components,
+            ncomponents,
         )
         W0 = reshape(
-            T_el.(701:(700+n_predictors*n_responses*n_components)),
+            T_el.(701:(700+n_predictors*n_responses*ncomponents)),
             n_predictors,
             n_responses,
-            n_components,
+            ncomponents,
         )
         Z = reshape(
-            T_el.(901:(900+n_samples*n_responses*n_components)),
+            T_el.(901:(900+n_samples*n_responses*ncomponents)),
             n_samples,
             n_responses,
-            n_components,
+            ncomponents,
         )
         samplelabels = ["sample_$i" for i = 1:n_samples]
         predictorlabels = collect(1:n_predictors)
@@ -152,14 +152,14 @@
         @test cppls.analysis_mode === :regression
         @test cppls.sampleclasses === nothing
         @test size(cppls.B) ==
-              (n_predictors, n_responses, n_components)
-        @test size(cppls.Y_hat) == (n_samples, n_responses, n_components)
-        @test size(cppls.F) == (n_samples, n_responses, n_components)
-        @test size(cppls.T) == (n_samples, n_components)
-        @test size(cppls.U) == (n_samples, n_components)
+              (n_predictors, n_responses, ncomponents)
+        @test size(cppls.Y_hat) == (n_samples, n_responses, ncomponents)
+        @test size(cppls.F) == (n_samples, n_responses, ncomponents)
+        @test size(cppls.T) == (n_samples, ncomponents)
+        @test size(cppls.U) == (n_samples, ncomponents)
         @test size(cppls.X_bar) == (1, n_predictors)
         @test size(cppls.Y_bar) == (1, n_responses)
-        @test size(cppls.Z) == (n_samples, n_responses, n_components)
+        @test size(cppls.Z) == (n_samples, n_responses, ncomponents)
 
         cppls_default = CPPLS.CPPLSFit(
             B,
@@ -227,20 +227,20 @@ end
 
 @testset "CPPLSFitLight keeps prediction essentials" begin
     configs = [
-        (Float32, (; n_predictors = 3, n_responses = 2, n_components = 1)),
-        (Float64, (; n_predictors = 4, n_responses = 3, n_components = 2)),
+        (Float32, (; n_predictors = 3, n_responses = 2, ncomponents = 1)),
+        (Float64, (; n_predictors = 4, n_responses = 3, ncomponents = 2)),
     ]
 
     for (T, dims) in configs
         n_predictors = dims.n_predictors
         n_responses = dims.n_responses
-        n_components = dims.n_components
+        ncomponents = dims.ncomponents
 
         B = reshape(
-            T.(1:(n_predictors*n_responses*n_components)),
+            T.(1:(n_predictors*n_responses*ncomponents)),
             n_predictors,
             n_responses,
-            n_components,
+            ncomponents,
         )
         X_bar = reshape(T.(1:n_predictors), 1, n_predictors)
         Y_bar = reshape(T.(1:n_responses) .+ T(100), 1, n_responses)
@@ -255,7 +255,7 @@ end
         @test light_model.Y_bar === Y_bar
         @test light_model.analysis_mode === :regression
         @test size(light_model.B) ==
-              (n_predictors, n_responses, n_components)
+              (n_predictors, n_responses, ncomponents)
         @test size(light_model.X_bar) == (1, n_predictors)
         @test size(light_model.Y_bar) == (1, n_responses)
         light_da = CPPLSFitLight(B, X_bar, Y_bar, :discriminant)
@@ -265,13 +265,13 @@ end
 
 @testset "CPPLSSpec stores hyperparameters" begin
     spec = CPPLS.CPPLSSpec()
-    @test spec.n_components == 2
+    @test spec.ncomponents == 2
     @test spec.gamma == 0.5
     @test spec.center === true
     @test spec.analysis_mode === :regression
 
     tuned = CPPLS.CPPLSSpec(
-        n_components = 3,
+        ncomponents = 3,
         gamma = (0.2, 0.8),
         center = false,
         X_tolerance = 1e-8,
@@ -281,24 +281,24 @@ end
         gamma_abs_tol = 1e-9,
         analysis_mode = :discriminant,
     )
-    @test tuned.n_components == 3
+    @test tuned.ncomponents == 3
     @test tuned.gamma == (0.2, 0.8)
     @test tuned.center === false
     @test tuned.analysis_mode === :discriminant
 
-    @test_throws ArgumentError CPPLS.CPPLSSpec(n_components = 0)
+    @test_throws ArgumentError CPPLS.CPPLSSpec(ncomponents = 0)
     @test_throws ArgumentError CPPLS.CPPLSSpec(analysis_mode = :unsupported)
 end
 
 @testset "custom show methods summarize CPPLS types" begin
-    spec = CPPLS.CPPLSSpec(n_components = 3, gamma = (0.2, 0.8), analysis_mode = :discriminant)
+    spec = CPPLS.CPPLSSpec(ncomponents = 3, gamma = (0.2, 0.8), analysis_mode = :discriminant)
     spec_inline = sprint(show, spec)
     spec_plain = sprint(io -> show(io, MIME"text/plain"(), spec))
     @test occursin("CPPLSSpec(", spec_inline)
-    @test occursin("n_components=3", spec_inline)
+    @test occursin("ncomponents=3", spec_inline)
     @test occursin("analysis_mode=discriminant", spec_inline)
     @test occursin("CPPLSSpec", spec_plain)
-    @test occursin("n_components: 3", spec_plain)
+    @test occursin("ncomponents: 3", spec_plain)
     @test occursin("analysis_mode: discriminant", spec_plain)
 
     B = reshape(Float64.(1:8), 2, 2, 2)

@@ -69,7 +69,7 @@ end
     cppls_prepare_data(
         X::AbstractMatrix{<:Real}, 
         Y_prim::AbstractMatrix{<:Real}, 
-        n_components::Integer, 
+        ncomponents::Integer, 
         Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
         center::Bool
@@ -82,7 +82,7 @@ arrays needed by the fit routine.
 function cppls_prepare_data(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
-    n_components::Integer,
+    ncomponents::Integer,
     Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     center::Bool
@@ -116,11 +116,11 @@ function cppls_prepare_data(
     end
 
     X_def = copy(X)
-    W_comp = Matrix{Float64}(undef, n_features_X, n_components)
-    P = Matrix{Float64}(undef, n_features_X, n_components)
-    C = Matrix{Float64}(undef, n_targets_Y, n_components)
-    zero_mask = Matrix{Bool}(undef, (n_components, n_features_X))
-    B = Array{Float64}(undef, (n_features_X, n_targets_Y, n_components))
+    W_comp = Matrix{Float64}(undef, n_features_X, ncomponents)
+    P = Matrix{Float64}(undef, n_features_X, ncomponents)
+    C = Matrix{Float64}(undef, n_targets_Y, ncomponents)
+    zero_mask = Matrix{Bool}(undef, (ncomponents, n_features_X))
+    B = Array{Float64}(undef, (n_features_X, n_targets_Y, ncomponents))
 
     (X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B,
         n_samples_X, n_targets_Y)

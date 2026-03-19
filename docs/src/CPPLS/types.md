@@ -13,11 +13,11 @@ typically not accessed directly by users.
 
 The package also provides getters for fields that are commonly useful in downstream
 work. For [`CPPLSSpec`](@ref), the getters are [`analysis_mode`](@ref), [`gamma`](@ref), 
-and [`n_components`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
+and [`ncomponents`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
 [`analysis_mode`](@ref), [`fitted`](@ref), [`gamma`](@ref),
 [`gamma_search_gammas`](@ref), [`gamma_search_rhos`](@ref),
 [`predictorlabels`](@ref), [`responselabels`](@ref), [`residuals`](@ref),
-[`sampleclasses`](@ref), [`samplelabels`](@ref), and [`X_scores`](@ref).
+[`sampleclasses`](@ref), [`samplelabels`](@ref), and [`xscores`](@ref).
 
 Both container types expose additional named fields. You can inspect them with
 `names(spec)` or `names(model)` and access them via dot notation, for example
@@ -30,7 +30,7 @@ Both container types expose additional named fields. You can inspect them with
 CPPLS.CPPLSSpec
 CPPLS.analysis_mode(::CPPLSSpec)
 CPPLS.gamma(::CPPLSSpec)
-CPPLS.n_components(::CPPLSSpec)
+CPPLS.ncomponents(::CPPLSSpec)
 ```
 
 ## AbstractCPPLSFit
@@ -39,8 +39,8 @@ CPPLS.n_components(::CPPLSSpec)
 CPPLS.AbstractCPPLSFit
 StatsAPI.coef(model::AbstractCPPLSFit) 
 CPPLS.regression_coefficients(::AbstractCPPLSFit)
-CPPLS.X_bar(::AbstractCPPLSFit)
-CPPLS.Y_bar(::AbstractCPPLSFit)
+CPPLS.xbar(::AbstractCPPLSFit)
+CPPLS.ybar(::AbstractCPPLSFit)
 ```
 
 ## CPPLSFit
@@ -58,7 +58,7 @@ CPPLS.responselabels(::CPPLSFit)
 StatsAPI.residuals(::CPPLSFit)
 CPPLS.sampleclasses(::CPPLSFit)
 CPPLS.samplelabels(::CPPLSFit)
-CPPLS.X_scores(::CPPLSFit)
+CPPLS.xscores(::CPPLSFit)
 ```
 
 ## CPPLSFitLight

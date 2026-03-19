@@ -2,11 +2,11 @@
     CPPLSSpec{T}
 
 Model specification passed to `fit`. A `CPPLSSpec` stores the user-controlled settings
-for CPPLS fitting, most importantly `n_components`, `gamma`, `center`, and
+for CPPLS fitting, most importantly `ncomponents`, `gamma`, `center`, and
 `analysis_mode`.
 """
 struct CPPLSSpec{T}
-    n_components::Int
+    ncomponents::Int
     gamma::T
     center::Bool
     X_tolerance::Float64
@@ -19,7 +19,7 @@ end
 
 """
     CPPLSSpec(; 
-        n_components::Integer=2, 
+        ncomponents::Integer=2, 
         gamma=0.5, 
         center::Bool=true, 
         X_tolerance::Real=1e-12, 
@@ -31,11 +31,11 @@ end
     )
 
 Construct a model specification for `fit`. The most commonly adjusted settings are
-`n_components`, `gamma`, `center`, and `analysis_mode`. `gamma` may be a fixed value, a
+`ncomponents`, `gamma`, `center`, and `analysis_mode`. `gamma` may be a fixed value, a
 `(lo, hi)` interval, or a collection of such candidates used during fitting.
 """
 function CPPLSSpec(;
-    n_components::T1=2,
+    ncomponents::T1=2,
     gamma=0.5,
     center::Bool=true,
     X_tolerance::T2=1e-12,
@@ -53,12 +53,12 @@ function CPPLSSpec(;
         T6<:Real
     }
 
-    n_components > 0 || throw(ArgumentError("n_components must be greater than zero"))
+    ncomponents > 0 || throw(ArgumentError("ncomponents must be greater than zero"))
     analysis_mode in (:regression, :discriminant) || throw(ArgumentError(
             "analysis_mode must be :regression or :discriminant, got $analysis_mode"))
 
     CPPLSSpec(
-        Int(n_components),
+        Int(ncomponents),
         gamma,
         center,
         Float64(X_tolerance),
@@ -72,7 +72,7 @@ end
 
 function Base.show(io::IO, spec::CPPLSSpec)
     print(io, "CPPLSSpec(",
-        "n_components=", spec.n_components,
+        "ncomponents=", spec.ncomponents,
         ", gamma=", repr(spec.gamma),
         ", center=", spec.center,
         ", analysis_mode=", spec.analysis_mode,
@@ -81,7 +81,7 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSSpec)
     println(io, "CPPLSSpec")
-    println(io, "  n_components: ", spec.n_components)
+    println(io, "  ncomponents: ", spec.ncomponents)
     println(io, "  gamma: ", repr(spec.gamma))
     println(io, "  center: ", spec.center)
     print(io, "  analysis_mode: ", spec.analysis_mode)
@@ -95,11 +95,11 @@ Return the gamma requested in the specification.
 gamma(spec::CPPLSSpec) = spec.gamma
 
 """
-    n_components(spec::CPPLSSpec)
+    ncomponents(spec::CPPLSSpec)
 
 Return the number of components requested in the specification.
 """
-n_components(spec::CPPLSSpec) = spec.n_components
+ncomponents(spec::CPPLSSpec) = spec.ncomponents
 
 """
     analysis_mode(spec::CPPLSSpec)
@@ -118,12 +118,12 @@ abstract type AbstractCPPLSFit end
 
 """
     coef(model::AbstractCPPLSFit)
-    coef(model::AbstractCPPLSFit, n_components::Integer)
+    coef(model::AbstractCPPLSFit, ncomponents::Integer)
 
 Return the regression coefficient matrix for the final (or requested) number of components.
 """
 coef(model::AbstractCPPLSFit) = @views model.B[:, :, end]
-coef(model::AbstractCPPLSFit, n_components::Integer) = @views model.B[:, :, n_components]
+coef(model::AbstractCPPLSFit, ncomponents::Integer) = @views model.B[:, :, ncomponents]
 
 """
     regression_coefficients(model::AbstractCPPLSFit)
@@ -133,18 +133,18 @@ Return the regression coefficients for the fitted model.
 regression_coefficients(model::AbstractCPPLSFit) = model.B
 
 """
-    X_bar(cpplsfit::AbstractCPPLSFit)
+    xbar(cpplsfit::AbstractCPPLSFit)
 
 Return the predictor mean vector for the fitted model.
 """
-X_bar(cpplsfit::AbstractCPPLSFit) = cpplsfit.X_bar
+xbar(cpplsfit::AbstractCPPLSFit) = cpplsfit.X_bar
 
 """
-    Y_bar(cpplsfit::AbstractCPPLSFit)
+    ybar(cpplsfit::AbstractCPPLSFit)
 
 Return the response mean vector for the fitted model.
 """
-Y_bar(cpplsfit::AbstractCPPLSFit) = cpplsfit.Y_bar
+ybar(cpplsfit::AbstractCPPLSFit) = cpplsfit.Y_bar
 
 """
     CPPLSFit{T1, T2}
@@ -154,7 +154,7 @@ together with the intermediate quantities needed for diagnostics, projections, a
 plotting.
 
 Most users will work with a `CPPLSFit` through `predict`, `project`, `coef`, `fitted`,
-`residuals`, `X_scores`, and the various label getters rather than by accessing fields
+`residuals`, `xscores`, and the various label getters rather than by accessing fields
 directly.
 """
 struct CPPLSFit{
@@ -274,12 +274,12 @@ analysis_mode(cpplsfit::CPPLSFit) = cpplsfit.analysis_mode
 
 """
     fitted(model::CPPLSFit)
-    fitted(model::CPPLSFit, n_components::Integer)
+    fitted(model::CPPLSFit, ncomponents::Integer)
 
 Return the fitted response matrix for the final (or requested) number of components.
 """
 fitted(model::CPPLSFit) = @views model.Y_hat[:, :, end]
-fitted(model::CPPLSFit, n_components::Integer) = @views model.Y_hat[:, :, n_components]
+fitted(model::CPPLSFit, ncomponents::Integer) = @views model.Y_hat[:, :, ncomponents]
 
 """
     gamma(cpplsfit::CPPLSFit)
@@ -326,12 +326,12 @@ projectionmatrix(cpplsfit::CPPLSFit) = cpplsfit.R
 
 """
     residuals(model::CPPLSFit)
-    residuals(model::CPPLSFit, n_components::Integer)
+    residuals(model::CPPLSFit, ncomponents::Integer)
 
 Return the response residual matrix for the final (or requested) number of components.
 """
 residuals(model::CPPLSFit) = @views model.F[:, :, end]
-residuals(model::CPPLSFit, n_components::Integer) = @views model.F[:, :, n_components]
+residuals(model::CPPLSFit, ncomponents::Integer) = @views model.F[:, :, ncomponents]
 
 """
     responselabels(cpplsfit::CPPLSFit)
@@ -356,11 +356,11 @@ Return the stored sample labels for the fitted model.
 samplelabels(cpplsfit::CPPLSFit) = cpplsfit.samplelabels
 
 """
-    X_scores(cpplsfit::CPPLSFit)
+    xscores(cpplsfit::CPPLSFit)
 
 Return the predictor score matrix `T` for the fitted model.
 """
-X_scores(cpplsfit::CPPLSFit) = cpplsfit.T
+xscores(cpplsfit::CPPLSFit) = cpplsfit.T
 
 """
     CPPLSFitLight{T}

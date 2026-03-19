@@ -71,7 +71,7 @@ function orient_like(reference_scores, reference_classes, scores; reference_clas
 end
 
 basic_spec = CPPLSSpec(
-	n_components=2,
+	ncomponents=2,
 	gamma=0.5,
 	analysis_mode=:discriminant
 )
@@ -99,7 +99,7 @@ labels_holdout = samplelabels[holdout_idx]
 plot_classes_holdout = ["projected $class" for class in classes_holdout]
 
 advanced_spec = CPPLSSpec(
-	n_components=2,
+	ncomponents=2,
 	gamma=intervalize(0:0.25:1),
 	analysis_mode=:discriminant
 )
@@ -113,8 +113,8 @@ advanced_model = fit(
 	samplelabels=labels_train
 )
 
-train_scores = orient_scores(X_scores(advanced_model)[:, 1:2], classes_train)
-heldout_scores = orient_like(X_scores(advanced_model)[:, 1:2], classes_train,
+train_scores = orient_scores(xscores(advanced_model)[:, 1:2], classes_train)
+heldout_scores = orient_like(xscores(advanced_model)[:, 1:2], classes_train,
 	project(advanced_model, X_holdout))
 nothing # hide
 ```

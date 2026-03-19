@@ -216,7 +216,7 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.n_components,
+        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -262,7 +262,7 @@ julia> X = reshape(collect(1.0:16.0), :, 1);
 
 julia> Y = reshape(2 .* vec(X) .+ 1, :, 1);
 
-julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:regression);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:regression);
 
 julia> scores, best_k = cvreg(
            X,
@@ -293,7 +293,7 @@ function cvreg(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.n_components,
+    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -346,7 +346,7 @@ function cvreg(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.n_components,
+    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -384,7 +384,7 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.n_components,
+        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -428,7 +428,7 @@ julia> X = reshape(collect(1.0:16.0), :, 1);
 
 julia> y = 2 .* vec(X) .+ 1;
 
-julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:regression);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:regression);
 
 julia> permutation_scores = permreg(
            X,
@@ -458,7 +458,7 @@ function permreg(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.n_components,
+    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -514,7 +514,7 @@ function permreg(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.n_components,
+    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -554,7 +554,7 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.n_components,
+        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -608,7 +608,7 @@ julia> classes = repeat(["A", "B"], inner=6);
 
 julia> Y, responselabels = labels_to_one_hot(classes);
 
-julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
 
 julia> scores, best_k = cvda(
            X,
@@ -644,7 +644,7 @@ function cvda(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.n_components,
+    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -703,7 +703,7 @@ function cvda(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.n_components,
+    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -760,7 +760,7 @@ function cvda(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.n_components,
+    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -806,7 +806,7 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.n_components,
+        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -854,7 +854,7 @@ julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
 
 julia> classes = repeat(["A", "B"], inner=6);
 
-julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
 
 julia> permutation_scores = permda(
            X,
@@ -888,7 +888,7 @@ function permda(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.n_components,
+    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -950,7 +950,7 @@ function permda(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.n_components,
+    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -1009,7 +1009,7 @@ function permda(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.n_components,
+    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -1064,7 +1064,7 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.n_components,
+        max_components::Integer=spec.ncomponents,
         strata::Union{AbstractVector{<:Integer}, Nothing}=nothing,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
@@ -1096,7 +1096,7 @@ Arguments
 
 Keyword arguments
 - `spec`: CPPLS model specification used for every fit. During inner optimization, the
-    routine evaluates component counts `1:max_components` by replacing `spec.n_components`
+    routine evaluates component counts `1:max_components` by replacing `spec.ncomponents`
     on temporary copies of `spec`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
     sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Y_aux`, and
@@ -1132,9 +1132,9 @@ Keyword arguments
     cannot exceed `num_inner_folds`.
 - `max_components`: largest latent-variable count considered in the inner loop.
     This value defines the search range `1:max_components` independently of the
-    `n_components` stored in `spec`. If `max_components > spec.n_components`, the inner
+    `ncomponents` stored in `spec`. If `max_components > spec.ncomponents`, the inner
     loop and the final outer-fold fit still evaluate those larger component counts by
-    working on temporary copies of `spec` with `n_components` replaced accordingly.
+    working on temporary copies of `spec` with `ncomponents` replaced accordingly.
 - `strata`: optional integer labels used to build stratified folds. When omitted, folds
     are created by shuffling sample indices without stratification.
 - `reshuffle_outer_folds`: if `true`, regenerate the outer folds on each repeat; if
@@ -1193,7 +1193,7 @@ julia> Y, responselabels = labels_to_one_hot(classes)
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
 
@@ -1239,7 +1239,7 @@ function nestedcv(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.n_components,
+    max_components::T5=spec.ncomponents,
     strata::T6=nothing,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
@@ -1345,7 +1345,7 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.n_components,
+        max_components::Integer=spec.ncomponents,
         strata::Union{AbstractVector{<:Integer}, Nothing}=nothing,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
@@ -1417,7 +1417,7 @@ julia> Y, responselabels = labels_to_one_hot(classes);
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(one_hot_to_labels(Y_train));
 
@@ -1462,7 +1462,7 @@ function nestedcvperm(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.n_components,
+    max_components::T6=spec.ncomponents,
     strata::T7=nothing,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
@@ -1521,7 +1521,7 @@ end
         num_outer_folds_repeats::Integer=10 * num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.n_components,
+        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=true,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true
@@ -1549,7 +1549,7 @@ Arguments
 
 Keyword arguments
 - `spec`: CPPLS model specification used for every fit. During inner optimization, the
-    routine evaluates component counts `1:max_components` by replacing `spec.n_components`
+    routine evaluates component counts `1:max_components` by replacing `spec.ncomponents`
     on temporary copies of `spec`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
     sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Y_aux`, and
@@ -1573,7 +1573,7 @@ Keyword arguments
 - `num_inner_folds_repeats`: number of inner folds evaluated per outer split. This
     cannot exceed `num_inner_folds`.
 - `max_components`: largest latent-variable count considered in the inner loop. This
-    search limit is independent of `spec.n_components`; if it is larger, temporary copies
+    search limit is independent of `spec.ncomponents`; if it is larger, temporary copies
     of `spec` are used with the required component count.
 - `reshuffle_outer_folds`: if `true`, regenerate the outer folds on each repeat; if
     `false`, build one outer partition and reuse its folds. Since outlier scanning is
@@ -1610,7 +1610,7 @@ julia> classes = repeat(["A", "B"], inner=6);
 
 julia> Y, responselabels = labels_to_one_hot(classes);
 
-julia> spec = CPPLSSpec(n_components=1, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
 
 julia> out = outlierscan(
            X,
@@ -1646,7 +1646,7 @@ function outlierscan(
     num_outer_folds_repeats::T2=10 * num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=n_components(spec),
+    max_components::T5=ncomponents(spec),
     reshuffle_outer_folds::Bool=true,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true
@@ -2121,13 +2121,13 @@ function subset_matrix_like(
 end
 
 """
-    with_n_components(spec::CPPLSSpec, n_components::Integer)
+    with_n_components(spec::CPPLSSpec, ncomponents::Integer)
 
-Return a copy of `spec` with `n_components` replaced and all other fields preserved.
+Return a copy of `spec` with `ncomponents` replaced and all other fields preserved.
 """
-function with_n_components(spec::CPPLSSpec, n_components::Integer)
+function with_n_components(spec::CPPLSSpec, ncomponents::Integer)
     CPPLSSpec(
-        n_components=n_components, gamma=spec.gamma, center=spec.center,
+        ncomponents=ncomponents, gamma=spec.gamma, center=spec.center,
         X_tolerance=spec.X_tolerance,
         X_loading_weight_tolerance=spec.X_loading_weight_tolerance,
         t_squared_norm_tolerance=spec.t_squared_norm_tolerance,

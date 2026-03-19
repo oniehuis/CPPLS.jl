@@ -36,6 +36,7 @@ export fitted
 export gamma
 export intervalize
 export invfreqweights
+export ncomponents
 export nestedcv
 export nestedcvperm
 export outlierscan
@@ -51,6 +52,10 @@ export responselabels
 export sampleclasses
 export samplelabels
 export scoreplot
+export xbar
+export xscores
+export ybar
+
 
 export predictonehot
 export predictsampleclasses
@@ -60,11 +65,8 @@ export labels_to_one_hot
 export one_hot_to_labels
 export gamma_search_gammas
 export gamma_search_rhos
-export X_scores
-export X_bar
-export Y_bar
 export analysis_mode
-export n_components
+
 
 export nmc
 

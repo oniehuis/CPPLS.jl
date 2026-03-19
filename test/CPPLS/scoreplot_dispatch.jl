@@ -41,40 +41,40 @@ end
         n_samples = 2
         n_predictors = 2
         n_responses = 2
-        n_components = 2
+        ncomponents = 2
 
-        B = reshape(collect(1.0:(n_predictors*n_responses*n_components)),
-            n_predictors, n_responses, n_components)
-        T = reshape(collect(1.0:(n_samples*n_components)), n_samples, n_components)
-        P = reshape(collect(1.0:(n_predictors*n_components)), n_predictors, n_components)
-        W_comp = reshape(collect(10.0:(9+n_predictors*n_components)),
-            n_predictors, n_components)
-        U = reshape(collect(1.0:(n_samples*n_components)), n_samples, n_components)
-        C = reshape(collect(5.0:(4+n_responses*n_components)),
-            n_responses, n_components)
-        R = reshape(collect(2.0:(1+n_predictors*n_components)),
-            n_predictors, n_components)
+        B = reshape(collect(1.0:(n_predictors*n_responses*ncomponents)),
+            n_predictors, n_responses, ncomponents)
+        T = reshape(collect(1.0:(n_samples*ncomponents)), n_samples, ncomponents)
+        P = reshape(collect(1.0:(n_predictors*ncomponents)), n_predictors, ncomponents)
+        W_comp = reshape(collect(10.0:(9+n_predictors*ncomponents)),
+            n_predictors, ncomponents)
+        U = reshape(collect(1.0:(n_samples*ncomponents)), n_samples, ncomponents)
+        C = reshape(collect(5.0:(4+n_responses*ncomponents)),
+            n_responses, ncomponents)
+        R = reshape(collect(2.0:(1+n_predictors*ncomponents)),
+            n_predictors, ncomponents)
         X_bar = reshape(collect(1.0:n_predictors), 1, n_predictors)
         Y_bar = reshape(collect(1.0:n_responses), 1, n_responses)
-        Y_hat = reshape(collect(1.0:(n_samples*n_responses*n_components)),
-            n_samples, n_responses, n_components)
-        F = reshape(collect(11.0:(10+n_samples*n_responses*n_components)),
-            n_samples, n_responses, n_components)
+        Y_hat = reshape(collect(1.0:(n_samples*n_responses*ncomponents)),
+            n_samples, n_responses, ncomponents)
+        F = reshape(collect(11.0:(10+n_samples*n_responses*ncomponents)),
+            n_samples, n_responses, ncomponents)
         X_var = [0.5, 0.25]
         X_var_total = 1.0
         gamma = [0.7, 0.6]
         rho = [0.8, 0.75]
-        gamma_search_gammas = reshape([0.7, 0.6], 1, n_components)
-        gamma_search_rhos = reshape([0.8, 0.75], 1, n_components)
-        zero_mask = reshape(Bool[false, true, true, false], n_components, n_predictors)
-        a = reshape(collect(3.0:(2+n_responses*n_components)),
-            n_responses, n_components)
-        b = reshape(collect(6.0:(5+n_responses*n_components)),
-            n_responses, n_components)
-        W0 = reshape(collect(7.0:(6+n_predictors*n_responses*n_components)),
-            n_predictors, n_responses, n_components)
-        Z = reshape(collect(9.0:(8+n_samples*n_responses*n_components)),
-            n_samples, n_responses, n_components)
+        gamma_search_gammas = reshape([0.7, 0.6], 1, ncomponents)
+        gamma_search_rhos = reshape([0.8, 0.75], 1, ncomponents)
+        zero_mask = reshape(Bool[false, true, true, false], ncomponents, n_predictors)
+        a = reshape(collect(3.0:(2+n_responses*ncomponents)),
+            n_responses, ncomponents)
+        b = reshape(collect(6.0:(5+n_responses*ncomponents)),
+            n_responses, ncomponents)
+        W0 = reshape(collect(7.0:(6+n_predictors*n_responses*ncomponents)),
+            n_predictors, n_responses, ncomponents)
+        Z = reshape(collect(9.0:(8+n_samples*n_responses*ncomponents)),
+            n_samples, n_responses, ncomponents)
 
         samplelabels = [SubString("a", 1:1), SubString("b", 1:1)]
         predictorlabels = ["x1", "x2"]

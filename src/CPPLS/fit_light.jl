@@ -2,7 +2,7 @@
     fit_cppls_light(
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real},
-        n_components::Int;
+        ncomponents::Int;
         gamma::Union{
             <:Real, 
             <:NTuple{2, <:Real}, 
@@ -26,7 +26,7 @@ parameter documentation.
 function fit_cppls_light(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
-    n_components::Int=2;
+    ncomponents::Int=2;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
     Y_aux::T3=nothing,
@@ -53,9 +53,9 @@ function fit_cppls_light(
 }
 
     X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B, _, _ = 
-        cppls_prepare_data(X, Y_prim, n_components, Y_aux, obs_weights, center)
+        cppls_prepare_data(X, Y_prim, ncomponents, Y_aux, obs_weights, center)
 
-    for i = 1:n_components
+    for i = 1:ncomponents
         wᵢ, _, _, _, _, _, _, _ = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
             gamma, gamma_rel_tol, gamma_abs_tol)
 
@@ -73,14 +73,14 @@ end
     fit_cppls_light(
         X::AbstractMatrix{<:Real}, 
         sampleclasses::AbstractCategoricalArray, 
-        n_components::Int=2; 
+        ncomponents::Int=2; 
         kwargs...
     )
     
     fit_cppls_light(
         X::AbstractMatrix{<:Real}, 
         sampleclasses::AbstractVector,
-        n_components:Int=2; 
+        ncomponents:Int=2; 
         kwargs...
     )
 
@@ -91,20 +91,20 @@ for the public entry point and full docs.
 function fit_cppls_light(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U},
-    n_components::Int=2;
+    ncomponents::Int=2;
     kwargs...
 ) where {T,R,V,C,U}
     
-    fit_cppls_light_from_sample_classes(X, sampleclasses, n_components; kwargs...)
+    fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
 end
 
 function fit_cppls_light(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector,
-    n_components::Int=2;
+    ncomponents::Int=2;
     kwargs...
 )
-    fit_cppls_light_from_sample_classes(X, sampleclasses, n_components; kwargs...)
+    fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
 end
 
 function fit_cppls_light(
@@ -117,7 +117,7 @@ function fit_cppls_light(
     analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
         "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_light_from_sample_classes(X, sampleclasses, model.n_components;
+    fit_cppls_light_from_sample_classes(X, sampleclasses, model.ncomponents;
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
@@ -130,14 +130,14 @@ function fit_cppls_light(
     analysis_mode(model) ≡ :discriminant || throw(ArgumentError(
         "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_light_from_sample_classes(X, sampleclasses, n_components(model);
+    fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 function fit_cppls_light_from_sample_classes(
     X::AbstractMatrix{<:Real},
     sampleclasses,
-    n_components::Int;
+    ncomponents::Int;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
     Y_aux::T3=nothing,
@@ -163,7 +163,7 @@ function fit_cppls_light_from_sample_classes(
 }
     Y_prim, _ = labels_to_one_hot(sampleclasses)
 
-    fit_cppls_light(X, Y_prim, n_components; gamma=gamma, obs_weights=obs_weights,
+    fit_cppls_light(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights,
         Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
@@ -174,7 +174,7 @@ end
     fit_cppls_light(
         X::AbstractMatrix{<:Real}, 
         y::AbstractVector{<:Real}, 
-        n_components::Int=2;
+        ncomponents::Int=2;
         kwargs...
     )
 
@@ -185,7 +185,7 @@ for the public entry point and full docs.
 function fit_cppls_light(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractVector{<:Real},
-    n_components::Int=2;
+    ncomponents::Int=2;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
     Y_aux::T3=nothing,
@@ -211,7 +211,7 @@ function fit_cppls_light(
 }
     Y_matrix = reshape(Y_prim, :, 1)
 
-    fit_cppls_light(X, Y_matrix, n_components; gamma=gamma, obs_weights=obs_weights,
+    fit_cppls_light(X, Y_matrix, ncomponents; gamma=gamma, obs_weights=obs_weights,
         Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
@@ -228,7 +228,7 @@ function fit_cppls_light(
     T1<:Union{AbstractVector{<:Real}, Nothing}, 
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
-    fit_cppls_light(X, Y_prim, n_components(model); 
+    fit_cppls_light(X, Y_prim, ncomponents(model); 
         cppls_model_fit_kwargs_with_mode(model)..., obs_weights=obs_weights, Y_aux=Y_aux)
 end
 
@@ -242,6 +242,6 @@ function fit_cppls_light(
     T1<:Union{AbstractVector{<:Real}, Nothing}, 
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
-    fit_cppls_light(X, Y_prim, n_components(model);
+    fit_cppls_light(X, Y_prim, ncomponents(model);
         cppls_model_fit_kwargs_with_mode(model)..., obs_weights=obs_weights, Y_aux=Y_aux)
 end

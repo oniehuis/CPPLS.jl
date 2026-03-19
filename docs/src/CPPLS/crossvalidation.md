@@ -159,7 +159,7 @@ function orient_scores(scores, classes; reference_class="major")
 end
 
 spec = CPPLSSpec(
-    n_components=2,
+    ncomponents=2,
     gamma=0.69,
     analysis_mode=:discriminant
 )
@@ -318,7 +318,7 @@ outlier_view_model = fit(
     samplelabels=samplelabels
 )
 
-outlier_view_scores = orient_scores(X_scores(outlier_view_model)[:, 1:2], classes)
+outlier_view_scores = orient_scores(xscores(outlier_view_model)[:, 1:2], classes)
 
 outlier_fig = Figure(size=figure_kwargs.size)
 outlier_ax = Axis(

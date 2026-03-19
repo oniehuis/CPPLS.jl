@@ -62,7 +62,7 @@ See also
 [`residuals`](@ref residuals(::CPPLSFit)),
 [`sampleclasses`](@ref sampleclasses(::CPPLSFit)),
 [`samplelabels`](@ref samplelabels(::CPPLSFit)),
-[`X_scores`](@ref X_scores(::CPPLSFit))
+[`xscores`](@ref xscores(::CPPLSFit))
 
 # Examples
 ```jldoctest
@@ -70,21 +70,21 @@ julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
 julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
 CPPLSSpec
-  n_components: 2
+  ncomponents: 2
   gamma: 0.01:0.01:1.0
   center: true
   analysis_mode: discriminant
 
 julia> model = fit(spec, X, classes; samplelabels=labels);
 
-julia> size(CPPLS.X_scores(model))
+julia> size(CPPLS.xscores(model))
 (100, 2)
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.75, analysis_mode=:discriminant)
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.75, analysis_mode=:discriminant)
 CPPLSSpec
-  n_components: 2
+  ncomponents: 2
   gamma: 0.75
   center: true
   analysis_mode: discriminant
@@ -131,7 +131,7 @@ end
     fit_cppls(
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real},
-        n_components::Integer=2;
+        ncomponents::Integer=2;
         kwargs...
     )
 
@@ -141,7 +141,7 @@ public entry point and full parameter documentation.
 function fit_cppls(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
-    n_components::Int=2;
+    ncomponents::Int=2;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
     Y_aux::T3=nothing,
@@ -184,7 +184,7 @@ function fit_cppls(
     n_predictors = size(X, 2)
 
     (X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B,
-        n_samples_X, n_targets_Y) = cppls_prepare_data(X, Y_prim, n_components, Y_aux,
+        n_samples_X, n_targets_Y) = cppls_prepare_data(X, Y_prim, ncomponents, Y_aux,
         obs_weights, center)
 
     samplelabels = default_sample_labels(validate_label_length(samplelabels, n_samples_X,
@@ -197,22 +197,22 @@ function fit_cppls(
             "responselabels must list class names for discriminant analysis"))
     end
 
-    T = Matrix{Float64}(undef, n_samples_X, n_components)
-    a = Matrix{Float64}(undef, size(Y, 2), n_components)
-    b = Matrix{Float64}(undef, n_targets_Y, n_components)
-    rho = Vector{Float64}(undef, n_components)
-    gamma_vals = fill(0.5, n_components)
+    T = Matrix{Float64}(undef, n_samples_X, ncomponents)
+    a = Matrix{Float64}(undef, size(Y, 2), ncomponents)
+    b = Matrix{Float64}(undef, n_targets_Y, ncomponents)
+    rho = Vector{Float64}(undef, ncomponents)
+    gamma_vals = fill(0.5, ncomponents)
     gamma_search_gammas = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
-        n_components)
+        ncomponents)
     gamma_search_rhos = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
-        n_components)
-    t_norms = Vector{Float64}(undef, n_components)
-    U = Matrix{Float64}(undef, n_samples_X, n_components)
-    Y_hat = Array{Float64}(undef, n_samples_X, n_targets_Y, n_components)
-    W0 = Array{Float64}(undef, n_predictors, size(Y, 2), n_components)
-    Z = Array{Float64}(undef, n_samples_X, size(Y, 2), n_components)
+        ncomponents)
+    t_norms = Vector{Float64}(undef, ncomponents)
+    U = Matrix{Float64}(undef, n_samples_X, ncomponents)
+    Y_hat = Array{Float64}(undef, n_samples_X, n_targets_Y, ncomponents)
+    W0 = Array{Float64}(undef, n_predictors, size(Y, 2), ncomponents)
+    Z = Array{Float64}(undef, n_samples_X, size(Y, 2), ncomponents)
 
-    for i = 1:n_components
+    for i = 1:ncomponents
         wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gamma_search_gammas[:, i],
         gamma_search_rhos[:, i] = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
             gamma, gamma_rel_tol, gamma_abs_tol)
@@ -264,7 +264,7 @@ function fit_cppls(
     T5<:AbstractVector,
     T6<:Union{AbstractVector, Nothing}  
 }
-    fit_cppls(X, Y_prim, n_components(model); cppls_model_fit_kwargs_with_mode(model)...,
+    fit_cppls(X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
         obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels,
         sampleclasses=sampleclasses)
@@ -274,7 +274,7 @@ end
     fit_cppls(
         X::AbstractMatrix{<:Real},
         y::AbstractVector{<:Real},
-        n_components::Int=2;
+        ncomponents::Int=2;
         kwargs...
     )
 
@@ -284,7 +284,7 @@ forwards into `fit_cppls`. Prefer `fit` for the public entry point and full docs
 function fit_cppls(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractVector{<:Real},
-    n_components::Int=2;
+    ncomponents::Int=2;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
     Y_aux::T3=nothing,
@@ -317,7 +317,7 @@ function fit_cppls(
 
     Y_matrix = reshape(Y_prim, :, 1)
 
-    fit_cppls(X, Y_matrix, n_components; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
+    fit_cppls(X, Y_matrix, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
@@ -343,13 +343,13 @@ function fit_cppls(
     T5<:AbstractVector
 }
 
-    fit_cppls(X, Y_prim, n_components(model); cppls_model_fit_kwargs_with_mode(model)...,
+    fit_cppls(X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
         obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels)
 end
 
 """
-    fit_cppls(X, sampleclasses::AbstractCategoricalArray, n_components::Int=2; kwargs...)
+    fit_cppls(X, sampleclasses::AbstractCategoricalArray, ncomponents::Int=2; kwargs...)
     fit_cppls(X, sampleclasses::AbstractVector, n_component::Int=2; kwargs...)
 
 Label-based convenience wrappers that convert class labels to a one-hot response matrix
@@ -358,19 +358,19 @@ and forward into `fit_cppls`. Prefer `fit` for the public entry point and full d
 function fit_cppls(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U},
-    n_components::Int=2;
+    ncomponents::Int=2;
     kwargs...
 ) where {T,R,V,C,U}
-    fit_cppls_from_sample_classes(X, sampleclasses, n_components; kwargs...)
+    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
 end
 
 function fit_cppls(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector,
-    n_components::Int=2;
+    ncomponents::Int=2;
     kwargs...
 )
-    fit_cppls_from_sample_classes(X, sampleclasses, n_components; kwargs...)
+    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
 end
 
 function fit_cppls(
@@ -382,7 +382,7 @@ function fit_cppls(
     model.analysis_mode ≡ :discriminant || throw(ArgumentError(
         "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(X, sampleclasses, n_components(model);
+    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
@@ -395,7 +395,7 @@ function fit_cppls(
     model.analysis_mode ≡ :discriminant || throw(ArgumentError(
         "CPPLSSpec must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(X, sampleclasses, n_components(model);
+    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
@@ -403,7 +403,7 @@ end
     fit_cppls_from_sample_classes(
         X::AbstractMatrix{<:Real},
         sampleclasses,
-        n_components::Int=2;
+        ncomponents::Int=2;
         kwargs...
     )
 
@@ -414,7 +414,7 @@ documentation and public entry points.
 function fit_cppls_from_sample_classes(
     X::AbstractMatrix{<:Real},
     sampleclasses,
-    n_components::Int=2;
+    ncomponents::Int=2;
     gamma::T1=0.5,
     obs_weights::T2=nothing,
     Y_aux::T3=nothing,
@@ -449,7 +449,7 @@ function fit_cppls_from_sample_classes(
 
     Y_prim, classes = labels_to_one_hot(sampleclasses)
 
-    fit_cppls(X, Y_prim, n_components; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
+    fit_cppls(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,

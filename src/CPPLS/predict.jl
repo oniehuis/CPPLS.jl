@@ -2,16 +2,16 @@
     predict(
         model::AbstractCPPLSFit, 
         X::AbstractMatrix{<:Real},
-        n_components::Integer=size(regression_coefficients(model), 3)
+        ncomponents::Integer=size(regression_coefficients(model), 3)
     ) -> Array{Float64, 3}
 
 Predict the response `Y` for each sample in `X` using the fitted model. Here, 
-`n_components` is the number of latent CPPLS components used to form the prediction.
-The result is a 3-dimensional array of size `(n_samples, n_targets, n_components)`:
+`ncomponents` is the number of latent CPPLS components used to form the prediction.
+The result is a 3-dimensional array of size `(n_samples, n_targets, ncomponents)`:
 the first dimension indexes samples, the second indexes response variables, and the
 third indexes the number of components used. In particular, `[:, :, i]` contains the
 prediction matrix obtained using the first `i` components. A `DimensionMismatch` is
-thrown if `n_components` exceeds the number of components stored in the model.
+thrown if `ncomponents` exceeds the number of components stored in the model.
 
 See also
 [`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit),
@@ -27,7 +27,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -42,20 +42,20 @@ julia> size(Ynew)
 function predict(
     model::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    n_components::Integer=size(regression_coefficients(model), 3)
+    ncomponents::Integer=size(regression_coefficients(model), 3)
 )
     n_samples_X = size(X, 1)
-    n_targets_Y = size(Y_bar(model), 2)
+    n_targets_Y = size(ybar(model), 2)
 
-    n_components ≤ size(regression_coefficients(model), 3) || throw(DimensionMismatch(
-        "n_components exceeds the number of components in the model"))
+    ncomponents ≤ size(regression_coefficients(model), 3) || throw(DimensionMismatch(
+        "ncomponents exceeds the number of components in the model"))
 
-    X_centered = X .- X_bar(model)
-    Y_hat = similar(X, n_samples_X, n_targets_Y, n_components)
+    X_centered = X .- xbar(model)
+    Y_hat = similar(X, n_samples_X, n_targets_Y, ncomponents)
 
-    for i = 1:n_components
+    for i = 1:ncomponents
         @views Y_hat[:, :, i] .= 
-            (X_centered * regression_coefficients(model)[:, :, i] .+ Y_bar(model))
+            (X_centered * regression_coefficients(model)[:, :, i] .+ ybar(model))
     end
 
     Y_hat
@@ -65,7 +65,7 @@ end
     predictonehot(
         model::AbstractCPPLSFit,
         X::AbstractMatrix{<:Real},
-        n_components::Integer=size(regression_coefficients(model), 3)
+        ncomponents::Integer=size(regression_coefficients(model), 3)
     ) -> Matrix{Int}
 
 Generate one-hot encoded class predictions from a fitted CPPLS model and predictors `X`.
@@ -86,7 +86,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -99,9 +99,9 @@ true
 function predictonehot(
     model::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    n_components::Integer=size(regression_coefficients(model), 3)
+    ncomponents::Integer=size(regression_coefficients(model), 3)
 )
-    predictions_to_onehot(model, predict(model, X, n_components))
+    predictions_to_onehot(model, predict(model, X, ncomponents))
 end
 
 """
@@ -129,7 +129,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -145,11 +145,11 @@ function predictions_to_onehot(
   model::AbstractCPPLSFit, 
   predictions::AbstractArray{<:Real, 3}
 )
-    n_components = size(predictions, 3)
+    ncomponents = size(predictions, 3)
     n_classes = size(predictions, 2)
 
     Y_pred_sum = sum(predictions, dims=3)[:, :, 1]
-    Y_pred_final = Y_pred_sum .- (n_components - 1) .* Y_bar(model)
+    Y_pred_final = Y_pred_sum .- (ncomponents - 1) .* ybar(model)
 
     predicted_class_indices = argmax.(eachrow(Y_pred_final))
 
@@ -160,7 +160,7 @@ end
     predictsampleclasses(
         model::CPPLSFit,
         X::AbstractMatrix{<:Real},
-        n_components::Integer=size(regression_coefficients(model), 3)
+        ncomponents::Integer=size(regression_coefficients(model), 3)
     ) -> AbstractVector
 
 Generate predicted class labels from a discriminant CPPLS model and predictors `X`.
@@ -180,7 +180,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -193,9 +193,9 @@ true
 function predictsampleclasses(
     model::CPPLSFit,
     X::AbstractMatrix{<:Real},
-    n_components::Integer=size(regression_coefficients(model), 3)
+    ncomponents::Integer=size(regression_coefficients(model), 3)
 )
-    predictions_to_sampleclasses(model, predict(model, X, n_components))
+    predictions_to_sampleclasses(model, predict(model, X, ncomponents))
 end
 
 """
@@ -223,7 +223,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
@@ -258,14 +258,14 @@ end
     project(model::CPPLSFit, X::AbstractMatrix{<:Real}) -> AbstractMatrix
 
 Compute latent component X scores by projecting new predictors `X` with a CPPLSFit
-model. The predictors are centered using `X_bar`(@ref CPPLS.X_bar^) and multiplied by 
+model. The predictors are centered using `xbar`(@ref CPPLS.xbar) and multiplied by 
 `projectionmatrix`(@ref CPPLS.projectionmatrix), returning an 
-`(n_samples, n_components)` X score matrix.
+`(n_samples, ncomponents)` X score matrix.
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`projectionmatrix`](@ref CPPLS.projectionmatrix),
-[`X_bar`](@ref CPPLS.X_bar)
+[`xbar`](@ref CPPLS.xbar)
 
 # Examples
 ```jldoctest
@@ -273,17 +273,17 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> spec = CPPLSSpec(n_components=2, gamma=0.5, analysis_mode=:discriminant);
+julia> spec = CPPLSSpec(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> model = fit(spec, X, classes);
 
 julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia> Xscores = project(model, Xnew);
+julia> xscores = project(model, Xnew);
 
-julia> size(Xscores)
+julia> size(xscores)
 (2, 2)
 ```
 """
 project(model::CPPLSFit, X::AbstractMatrix{<:Real}) = 
-    (X .- X_bar(model)) * projectionmatrix(model)
+    (X .- xbar(model)) * projectionmatrix(model)

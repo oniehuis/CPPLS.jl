@@ -136,7 +136,7 @@ sizes.
 class_weights = invfreqweights(classes)
 
 spec = CPPLSSpec(
-    n_components=2,
+    ncomponents=2,
     gamma=0.5,
     analysis_mode=:discriminant
 )
@@ -149,7 +149,7 @@ m_weighted = fit(
     samplelabels=samplelabels
 )
 
-scores_weighted = orient_scores(X_scores(m_weighted)[:, 1:2], classes)
+scores_weighted = orient_scores(xscores(m_weighted)[:, 1:2], classes)
 
 cppls_weighted_plt = scoreplot(
     samplelabels,
@@ -190,7 +190,7 @@ m_weighted_yaux = fit(
     samplelabels=samplelabels
 )
 
-scores_weighted_yaux = orient_scores(X_scores(m_weighted_yaux)[:, 1:2], classes)
+scores_weighted_yaux = orient_scores(xscores(m_weighted_yaux)[:, 1:2], classes)
 
 cppls_weighted_yaux_plt = scoreplot(
     samplelabels,
@@ -272,7 +272,7 @@ then use interval-based optimization to obtain a practical two-component fit.
 
 ```@example fit_da
 weighted_yaux_grid_spec = CPPLSSpec(
-    n_components=1,
+    ncomponents=1,
     gamma=0:0.001:1,
     analysis_mode=:discriminant
 )
@@ -319,7 +319,7 @@ winner.
 
 ```@example fit_da
 weighted_yaux_interval_spec = CPPLSSpec(
-    n_components=1,
+    ncomponents=1,
     gamma=intervalize(0:0.05:1),
     analysis_mode=:discriminant
 )
@@ -377,7 +377,7 @@ selection are all aligned with the same objective.
 
 ```@example fit_da
 weighted_yaux_best_spec = CPPLSSpec(
-    n_components=2,
+    ncomponents=2,
     gamma=intervalize(0:0.05:1),
     analysis_mode=:discriminant
 )
@@ -403,7 +403,7 @@ println("Selected gammas for the two latent variables: ",
     round.(gamma(m_weighted_yaux_best), digits=3))
 println("Associated rho^2: ", round.(selected_weighted_yaux_rhos, digits=6))
 
-scores_weighted_yaux_best = orient_scores(X_scores(m_weighted_yaux_best)[:, 1:2], classes)
+scores_weighted_yaux_best = orient_scores(xscores(m_weighted_yaux_best)[:, 1:2], classes)
 
 cppls_weighted_yaux_best_plt = scoreplot(
     samplelabels,

@@ -64,7 +64,7 @@ selected during fitting.
 
 ```@example project
 spec = CPPLSSpec(
-    n_components=2,
+    ncomponents=2,
     gamma=intervalize(0:0.25:1),
     analysis_mode=:discriminant
 )
@@ -92,7 +92,7 @@ wong = Makie.wong_colors()
 projected_plt = scoreplot(
     vcat(labels_train, labels_holdout),
     vcat(classes_train, plot_classes_holdout),
-    vcat(X_scores(model), heldout_scores);
+    vcat(xscores(model), heldout_scores);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores",

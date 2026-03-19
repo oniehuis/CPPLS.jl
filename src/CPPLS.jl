@@ -62,7 +62,6 @@ export xbar
 export xscores
 export ybar
 
-export predictions_to_sampleclasses
 export one_hot_to_labels
 
 export nmc

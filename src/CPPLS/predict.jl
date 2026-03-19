@@ -19,7 +19,7 @@ See also
 [`predictonehot`](@ref CPPLS.predictonehot), 
 [`onehot`](@ref CPPLS.onehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
-[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
 
 # Examples
 ```jldoctest
@@ -78,7 +78,7 @@ See also
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
-[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
 
 # Examples
 ```jldoctest
@@ -120,7 +120,7 @@ See also
 [`predict`](@ref CPPLS.predict), 
 [`predictonehot`](@ref CPPLS.predictonehot), 
 [`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
-[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
 [`onehot`](@ref CPPLS.onehot)
 
 # Examples
@@ -171,7 +171,7 @@ See also
 [`predict`](@ref CPPLS.predict), 
 [`predictonehot`](@ref CPPLS.predictonehot), 
 [`onehot`](@ref CPPLS.onehot), 
-[`predictions_to_sampleclasses`](@ref CPPLS.predictions_to_sampleclasses)
+[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
 [`regression_coefficients`](@ref CPPLS.regression_coefficients), 
 
 # Examples
@@ -195,11 +195,11 @@ function predictsampleclasses(
     X::AbstractMatrix{<:Real},
     ncomponents::Integer=size(regression_coefficients(model), 3)
 )
-    predictions_to_sampleclasses(model, predict(model, X, ncomponents))
+    predictsampleclasses(model, predict(model, X, ncomponents))
 end
 
 """
-    predictions_to_sampleclasses(
+    predictsampleclasses(
         model::CPPLSFit,
         predictions::AbstractArray{<:Real, 3}
     ) -> AbstractVector
@@ -231,16 +231,16 @@ julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> raw = predict(model, Xnew);
 
-julia> predictions_to_sampleclasses(model, raw) == ["major", "minor"]
+julia> predictsampleclasses(model, raw) == ["major", "minor"]
 true
 ```
 """
-function predictions_to_sampleclasses(
+function predictsampleclasses(
     model::CPPLSFit,
     predictions::AbstractArray{<:Real,3}
 )
     mode(model) ≡ :discriminant || throw(ArgumentError(
-        "predictions_to_sampleclasses is only defined for discriminant CPPLS models"))
+        "predictsampleclasses is only defined for discriminant CPPLS models"))
 
     isempty(responselabels(model)) && throw(ArgumentError(
         "responselabels must be provided to map predictions to class labels"))

@@ -7,7 +7,7 @@ values.
 
 For discriminant models, CPPLS also provides helpers for turning raw prediction
 arrays into class assignments. [`onehot`](@ref) and
-[`predictions_to_sampleclasses`](@ref) perform those conversions when you already
+[`predictsampleclasses`](@ref) perform those conversions when you already
 have the output of [`predict`](@ref). For convenience, [`predictonehot`](@ref) returns 
 one-hot encoded class predictions directly, and [`predictsampleclasses`](@ref) returns 
 predicted class labels.
@@ -126,14 +126,14 @@ Let us now see what the model predicts:
 
 ```@example project
 heldout_predictions = predict(model, X_holdout)
-predictions_to_sampleclasses(model, heldout_predictions)
+predictsampleclasses(model, heldout_predictions)
 ```
 
 As we can see, the predicted labels match the classes from which the samples were
 drawn. In this example, `heldout_predictions` is a three-dimensional array whose
 third dimension indexes the number of components used in the prediction.
 
-Instead of calling [`predict`](@ref) and [`predictions_to_sampleclasses`](@ref)
+Instead of calling [`predict`](@ref) and [`predictsampleclasses`](@ref)
 successively, we could have used the convenience wrapper
 [`predictsampleclasses`](@ref). More generally, [`predictonehot`](@ref) and
 [`predictsampleclasses`](@ref) collapse the full prediction tensor into class
@@ -146,10 +146,9 @@ predictsampleclasses(model, X_holdout)
 ## API
 
 ```@docs
+CPPLS.onehot
 CPPLS.predict
 CPPLS.predictonehot
 CPPLS.predictsampleclasses
-CPPLS.onehot
-CPPLS.predictions_to_sampleclasses
 CPPLS.project
 ```

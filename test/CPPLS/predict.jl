@@ -88,7 +88,7 @@ end
     @test result == expected
 end
 
-@testset "predictions_to_sampleclasses maps response labels" begin
+@testset "predictsampleclasses maps response labels" begin
     X = Float64[
         1 0
         0 1
@@ -104,11 +104,11 @@ end
             CPPLS.one_hot_to_labels(CPPLS.onehot(model, preds)),
         ]
 
-    @test CPPLS.predictions_to_sampleclasses(model, preds) == expected
+    @test CPPLS.predictsampleclasses(model, preds) == expected
     @test CPPLS.predictsampleclasses(model, X, 1) == expected
 end
 
-@testset "predictions_to_sampleclasses rejects regression models" begin
+@testset "predictsampleclasses rejects regression models" begin
     X = Float64[
         1 0
         0 1
@@ -118,7 +118,7 @@ end
     model = CPPLS.fit_cppls(X, y, 1; gamma = 0.5)
 
     preds = CPPLS.predict(model, X, 1)
-    @test_throws ArgumentError CPPLS.predictions_to_sampleclasses(model, preds)
+    @test_throws ArgumentError CPPLS.predictsampleclasses(model, preds)
 end
 
 @testset "project centers inputs before applying R" begin

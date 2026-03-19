@@ -68,7 +68,7 @@ See also
 ```jldoctest
 julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
-julia> labels, X, classes, Y_aux = load(file, "samplelabels", "X", "classes", "Y_aux");
+julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
 
 julia> spec = CPPLSSpec(n_components=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
 CPPLSSpec

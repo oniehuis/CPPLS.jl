@@ -38,7 +38,7 @@ using CairoMakie
 
 samplelabels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
-    "samplelabels",
+    "sample_labels",
     "X",
     "classes",
     "Y_aux"

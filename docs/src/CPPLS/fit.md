@@ -52,7 +52,7 @@ using Colors
 # Get custom colors
 orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
 
-data = load(
+sample_labels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
     "sample_labels",
     "X",
@@ -67,12 +67,12 @@ For comparison, we first fit a Principal Component Analysis (PCA) baseline to in
 separation of the two classes based on variance alone.
 
 ```@example fit_da
-M = fit(PCA, data["X"]'; maxoutdim=2)
-scores_pca = permutedims(predict(M, data["X"]'))
+M = fit(PCA, X'; maxoutdim=2)
+scores_pca = permutedims(predict(M, X'))
 
 pca_plt = scoreplot(
-    data["sample_labels"],
-    data["classes"],
+    sample_labels,
+    classes,
     scores_pca;
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
@@ -118,11 +118,11 @@ m_plain = fit(
     spec,
     X,
     classes;
-    samplelabels=samplelabels
+    samplelabels=sample_labels
 )
 
 cppls_plain_plt = scoreplot(
-    samplelabels,
+    sample_labels,
     classes,
     xscores(m_plain, 1:2);
     backend=:makie,
@@ -161,11 +161,11 @@ m_weighted = fit(
     X,
     classes;
     obs_weights=class_weights,
-    samplelabels=samplelabels
+    samplelabels=sample_labels
 )
 
 cppls_weighted_plt = scoreplot(
-    samplelabels,
+    sample_labels,
     classes,
     xscores(m_weighted, 1:2);
     backend=:makie,
@@ -188,9 +188,19 @@ less biased by class prevalence.
 
 At this point, the class separation already looks convincing. In this dataset, however, it 
 is driven not only by class-related variation but also by variation associated with 
-auxiliary responses. For example, suppose the samples in the two groups were analyzed using two different instruments, and the choice of instrument is correlated with group membership. If most majority-class samples were measured with instrument A and most minority-class samples with instrument B, then instrument effects could confound the class separation.
+auxiliary responses. For example, suppose the samples in the two groups were analyzed using 
+two different instruments, and the choice of instrument is correlated with group 
+membership. If most majority-class samples were measured with instrument A and most 
+minority-class samples with instrument B, then instrument effects could confound the class 
+separation.
 
-If such auxiliary information is available, we can provide it to the model so that it can account for this confounding structure. This is done using the optional keyword argument `Y_aux` in the [`fit`](@ref) function. Supplying auxiliary response information changes how the latent variables are estimated: instead of forcing all supervised structure into the class contrast, the model can also explicitly model variation associated with the auxiliary responses. This helps ensure that the separation between the classes is not driven by confounding factors, but rather by the traits of true interest.
+If such auxiliary information is available, we can provide it to the model so that it can 
+account for this confounding structure. This is done using the optional keyword argument 
+`Y_aux` in the [`fit`](@ref) function. Supplying auxiliary response information changes 
+how the latent variables are estimated: instead of forcing all supervised structure into 
+the class contrast, the model can also explicitly model variation associated with the 
+auxiliary responses. This helps ensure that the separation between the classes is not 
+driven by confounding factors, but rather by the traits of true interest.
 
 ```@example fit_da
 m_weighted_yaux = fit(
@@ -198,12 +208,12 @@ m_weighted_yaux = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Y_aux=Y_aux,                          # model auxiliary responses explicitly
-    samplelabels=samplelabels
+    Y_aux=Y_aux,
+    samplelabels=sample_labels
 )
 
 cppls_weighted_yaux_plt = scoreplot(
-    samplelabels,
+    sample_labels,
     classes,
     xscores(m_weighted_yaux, 1:2);
     backend=:makie,
@@ -230,8 +240,8 @@ aux_min, aux_max = extrema(aux)
 point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
 
 cppls_weighted_shaded_plt = scoreplot(
-    samplelabels,
-    fill("samples", length(samplelabels)),
+    sample_labels,
+    fill("samples", length(sample_labels)),
     xscores(m_weighted, 1:2);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
@@ -244,8 +254,8 @@ cppls_weighted_shaded_plt = scoreplot(
 save("cppls_weighted_shaded.svg", cppls_weighted_shaded_plt)
 
 cppls_weighted_yaux_shaded_plt = scoreplot(
-    samplelabels,
-    fill("samples", length(samplelabels)),
+    sample_labels,
+    fill("samples", length(sample_labels)),
     xscores(m_weighted_yaux, 1:2);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
@@ -263,21 +273,19 @@ nothing # hide
 
 ![](cppls_weighted_yaux_shaded.svg)
 
-In the first shaded score plot, fitted without auxiliary response information, the
-grayscale values are not randomly distributed across the score space. Instead, they
-are arranged roughly along the first latent dimension. This indicates that
-auxiliary signal correlated with class membership has leaked into the apparent class
-separation.
+In the first shaded score plot, fitted without auxiliary response information, the 
+grayscale values are not randomly distributed across the score space. Instead, they are 
+arranged roughly along the first latent dimension. This indicates that auxiliary signal 
+correlated with class membership has leaked into the apparent class separation.
 
 With the auxiliary response information included, as shown in the second plot, the
-auxiliary structure is much less pronounced in the fitted scores, as indicated by
-the grayscale values being more evenly distributed across the plot.
+auxiliary structure is much less pronounced in the fitted scores, as indicated by the 
+grayscale values being more evenly distributed across the plot.
 
 ### Choosing Gamma for the Weighted + Auxiliary Model
 
 With observation weights and `Y_aux` in place, we can now choose `gamma` for the model we
 actually want to interpret. 
-
 
 The `gamma` argument supports three distinct workflows. A fixed scalar such as `0.5`
 uses the same value for every latent variable. A grid such as `0:0.01:1` evaluates a
@@ -418,7 +426,7 @@ m_weighted_yaux_best = fit(
     classes;
     obs_weights=class_weights,
     Y_aux=Y_aux,
-    samplelabels=samplelabels
+    samplelabels=sample_labels
 )
 
 selected_weighted_yaux_rhos = [
@@ -434,7 +442,7 @@ println("Selected gammas for the two latent variables: ",
 println("Associated rho^2: ", round.(selected_weighted_yaux_rhos, digits=6))
 
 cppls_weighted_yaux_best_plt = scoreplot(
-    samplelabels,
+    sample_labels,
     classes,
     xscores(m_weighted_yaux_best, 1:2);
     backend=:makie,

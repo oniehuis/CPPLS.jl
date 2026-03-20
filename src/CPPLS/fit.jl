@@ -156,13 +156,15 @@ function fit_cppls(
     responselabels::T11=String[],
     mode::Symbol = :regression,
     sampleclasses::T12=nothing,
+    orient_scores::Bool=true,
+    reference_class::T13=nothing
 ) where {
     T1<:Union{
         <:Real, 
         <:NTuple{2, <:Real},
-        <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
+        <:AbstractVector{<:Union{Real, <:NTuple{2, <:Real}}}
     },
-    T2<:Union{AbstractVector{<:Real} ,Nothing},
+    T2<:Union{AbstractVector{<:Real}, Nothing},
     T3<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
     T4<:Real,
     T5<:Real,
@@ -172,7 +174,8 @@ function fit_cppls(
     T9<:AbstractVector,
     T10<:AbstractVector,
     T11<:AbstractVector,
-    T12<:Union{AbstractVector, Nothing}
+    T12<:Union{AbstractVector, Nothing},
+    T13<:Union{AbstractString, Nothing}
 }
 
     mode in (:discriminant, :regression) || throw(ArgumentError(
@@ -239,11 +242,23 @@ function fit_cppls(
     X_var = vec(sum(P .* P, dims = 1)) .* t_norms
     X_var_total = sum(X .* X)
 
-    CPPLSFit(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
+    fitobj = CPPLSFit(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
         gamma_vals, rho, gammas, rhos, zero_mask, a, b, W0,
         Z; samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels,
         mode=mode, sampleclasses=sampleclasses)
+
+    if orient_scores && mode ≡ :discriminant && !isnothing(sampleclasses) && !isempty(responselabels)
+        ref = isnothing(reference_class) ? sort!(collect(responselabels))[1] : reference_class
+        idx = findall(==(ref), sampleclasses)
+        for lv in axes(fitobj.T, 2)
+            if mean(fitobj.T[idx, lv]) < 0
+                fitobj.T[:, lv] .*= -1
+            end
+        end
+    end
+
+    fitobj
 end
 
 function fit_cppls(
@@ -426,12 +441,14 @@ function fit_cppls_from_sample_classes(
     t_squared_norm_tolerance::T8=1e-10,
     samplelabels::T9=String[],
     predictorlabels::T10=String[],
-    responselabels::T11=String[]
+    responselabels::T11=String[],
+    orient_scores::Bool=true,
+    reference_class::T12=nothing
 ) where {
     T1<:Union{
         <:Real, 
         <:NTuple{2, <:Real}, 
-        <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
+        <:AbstractVector{<:Union{Real, <:NTuple{2, <:Real}}}
     },
     T2<:Union{AbstractVector{<:Real}, Nothing},
     T3<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
@@ -442,21 +459,25 @@ function fit_cppls_from_sample_classes(
     T8<:Real,
     T9<:AbstractVector,
     T10<:AbstractVector,
-    T11<:AbstractVector
+    T11<:AbstractVector,
+    T12<:Union{AbstractString, Nothing}
 }
     isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
         " when passing sample classes; response labels are inferred automatically."))
 
     Y_prim, classes = onehot(sampleclasses)
 
-    fit_cppls(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
+    fitobj = fit_cppls(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
         samplelabels=samplelabels, predictorlabels=predictorlabels, 
         responselabels=classes, mode=:discriminant, 
-        sampleclasses=copy(sampleclasses)
+        sampleclasses=copy(sampleclasses),
+        orient_scores=orient_scores, reference_class=reference_class
     )
+    
+    fitobj
 end
 
 ############################################################################################

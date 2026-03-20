@@ -52,13 +52,14 @@ using Colors
 # Get custom colors
 orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
 
-sample_labels, X, classes, Y_aux = load(
-    CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
-    "sample_labels",
-    "X",
-    "classes",
-    "Y_aux"
-)
+# Load example data from file
+data = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"))
+
+# Extract data of interest
+sample_labels = data["sample_labels"]
+X             = data["X"]
+classes       = data["classes"]
+Y_aux         = data["Y_aux"]
 
 nothing # hide
 ```

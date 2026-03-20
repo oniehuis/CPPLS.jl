@@ -138,9 +138,14 @@ nothing # hide
 
 ![](cppls_plain.svg)
 
-Even in this comparatively simple model, the samples belonging to the two classes are noticeably better separated from each other than in the PCA score plot.
+Even in this comparatively simple model, the samples belonging to the two classes are 
+noticeably better separated from each other than in the PCA score plot.
 
-Next, we add inverse-frequency observation weights by specifying the `obs_weights` keyword argument in the [`fit`](@ref) function. To calculate the inverse-frequency weights for samples in each class, we use the function [`invfreqweights`](@ref). This adjustment gives the two classes equal total influence on the fitted model and thus removes the class size imbalance.
+Next, we add inverse-frequency observation weights by specifying the `obs_weights` keyword 
+argument in the [`fit`](@ref) function. To calculate the inverse-frequency weights for 
+samples in each class, we use the function [`invfreqweights`](@ref). This adjustment gives 
+the two classes equal total influence on the fitted model and thus removes the class size 
+imbalance.
 
 ```@example fit_da
 class_weights = invfreqweights(classes)
@@ -181,12 +186,11 @@ this example, the main effect is not a larger distance between the groups, but r
 a recentering and slight rotation of the latent space so that the class contrast is
 less biased by class prevalence.
 
-At this point, the class separation already looks convincing. In this dataset,
-however, it is driven not only by class-related variation but also by structured
-variation associated with auxiliary responses. To address that, we include `Y_aux`
-in addition to the observation weights. This changes how the latent variables are
-estimated. Instead of forcing all supervised structure into the class contrast, the
-model can also represent variation associated with auxiliary responses.
+At this point, the class separation already looks convincing. In this dataset, however, it 
+is driven not only by class-related variation but also by variation associated with 
+auxiliary responses. For example, suppose the samples in the two groups were analyzed using two different instruments, and the choice of instrument is correlated with group membership. If most majority-class samples were measured with instrument A and most minority-class samples with instrument B, then instrument effects could confound the class separation.
+
+If such auxiliary information is available, we can provide it to the model so that it can account for this confounding structure. This is done using the optional keyword argument `Y_aux` in the [`fit`](@ref) function. Supplying auxiliary response information changes how the latent variables are estimated: instead of forcing all supervised structure into the class contrast, the model can also explicitly model variation associated with the auxiliary responses. This helps ensure that the separation between the classes is not driven by confounding factors, but rather by the traits of true interest.
 
 ```@example fit_da
 m_weighted_yaux = fit(

@@ -126,11 +126,11 @@ coef(model::AbstractCPPLSFit) = @views model.B[:, :, end]
 coef(model::AbstractCPPLSFit, ncomponents::Integer) = @views model.B[:, :, ncomponents]
 
 """
-    regression_coefficients(model::AbstractCPPLSFit)
+    coefall(model::AbstractCPPLSFit)
 
 Return the regression coefficients for the fitted model.
 """
-regression_coefficients(model::AbstractCPPLSFit) = model.B
+coefall(model::AbstractCPPLSFit) = model.B
 
 """
     xbar(cpplsfit::AbstractCPPLSFit)

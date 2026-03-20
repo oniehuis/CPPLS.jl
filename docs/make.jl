@@ -47,7 +47,7 @@ makedocs(
         "Utils" => Any[
             "Utils/encoding.md",
             "Utils/statistics.md",
-            "Utils/crossvalidation_utils.md"
+            "Utils/crossvalidation.md"
         ],
         "Register" => "register.md",
     ],

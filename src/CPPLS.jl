@@ -50,6 +50,7 @@ export predictorlabels
 export project
 export projectionmatrix
 export pvalue
+export coefall
 export residuals
 export responselabels
 export rhos

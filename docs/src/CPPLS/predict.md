@@ -7,9 +7,9 @@ values.
 
 For discriminant models, CPPLS also provides helpers for turning raw prediction
 arrays into class assignments. [`onehot`](@ref) and
-[`sampleclasses`](@ref) perform those conversions when you already
+[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})) perform those conversions when you already
 have the output of [`predict`](@ref). For convenience, [`onehot`](@ref) returns 
-one-hot encoded class predictions directly, and [`sampleclasses`](@ref) returns 
+one-hot encoded class predictions directly, and [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) returns 
 predicted class labels.
 
 ## Example
@@ -149,7 +149,11 @@ sampleclasses(model, X_holdout)
 
 ```@docs
 CPPLS.onehot
+CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})
+CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 CPPLS.predict
-CPPLS.sampleclasses(::CPPLSFit, ::AbstractArray{<:Real,3})
 CPPLS.project
+CPPLS.sampleclasses
+CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})
+CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 ```

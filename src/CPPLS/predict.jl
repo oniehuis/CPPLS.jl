@@ -2,7 +2,7 @@
     predict(
         model::AbstractCPPLSFit, 
         X::AbstractMatrix{<:Real},
-        ncomponents::Integer=size(regression_coefficients(model), 3)
+        ncomponents::Integer=size(coefall(model), 3)
     ) -> Array{Float64, 3}
 
 Predict the response `Y` for each sample in `X` using the fitted model. Here, 
@@ -18,7 +18,6 @@ See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`onehot`](@ref CPPLS.onehot), 
 [`onehot`](@ref CPPLS.onehot), 
-[`sampleclasses`](@ref CPPLS.sampleclasses), 
 [`sampleclasses`](@ref CPPLS.sampleclasses)
 
 # Examples
@@ -42,12 +41,12 @@ julia> size(Ynew)
 function predict(
     model::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    ncomponents::Integer=size(regression_coefficients(model), 3)
+    ncomponents::Integer=size(coefall(model), 3)
 )
     n_samples_X = size(X, 1)
     n_targets_Y = size(ybar(model), 2)
 
-    ncomponents ≤ size(regression_coefficients(model), 3) || throw(DimensionMismatch(
+    ncomponents ≤ size(coefall(model), 3) || throw(DimensionMismatch(
         "ncomponents exceeds the number of components in the model"))
 
     X_centered = X .- xbar(model)
@@ -55,7 +54,7 @@ function predict(
 
     for i = 1:ncomponents
         @views Y_hat[:, :, i] .= 
-            (X_centered * regression_coefficients(model)[:, :, i] .+ ybar(model))
+            (X_centered * coefall(model)[:, :, i] .+ ybar(model))
     end
 
     Y_hat
@@ -65,7 +64,7 @@ end
     onehot(
         model::AbstractCPPLSFit,
         X::AbstractMatrix{<:Real},
-        ncomponents::Integer=size(regression_coefficients(model), 3)
+        ncomponents::Integer=size(coefall(model), 3)
     ) -> Matrix{Int}
 
 Generate one-hot encoded class predictions from a fitted CPPLS model and predictors `X`.
@@ -77,7 +76,6 @@ See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
-[`sampleclasses`](@ref CPPLS.sampleclasses), 
 [`sampleclasses`](@ref CPPLS.sampleclasses)
 
 # Examples
@@ -99,7 +97,7 @@ true
 function onehot(
     model::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    ncomponents::Integer=size(regression_coefficients(model), 3)
+    ncomponents::Integer=size(coefall(model), 3)
 )
     onehot(model, predict(model, X, ncomponents))
 end
@@ -119,9 +117,7 @@ See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
-[`sampleclasses`](@ref CPPLS.sampleclasses), 
 [`sampleclasses`](@ref CPPLS.sampleclasses)
-[`onehot`](@ref CPPLS.onehot)
 
 # Examples
 ```jldoctest
@@ -160,7 +156,7 @@ end
     sampleclasses(
         model::CPPLSFit,
         X::AbstractMatrix{<:Real},
-        ncomponents::Integer=size(regression_coefficients(model), 3)
+        ncomponents::Integer=size(coefall(model), 3)
     ) -> AbstractVector
 
 Generate predicted class labels from a discriminant CPPLS model and predictors `X`.
@@ -169,10 +165,8 @@ The returned vector follows the ordering in `responselabels`.
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
-[`onehot`](@ref CPPLS.onehot), 
-[`onehot`](@ref CPPLS.onehot), 
-[`sampleclasses`](@ref CPPLS.sampleclasses)
-[`regression_coefficients`](@ref CPPLS.regression_coefficients), 
+[`onehot`](@ref CPPLS.onehot),
+[`coefall`](@ref CPPLS.coefall), 
 
 # Examples
 ```jldoctest
@@ -193,7 +187,7 @@ true
 function sampleclasses(
     model::CPPLSFit,
     X::AbstractMatrix{<:Real},
-    ncomponents::Integer=size(regression_coefficients(model), 3)
+    ncomponents::Integer=size(coefall(model), 3)
 )
     sampleclasses(model, predict(model, X, ncomponents))
 end

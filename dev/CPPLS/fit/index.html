@@ -6,41 +6,29 @@ using Statistics
 using CairoMakie
 using Colors
 
+# Get custom colors
+orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
+
 samplelabels, X, classes, Y_aux = load(
     CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;),
     &quot;sample_labels&quot;,
     &quot;X&quot;,
     &quot;classes&quot;,
     &quot;Y_aux&quot;
-)
-
-backend = :makie  # use Makie to render all score plots
-figure_kwargs = (; size=(900, 600))  # score plot dimensions
-
-function orient_scores(scores, classes; reference_class=&quot;major&quot;)
-    oriented = copy(scores)
-    reference_idx = classes .== reference_class
-    for lv in axes(oriented, 2)
-        if mean(oriented[reference_idx, lv]) &lt; 0
-            oriented[:, lv] .*= -1
-        end
-    end
-    oriented
-end</code></pre><p>For comparison, we first fit a Principal Component Analysis (PCA) baseline to inspect the separation of the two classes based on variance alone.</p><pre><code class="language-julia hljs">M = fit(PCA, X&#39;; maxoutdim=2)
+)</code></pre><p>For comparison, we first fit a Principal Component Analysis (PCA) baseline to inspect the separation of the two classes based on variance alone.</p><pre><code class="language-julia hljs">M = fit(PCA, X&#39;; maxoutdim=2)
 scores_pca = permutedims(predict(M, X&#39;))
 
-wong = Makie.wong_colors()
 pca_plt = scoreplot(
     samplelabels,
     classes,
     scores_pca;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title=&quot;PCA scores&quot;,
     xlabel=&quot;Principal Component 1&quot;,
     ylabel=&quot;Principal Component 2&quot;,
     group_order=[&quot;minor&quot;, &quot;major&quot;],
-    group_marker=Dict(&quot;minor&quot; =&gt; (; color=wong[2]), &quot;major&quot; =&gt; (; color=wong[1])),
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
     default_marker=(; markersize=14)
 )
 save(&quot;pca.svg&quot;, pca_plt)</code></pre><p><img src="../pca.svg" alt/></p><p>In this synthetic dataset, the first two principal components are not optimized for class discrimination, so a substantial part of the visible structure reflects nuisance variation rather than the class contrast of interest.</p><h3 id="Observation-Weights-and-Auxiliary-Responses"><a class="docs-heading-anchor" href="#Observation-Weights-and-Auxiliary-Responses">Observation Weights and Auxiliary Responses</a><a id="Observation-Weights-and-Auxiliary-Responses-1"></a><a class="docs-heading-anchor-permalink" href="#Observation-Weights-and-Auxiliary-Responses" title="Permalink"></a></h3><p>In a practical DA analysis, class imbalance and auxiliary supervision should be handled before <code>gamma</code> is tuned, because both affect the supervised structure that <code>gamma</code> balances. We therefore begin with a simple working value, <code>gamma=0.5</code>, and first add the other modeling ingredients that are already known to matter in this dataset. For visual comparability across plots, we orient each latent variable so that the mean score of class <code>major</code> is positive; this only fixes the sign indeterminacy of the latent variables and does not change the fit itself.</p><p>We first add inverse-frequency observation weights. This gives the two classes the same total influence on the fitted model and reduces the bias introduced by unequal class sizes.</p><pre><code class="language-julia hljs">class_weights = invfreqweights(classes)
@@ -59,17 +47,15 @@ m_weighted = fit(
     samplelabels=samplelabels
 )
 
-scores_weighted = orient_scores(xscores(m_weighted)[:, 1:2], classes)
-
 cppls_weighted_plt = scoreplot(
     samplelabels,
     classes,
-    scores_weighted;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model&quot;,
     group_order=[&quot;minor&quot;, &quot;major&quot;],
-    group_marker=Dict(&quot;minor&quot; =&gt; (; color=wong[2]), &quot;major&quot; =&gt; (; color=wong[1])),
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
     default_marker=(; markersize=14)
 )
 save(&quot;cppls_weighted.svg&quot;, cppls_weighted_plt)</code></pre><p><img src="../cppls_weighted.svg" alt/></p><p>Applying inverse-frequency weights makes the discriminant structure more symmetric. In this example, the main effect is not a larger distance between the groups, but rather a recentering and slight rotation of the latent space so that the class contrast is less biased by class prevalence.</p><p>At this point, the class separation already looks convincing. In this dataset, however, it is driven not only by class-related variation but also by structured variation associated with auxiliary responses. To address that, we include <code>Y_aux</code> in addition to the observation weights. This changes how the latent variables are estimated. Instead of forcing all supervised structure into the class contrast, the model can also represent variation associated with auxiliary responses.</p><pre><code class="language-julia hljs">m_weighted_yaux = fit(
@@ -81,30 +67,27 @@ save(&quot;cppls_weighted.svg&quot;, cppls_weighted_plt)</code></pre><p><img src
     samplelabels=samplelabels
 )
 
-scores_weighted_yaux = orient_scores(xscores(m_weighted_yaux)[:, 1:2], classes)
-
 cppls_weighted_yaux_plt = scoreplot(
     samplelabels,
     classes,
-    scores_weighted_yaux;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted_yaux, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses&quot;,
     group_order=[&quot;minor&quot;, &quot;major&quot;],
-    group_marker=Dict(&quot;minor&quot; =&gt; (; color=wong[2]), &quot;major&quot; =&gt; (; color=wong[1])),
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
     default_marker=(; markersize=14)
 )
 save(&quot;cppls_weighted_yaux.svg&quot;, cppls_weighted_yaux_plt)</code></pre><p><img src="../cppls_weighted_yaux.svg" alt/></p><p>The visible class separation may not have increased, but it is now more likely to reflect  information that is genuinely related to class membership rather than variation carried  by a correlated covariate. To make that difference easier to see, we plot the last two  score sets again, now shading each point by its auxiliary response value.</p><pre><code class="language-julia hljs">aux = vec(Y_aux[:, 1])
-
 aux_min, aux_max = extrema(aux)
 point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
 
 cppls_weighted_shaded_plt = scoreplot(
     samplelabels,
     fill(&quot;samples&quot;, length(samplelabels)),
-    scores_weighted;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model &quot; *
           &quot;shaded by auxiliary values&quot;,
     show_legend=false,
@@ -116,9 +99,9 @@ save(&quot;cppls_weighted_shaded.svg&quot;, cppls_weighted_shaded_plt)
 cppls_weighted_yaux_shaded_plt = scoreplot(
     samplelabels,
     fill(&quot;samples&quot;, length(samplelabels)),
-    scores_weighted_yaux;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted_yaux, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses &quot; *
           &quot;shaded by auxiliary values&quot;,
     show_legend=false,
@@ -226,17 +209,15 @@ println(&quot;Selected gammas for the two latent variables: &quot;,
     round.(gamma(m_weighted_yaux_best), digits=3))
 println(&quot;Associated rho^2: &quot;, round.(selected_weighted_yaux_rhos, digits=6))
 
-scores_weighted_yaux_best = orient_scores(xscores(m_weighted_yaux_best)[:, 1:2], classes)
-
 cppls_weighted_yaux_best_plt = scoreplot(
     samplelabels,
     classes,
-    scores_weighted_yaux_best;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted_yaux_best, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title=&quot;CPPLS-DA scores with weights, Y_aux, and optimized gamma&quot;,
     group_order=[&quot;minor&quot;, &quot;major&quot;],
-    group_marker=Dict(&quot;minor&quot; =&gt; (; color=wong[2]), &quot;major&quot; =&gt; (; color=wong[1])),
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
     default_marker=(; markersize=14)
 )
 save(&quot;cppls_weighted_yaux_best.svg&quot;, cppls_weighted_yaux_best_plt)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Selected gammas for the two latent variables: [0.692, 0.676]
@@ -284,4 +265,4 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
-  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/f2dc4b408dd7fac050d0e0fac710ae8ca3992066/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 20 March 2026 08:03">Friday 20 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/4e555450e7295c9bcfccb00f51435c174e66726a/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 20 March 2026 08:40">Friday 20 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -1,16 +1,18 @@
 # Projection and Prediction
 
-After a CPPLS model has been fitted with [`fit`](@ref), it can be applied in two main
-ways. [`project`](@ref) maps new samples into the latent score space defined by the
-model, whereas [`predict`](@ref) generates predicted responses from new predictor
-values.
 
-For discriminant models, CPPLS also provides helpers for turning raw prediction
-arrays into class assignments. [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})) and
-[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})) perform those conversions when you already
-have the output of [`predict`](@ref). For convenience, [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) returns 
-one-hot encoded class predictions directly, and [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) returns 
-predicted class labels.
+After fitting a CPPLS model with [`fit`](@ref), you can apply it in two main ways:
+- Use [`project`](@ref) to map new samples into the latent score space defined by the model.
+- Use [`predict`](@ref) to generate predicted responses from new predictor values.
+
+
+For discriminant models, CPPLS provides helper functions to convert raw prediction arrays into class assignments.
+[`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})) and
+[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
+perform these conversions when you already have the output of [`predict`](@ref).
+For convenience, [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) and
+[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
+take predictor data, call `predict` internally, and return one-hot encoded class predictions and predicted class labels directly, respectively.
 
 ## Example
 

@@ -7,9 +7,9 @@ values.
 
 For discriminant models, CPPLS also provides helpers for turning raw prediction
 arrays into class assignments. [`onehot`](@ref) and
-[`predictsampleclasses`](@ref) perform those conversions when you already
-have the output of [`predict`](@ref). For convenience, [`predictonehot`](@ref) returns 
-one-hot encoded class predictions directly, and [`predictsampleclasses`](@ref) returns 
+[`sampleclasses`](@ref) perform those conversions when you already
+have the output of [`predict`](@ref). For convenience, [`onehot`](@ref) returns 
+one-hot encoded class predictions directly, and [`sampleclasses`](@ref) returns 
 predicted class labels.
 
 ## Example
@@ -128,21 +128,21 @@ Let us now see what the model predicts:
 
 ```@example project
 heldout_predictions = predict(model, X_holdout)
-predictsampleclasses(model, heldout_predictions)
+sampleclasses(model, heldout_predictions)
 ```
 
 As we can see, the predicted labels match the classes from which the samples were
 drawn. In this example, `heldout_predictions` is a three-dimensional array whose
 third dimension indexes the number of components used in the prediction.
 
-Instead of calling [`predict`](@ref) and [`predictsampleclasses`](@ref)
+Instead of calling [`predict`](@ref) and [`sampleclasses`](@ref)
 successively, we could have used the convenience wrapper
-[`predictsampleclasses`](@ref). More generally, [`predictonehot`](@ref) and
-[`predictsampleclasses`](@ref) collapse the full prediction tensor into class
+[`sampleclasses`](@ref). More generally, [`onehot`](@ref) and
+[`sampleclasses`](@ref) collapse the full prediction tensor into class
 assignments, which is often more convenient in discriminant-analysis workflows.
 
 ```@example project
-predictsampleclasses(model, X_holdout)
+sampleclasses(model, X_holdout)
 ```
 
 ## API
@@ -150,7 +150,6 @@ predictsampleclasses(model, X_holdout)
 ```@docs
 CPPLS.onehot
 CPPLS.predict
-CPPLS.predictonehot
-CPPLS.predictsampleclasses
+CPPLS.sampleclasses(::CPPLSFit, ::AbstractArray{<:Real,3})
 CPPLS.project
 ```

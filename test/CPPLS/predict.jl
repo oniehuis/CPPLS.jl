@@ -68,7 +68,7 @@ end
     @test result == expected_one_hot
 end
 
-@testset "predictonehot matches predict inputs" begin
+@testset "onehot matches predict inputs" begin
     B = Array{Float64}(undef, 2, 2, 2)
     B[:, :, 1] = [0.8 0.1; -0.2 0.4]
     B[:, :, 2] = [0.3 -0.6; 0.5 0.2]
@@ -83,12 +83,12 @@ end
     ]
 
     expected = CPPLS.onehot(cppls, CPPLS.predict(cppls, X, 2))
-    result = CPPLS.predictonehot(cppls, X, 2)
+    result = CPPLS.onehot(cppls, X, 2)
 
     @test result == expected
 end
 
-@testset "predictsampleclasses maps response labels" begin
+@testset "sampleclasses maps response labels" begin
     X = Float64[
         1 0
         0 1
@@ -104,11 +104,11 @@ end
             CPPLS.sampleclasses(CPPLS.onehot(model, preds)),
         ]
 
-    @test CPPLS.predictsampleclasses(model, preds) == expected
-    @test CPPLS.predictsampleclasses(model, X, 1) == expected
+    @test CPPLS.sampleclasses(model, preds) == expected
+    @test CPPLS.sampleclasses(model, X, 1) == expected
 end
 
-@testset "predictsampleclasses rejects regression models" begin
+@testset "sampleclasses rejects regression models" begin
     X = Float64[
         1 0
         0 1
@@ -118,7 +118,7 @@ end
     model = CPPLS.fit_cppls(X, y, 1; gamma = 0.5)
 
     preds = CPPLS.predict(model, X, 1)
-    @test_throws ArgumentError CPPLS.predictsampleclasses(model, preds)
+    @test_throws ArgumentError CPPLS.sampleclasses(model, preds)
 end
 
 @testset "project centers inputs before applying R" begin

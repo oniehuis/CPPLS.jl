@@ -61,6 +61,12 @@ CPPLS.samplelabels(::CPPLSFit)
 CPPLS.xscores(::CPPLSFit)
 ```
 
+## CPPLS.sampleclasses
+
+```@docs
+CPPLS.sampleclasses
+```
+
 ## CPPLSFitLight
 
 ```@docs

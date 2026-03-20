@@ -10,7 +10,7 @@ if some classes do not appear in `label_indices`. This method returns only the e
 matrix.
 
 See also
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 # Examples
 ```jldoctest

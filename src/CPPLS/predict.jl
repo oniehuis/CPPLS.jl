@@ -16,10 +16,10 @@ thrown if `ncomponents` exceeds the number of components stored in the model.
 See also
 [`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit),
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
-[`predictonehot`](@ref CPPLS.predictonehot), 
 [`onehot`](@ref CPPLS.onehot), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
+[`onehot`](@ref CPPLS.onehot), 
+[`sampleclasses`](@ref CPPLS.sampleclasses), 
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 # Examples
 ```jldoctest
@@ -62,7 +62,7 @@ function predict(
 end
 
 """
-    predictonehot(
+    onehot(
         model::AbstractCPPLSFit,
         X::AbstractMatrix{<:Real},
         ncomponents::Integer=size(regression_coefficients(model), 3)
@@ -77,8 +77,8 @@ See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
+[`sampleclasses`](@ref CPPLS.sampleclasses), 
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 
 # Examples
 ```jldoctest
@@ -92,11 +92,11 @@ julia> model = fit(spec, X, classes);
 
 julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia> predictonehot(model, Xnew) == [1 0; 0 1]
+julia> onehot(model, Xnew) == [1 0; 0 1]
 true
 ```
 """
-function predictonehot(
+function onehot(
     model::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
     ncomponents::Integer=size(regression_coefficients(model), 3)
@@ -118,9 +118,9 @@ See also
 [`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
-[`predictonehot`](@ref CPPLS.predictonehot), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
+[`onehot`](@ref CPPLS.onehot), 
+[`sampleclasses`](@ref CPPLS.sampleclasses), 
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 [`onehot`](@ref CPPLS.onehot)
 
 # Examples
@@ -157,7 +157,7 @@ function onehot(
 end
 
 """
-    predictsampleclasses(
+    sampleclasses(
         model::CPPLSFit,
         X::AbstractMatrix{<:Real},
         ncomponents::Integer=size(regression_coefficients(model), 3)
@@ -169,9 +169,9 @@ The returned vector follows the ordering in `responselabels`.
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`predict`](@ref CPPLS.predict), 
-[`predictonehot`](@ref CPPLS.predictonehot), 
 [`onehot`](@ref CPPLS.onehot), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
+[`onehot`](@ref CPPLS.onehot), 
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 [`regression_coefficients`](@ref CPPLS.regression_coefficients), 
 
 # Examples
@@ -186,20 +186,20 @@ julia> model = fit(spec, X, classes);
 
 julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia> predictsampleclasses(model, Xnew) == ["major", "minor"]
+julia> sampleclasses(model, Xnew) == ["major", "minor"]
 true
 ```
 """
-function predictsampleclasses(
+function sampleclasses(
     model::CPPLSFit,
     X::AbstractMatrix{<:Real},
     ncomponents::Integer=size(regression_coefficients(model), 3)
 )
-    predictsampleclasses(model, predict(model, X, ncomponents))
+    sampleclasses(model, predict(model, X, ncomponents))
 end
 
 """
-    predictsampleclasses(
+    sampleclasses(
         model::CPPLSFit,
         predictions::AbstractArray{<:Real, 3}
     ) -> AbstractVector
@@ -213,8 +213,8 @@ See also
 [`sampleclasses`](@ref CPPLS.sampleclasses)
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
-[`predictonehot`](@ref CPPLS.predictonehot), 
-[`predictsampleclasses`](@ref CPPLS.predictsampleclasses)
+[`onehot`](@ref CPPLS.onehot), 
+[`sampleclasses`](@ref CPPLS.sampleclasses)
 [`responselabels`](@ref CPPLS.responselabels)
 
 # Examples
@@ -231,16 +231,16 @@ julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> raw = predict(model, Xnew);
 
-julia> predictsampleclasses(model, raw) == ["major", "minor"]
+julia> sampleclasses(model, raw) == ["major", "minor"]
 true
 ```
 """
-function predictsampleclasses(
+function sampleclasses(
     model::CPPLSFit,
     predictions::AbstractArray{<:Real,3}
 )
     mode(model) ≡ :discriminant || throw(ArgumentError(
-        "predictsampleclasses is only defined for discriminant CPPLS models"))
+        "sampleclasses is only defined for discriminant CPPLS models"))
 
     isempty(responselabels(model)) && throw(ArgumentError(
         "responselabels must be provided to map predictions to class labels"))

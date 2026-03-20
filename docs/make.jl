@@ -49,6 +49,7 @@ makedocs(
             "Utils/statistics.md",
             "Utils/crossvalidation_utils.md"
         ],
+        "Register" => "register.md",
     ],
 )
 

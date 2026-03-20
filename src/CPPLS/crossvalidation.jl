@@ -78,7 +78,7 @@ on nearest-mean classification and assumes models were fit in `:discriminant` mo
 The returned callbacks implement the following defaults:
 `score_fn(Y_true, Y_pred) = 1 - nmc(Y_true, Y_pred, weighted)`, so larger scores are
 better and `weighted=true` applies inverse-frequency class weighting;
-`predict_fn(model, X, k) = predictonehot(model, X, k)` to obtain one-hot class
+`predict_fn(model, X, k) = onehot(model, X, k)` to obtain one-hot class
 predictions from a discriminant CPPLS fit;
 `select_fn = argmax`, so inner cross-validation chooses the component count with the
 largest score; and
@@ -130,7 +130,7 @@ julia> cb.select_fn([0.2, 0.6, 0.4])
 """
 function cv_classification(; weighted::Bool=true)
     score_fn = (Y_true, Y_pred) -> 1 - nmc(Y_true, Y_pred, weighted)
-    predict_fn = (model, X, k) -> predictonehot(model, X, k)
+    predict_fn = (model, X, k) -> onehot(model, X, k)
     select_fn = argmax
     flag_fn = (Y_true, Y_pred) -> sampleclasses(Y_pred) .≠ sampleclasses(Y_true)
     (score_fn=score_fn, predict_fn=predict_fn, select_fn=select_fn, flag_fn=flag_fn)

@@ -46,9 +46,7 @@ export outlierscan
 export permda
 export permreg
 export predict
-export predictonehot
 export predictorlabels
-export predictsampleclasses
 export project
 export projectionmatrix
 export pvalue

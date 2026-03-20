@@ -96,11 +96,51 @@ variation rather than the class contrast of interest.
 ### Observation Weights and Auxiliary Responses
 
 To illustrate the impact of class imbalance and auxiliary response information on latent 
-variable extraction, we show how adding each of these factors changes the X scores of the fitted 
-model. In this demonstration, we use a fixed gamma value of 0.5 so that only the parameter of interest 
-varies. In a real-world scenario, you would typically decide whether to include observation weights and auxiliary responses before the main analysis, and then optimize gamma in a model that already includes these parameters.
+variable extraction, we show how adding each of these factors changes the X scores of the 
+fitted model. In this demonstration, we use a fixed gamma value of 0.5 so that only the 
+parameter of interest varies. In a real-world scenario, you would typically decide whether 
+to include observation weights and auxiliary responses before the main analysis, and then 
+optimize gamma in a model that already includes these parameters.
 
-We first add inverse-frequency observation weights. This adjustment gives the two classes equal total influence on the fitted model and reduces the bias introduced by unequal class sizes.
+We start with a plain model in which neither observational weights nore  auxiliary response 
+information is considered.
+
+```@example fit_da
+class_weights = invfreqweights(classes)
+
+spec = CPPLSSpec(
+    ncomponents=2,
+    gamma=0.5,
+    mode=:discriminant
+)
+
+m_plain = fit(
+    spec,
+    X,
+    classes;
+    samplelabels=samplelabels
+)
+
+cppls_plain_plt = scoreplot(
+    samplelabels,
+    classes,
+    xscores(m_plain, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title="CPPLS-DA scores from an inverse-frequency-weighted model",
+    group_order=["minor", "major"],
+    group_marker=Dict("minor" => (; color=orange), "major" => (; color=blue)),
+    default_marker=(; markersize=14)
+)
+save("cppls_plain.svg", cppls_plain_plt)
+nothing # hide
+```
+
+![](cppls_plain.svg)
+
+Even in this comparatively simple model, the samples belonging to the two classes are noticeably better separated from each other than in the PCA score plot.
+
+Next, we add inverse-frequency observation weights by specifying the `obs_weights` keyword argument in the [`fit`](@ref) function. To calculate the inverse-frequency weights for samples in each class, we use the function [`invfreqweights`](@ref). This adjustment gives the two classes equal total influence on the fitted model and thus removes the class size imbalance.
 
 ```@example fit_da
 class_weights = invfreqweights(classes)

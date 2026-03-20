@@ -9,13 +9,14 @@ using Colors
 # Get custom colors
 orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
 
-sample_labels, X, classes, Y_aux = load(
-    CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;),
-    &quot;sample_labels&quot;,
-    &quot;X&quot;,
-    &quot;classes&quot;,
-    &quot;Y_aux&quot;
-)</code></pre><p>For comparison, we first fit a Principal Component Analysis (PCA) baseline to inspect the separation of the two classes based on variance alone.</p><pre><code class="language-julia hljs">M = fit(PCA, X&#39;; maxoutdim=2)
+# Load example data from file
+data = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;))
+
+# Extract data of interest
+sample_labels = data[&quot;sample_labels&quot;]
+X             = data[&quot;X&quot;]
+classes       = data[&quot;classes&quot;]
+Y_aux         = data[&quot;Y_aux&quot;]</code></pre><p>For comparison, we first fit a Principal Component Analysis (PCA) baseline to inspect the separation of the two classes based on variance alone.</p><pre><code class="language-julia hljs">M = fit(PCA, X&#39;; maxoutdim=2)
 scores_pca = permutedims(predict(M, X&#39;))
 
 pca_plt = scoreplot(
@@ -170,7 +171,7 @@ vlines!(weighted_yaux_gamma_ax, [selected_weighted_yaux_grid_gamma];
     color=:black, linestyle=:dash)
 
 save(&quot;gamma_weighted_yaux_grid.svg&quot;, weighted_yaux_gamma_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Best gamma with obs_weights and Y_aux: 0.692
-Associated rho^2: 0.7722165662543278</code></pre><p><img src="../gamma_weighted_yaux_grid.svg" alt/></p><p>To turn that landscape into an actual optimization step, we next search over adjacent intervals. The grey curve below is the dense landscape just plotted, the red points are the best values retained from each interval, and the dashed line marks the overall winner.</p><pre><code class="language-julia hljs">weighted_yaux_interval_spec = CPPLSSpec(
+Associated rho^2: 0.772216566254328</code></pre><p><img src="../gamma_weighted_yaux_grid.svg" alt/></p><p>To turn that landscape into an actual optimization step, we next search over adjacent intervals. The grey curve below is the dense landscape just plotted, the red points are the best values retained from each interval, and the dashed line marks the overall winner.</p><pre><code class="language-julia hljs">weighted_yaux_interval_spec = CPPLSSpec(
     ncomponents=1,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant
@@ -207,8 +208,8 @@ scatter!(weighted_yaux_interval_ax, weighted_yaux_interval_gammas, weighted_yaux
 vlines!(weighted_yaux_interval_ax, [selected_weighted_yaux_gamma];
     color=:firebrick, linestyle=:dash)
 
-save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.6917448608611934
-Associated rho^2: 0.7722166962883601</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_spec = CPPLSSpec(
+save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.6917448608662524
+Associated rho^2: 0.7722166962883606</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_spec = CPPLSSpec(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant
@@ -291,4 +292,4 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
-  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/35f662a626cb275ee2960ad5d97720d149cb89bb/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 20 March 2026 14:31">Friday 20 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/6b308933e52cf1bdabafb5adcdc1ac29f9b7f3ae/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 20 March 2026 14:43">Friday 20 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

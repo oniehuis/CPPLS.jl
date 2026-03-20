@@ -6,9 +6,9 @@ model, whereas [`predict`](@ref) generates predicted responses from new predicto
 values.
 
 For discriminant models, CPPLS also provides helpers for turning raw prediction
-arrays into class assignments. [`onehot`](@ref) and
+arrays into class assignments. [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})) and
 [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})) perform those conversions when you already
-have the output of [`predict`](@ref). For convenience, [`onehot`](@ref) returns 
+have the output of [`predict`](@ref). For convenience, [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) returns 
 one-hot encoded class predictions directly, and [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) returns 
 predicted class labels.
 
@@ -135,11 +135,17 @@ As we can see, the predicted labels match the classes from which the samples wer
 drawn. In this example, `heldout_predictions` is a three-dimensional array whose
 third dimension indexes the number of components used in the prediction.
 
-Instead of calling [`predict`](@ref) and [`sampleclasses`](@ref)
+Instead of calling [`predict`](@ref) and
+[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
 successively, we could have used the convenience wrapper
-[`sampleclasses`](@ref). More generally, [`onehot`](@ref) and
-[`sampleclasses`](@ref) collapse the full prediction tensor into class
-assignments, which is often more convenient in discriminant-analysis workflows.
+[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)).
+
+More generally, the convenience methods
+[`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) and
+[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
+take predictor data and internally call `predict`, returning class assignments directly.
+This is often more convenient in discriminant-analysis workflows than working with the
+full prediction tensor.
 
 ```@example project
 sampleclasses(model, X_holdout)
@@ -148,12 +154,10 @@ sampleclasses(model, X_holdout)
 ## API
 
 ```@docs
-CPPLS.onehot
 CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})
 CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 CPPLS.predict
 CPPLS.project
-CPPLS.sampleclasses
 CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})
 CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 ```

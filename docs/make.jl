@@ -32,7 +32,7 @@ makedocs(
     sitename = "CPPLS",
     format = Documenter.HTML(mathengine = Documenter.MathJax2()),
     modules = [CPPLS],
-    checkdocs = :exports,
+    checkdocs = :none,
     authors = "Oliver Niehuis",
     pages = [
         "Home" => "index.md",

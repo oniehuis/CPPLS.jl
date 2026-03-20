@@ -1,10 +1,20 @@
 # Fit
 
-dataset.
+Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a 
+[`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant 
+analysis. In either case, you can optionally provide observation weights and auxiliary 
+response information. Observation weights determine how much influence each sample has on 
+the model, while auxiliary responses can guide the supervised projection without altering 
+the primary prediction target. In discriminant analysis (DA), observation weights are 
+particularly helpful for handling imbalanced classes. Along with the gamma parameter, 
+which controls the balance between predictor and response variances and their correlation, 
+observation weights and auxiliary responses are key options for tailoring a CPPLS model to 
+your dataset. Other choices, such as the number of components, may also be important 
+depending on your analysis.
 
-Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a [`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant analysis. In either case, you can optionally provide observation weights and auxiliary response information. Observation weights determine how much influence each sample has on the model, while auxiliary responses can guide the supervised projection without altering the primary prediction target. In discriminant analysis (DA), observation weights are particularly helpful for handling imbalanced classes. Along with the gamma parameter—which controls the balance between predictor and response variances and their correlation—these options are the main tools for tailoring a CPPLS model to your dataset.
-
-If you plan to use observation weights or auxiliary responses, specify them before selecting the gamma parameter. Both can affect the supervised objective and, consequently, the gamma values that are most appropriate.
+If you plan to use observation weights or auxiliary responses, specify them before 
+selecting the gamma parameter. Both can affect the supervised objective and, consequently, 
+the gamma values that are most appropriate.
 
 ## Example
 
@@ -13,19 +23,21 @@ contains 100 samples: 10 belong to the minority class `minor` and 90 to the majo
 class `major`. Accordingly, the predictor matrix has 100 rows and 14 columns,
 representing 14 measured traits. The dataset is useful for illustrating three modeling
 choices that interact in practice: inverse-frequency observation weighting, the
-auxiliary response block `Y_aux`, and the selection of `gamma` once those ingredients
-are in place.
+auxiliary response, and the selection of gamma once those ingredients are in place.
 
 The dataset was constructed so that a plain PCA score plot is dominated by nuisance
 structure, whereas CPPLS-DA recovers the class contrast more clearly. That makes it a
 useful benchmark for showing how observation weighting and auxiliary responses change the
-fitted score space and how `gamma` should then be chosen for that full model.
+fitted score space and how gamma should then be chosen for that full model.
 
-In addition to `CPPLS`, the example uses `JLD2` to load the dataset from disk,
-`MultivariateStats` to compute the PCA baseline, `Colors` to convert the auxiliary
-variable into grayscale values in the later auxiliary-response plots, `Statistics` to
-orient the latent variables consistently across plots, and `CairoMakie` to render
-static figures. The Julia Pkg documentation explains how to install registered packages in the
+In addition to `CPPLS`, the example uses [JLD2](https://github.com/JuliaIO/JLD2.jl) to load 
+the dataset from disk, 
+[MultivariateStats](https://github.com/JuliaStats/MultivariateStats.jl) to compute the PCA 
+baseline, [Colors](https://github.com/JuliaGraphics/Colors.jl) to convert the auxiliary
+variable into grayscale values in the later auxiliary-response plots, 
+[Statistics](https://github.com/JuliaStats/Statistics.jl) to orient the latent variables 
+consistently across plots, and [CairoMakie](https://docs.makie.org) to render static 
+figures. The Julia Pkg documentation explains how to install registered packages in the
 [Getting Started](https://pkgdocs.julialang.org/v1/getting-started/#Basic-Usage)
 section.
 
@@ -40,7 +52,7 @@ using Colors
 # Get custom colors
 orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
 
-samplelabels, X, classes, Y_aux = load(
+data = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
     "sample_labels",
     "X",
@@ -55,12 +67,12 @@ For comparison, we first fit a Principal Component Analysis (PCA) baseline to in
 separation of the two classes based on variance alone.
 
 ```@example fit_da
-M = fit(PCA, X'; maxoutdim=2)
-scores_pca = permutedims(predict(M, X'))
+M = fit(PCA, data["X"]'; maxoutdim=2)
+scores_pca = permutedims(predict(M, data["X"]'))
 
 pca_plt = scoreplot(
-    samplelabels,
-    classes,
+    data["sample_labels"],
+    data["classes"],
     scores_pca;
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
@@ -83,17 +95,12 @@ variation rather than the class contrast of interest.
 
 ### Observation Weights and Auxiliary Responses
 
-In a practical DA analysis, class imbalance and auxiliary supervision should be handled
-before `gamma` is tuned, because both affect the supervised structure that `gamma`
-balances. We therefore begin with a simple working value, `gamma=0.5`, and first add the
-other modeling ingredients that are already known to matter in this dataset. For visual
-comparability across plots, we orient each latent variable so that the mean score of
-class `major` is positive; this only fixes the sign indeterminacy of the latent variables
-and does not change the fit itself.
+To illustrate the impact of class imbalance and auxiliary response information on latent 
+variable extraction, we show how adding each of these factors changes the X scores of the fitted 
+model. In this demonstration, we use a fixed gamma value of 0.5 so that only the parameter of interest 
+varies. In a real-world scenario, you would typically decide whether to include observation weights and auxiliary responses before the main analysis, and then optimize gamma in a model that already includes these parameters.
 
-We first add inverse-frequency observation weights. This gives the two classes the same
-total influence on the fitted model and reduces the bias introduced by unequal class
-sizes.
+We first add inverse-frequency observation weights. This adjustment gives the two classes equal total influence on the fitted model and reduces the bias introduced by unequal class sizes.
 
 ```@example fit_da
 class_weights = invfreqweights(classes)

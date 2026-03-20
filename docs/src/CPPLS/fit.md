@@ -1,36 +1,10 @@
 # Fit
 
-Model fitting in `CPPLS` is performed through `StatsAPI.fit` together with a
-[`CPPLSSpec`](@ref). The same interface is used for both regression and discriminant
-analysis. In both settings, the fit can optionally incorporate `obs_weights` and
-`Y_aux`. Observation weights control how strongly individual samples contribute to the
-model, whereas auxiliary response information can shape the supervised projection without
-changing the primary prediction target. In discriminant analysis (DA), observation weights
-are especially useful when classes are imbalanced. Together with `gamma`, these arguments
-are among the main levers for tailoring a CPPLS model to the structure of a particular
 dataset.
 
-The `gamma` argument supports three distinct workflows. A fixed scalar such as `0.5`
-uses the same value for every latent variable. A grid such as `0:0.01:1` evaluates a
-set of fixed candidate values and keeps the one with the largest leading canonical
-correlation for each latent variable. An interval specification such as
-`[(0.1, 0.3), (0.7, 0.9)]` performs one bounded search inside each closed interval,
-so both endpoints are included in the search, and then keeps the best interval-wise
-optimum. The package ships with the helper function
-[`intervalize`](@ref), which converts a grid into a list of adjacent intervals,
-for example `intervalize(0:0.01:1)`.
+Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a [`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant analysis. In either case, you can optionally provide observation weights and auxiliary response information. Observation weights determine how much influence each sample has on the model, while auxiliary responses can guide the supervised projection without altering the primary prediction target. In discriminant analysis (DA), observation weights are particularly helpful for handling imbalanced classes. Along with the gamma parameter—which controls the balance between predictor and response variances and their correlation—these options are the main tools for tailoring a CPPLS model to your dataset.
 
-That distinction matters for diagnostics. The stored values returned by
-`gammas(model, lv)` and `rhos(model, lv)` contain one point per
-candidate supplied to `gamma`. For a grid, that gives a sampled view of the objective
-curve across gamma. For `intervalize(...)`, it gives one selected optimum per
-interval, which is useful for comparing intervals but is not itself a dense landscape
-trace. If the goal is to visualize the shape of the gamma objective, prefer a grid. If
-the goal is robust optimization over subranges, prefer intervals.
-
-If observation weights or auxiliary responses are part of the intended analysis, they
-should be specified before `gamma` is selected, because both can change the supervised
-objective and therefore the `gamma` values that are most useful.
+If you plan to use observation weights or auxiliary responses, specify them before selecting the gamma parameter. Both can affect the supervised objective and, consequently, the gamma values that are most appropriate.
 
 ## Example
 
@@ -251,7 +225,28 @@ the grayscale values being more evenly distributed across the plot.
 ### Choosing Gamma for the Weighted + Auxiliary Model
 
 With observation weights and `Y_aux` in place, we can now choose `gamma` for the model we
-actually want to interpret. We first inspect the objective landscape on a dense grid and
+actually want to interpret. 
+
+
+The `gamma` argument supports three distinct workflows. A fixed scalar such as `0.5`
+uses the same value for every latent variable. A grid such as `0:0.01:1` evaluates a
+set of fixed candidate values and keeps the one with the largest leading canonical
+correlation for each latent variable. An interval specification such as
+`[(0.1, 0.3), (0.7, 0.9)]` performs one bounded search inside each closed interval,
+so both endpoints are included in the search, and then keeps the best interval-wise
+optimum. The package ships with the helper function
+[`intervalize`](@ref), which converts a grid into a list of adjacent intervals,
+for example `intervalize(0:0.01:1)`.
+
+That distinction matters for diagnostics. The stored values returned by
+`gammas(model, lv)` and `rhos(model, lv)` contain one point per
+candidate supplied to `gamma`. For a grid, that gives a sampled view of the objective
+curve across gamma. For `intervalize(...)`, it gives one selected optimum per
+interval, which is useful for comparing intervals but is not itself a dense landscape
+trace. If the goal is to visualize the shape of the gamma objective, prefer a grid. If
+the goal is robust optimization over subranges, prefer intervals.
+
+We first inspect the objective landscape on a dense grid and
 then use interval-based optimization to obtain a practical two-component fit.
 
 ```@example fit_da

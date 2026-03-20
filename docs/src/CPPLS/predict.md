@@ -6,13 +6,17 @@ After fitting a CPPLS model with [`fit`](@ref), you can apply it in two main way
 - Use [`predict`](@ref) to generate predicted responses from new predictor values.
 
 
-For discriminant models, CPPLS provides helper functions to convert raw prediction arrays into class assignments.
+For discriminant models, CPPLS provides helper functions to convert raw prediction arrays 
+into class assignments.
 [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})) and
 [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
-perform these conversions when you already have the output of [`predict`](@ref).
-For convenience, [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) and
+perform these conversions when you already have the output of [`predict`](@ref). 
+For convenience, 
+[`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) 
+and
 [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
-take predictor data, call `predict` internally, and return one-hot encoded class predictions and predicted class labels directly, respectively.
+take predictor data, call[`predict`](@ref) internally, and return one-hot encoded class 
+predictions and predicted class labels directly, respectively.
 
 ## Example
 
@@ -145,7 +149,7 @@ successively, we could have used the convenience wrapper
 More generally, the convenience methods
 [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) and
 [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
-take predictor data and internally call `predict`, returning class assignments directly.
+take predictor data and internally call [`predict`](@ref), returning class assignments directly.
 This is often more convenient in discriminant-analysis workflows than working with the
 full prediction tensor.
 

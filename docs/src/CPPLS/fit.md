@@ -63,6 +63,9 @@ using Statistics
 using CairoMakie
 using Colors
 
+# Get custom colors
+orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
+
 samplelabels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
     "sample_labels",
@@ -71,19 +74,6 @@ samplelabels, X, classes, Y_aux = load(
     "Y_aux"
 )
 
-backend = :makie  # use Makie to render all score plots
-figure_kwargs = (; size=(900, 600))  # score plot dimensions
-
-function orient_scores(scores, classes; reference_class="major")
-    oriented = copy(scores)
-    reference_idx = classes .== reference_class
-    for lv in axes(oriented, 2)
-        if mean(oriented[reference_idx, lv]) < 0
-            oriented[:, lv] .*= -1
-        end
-    end
-    oriented
-end
 nothing # hide
 ```
 
@@ -94,18 +84,17 @@ separation of the two classes based on variance alone.
 M = fit(PCA, X'; maxoutdim=2)
 scores_pca = permutedims(predict(M, X'))
 
-wong = Makie.wong_colors()
 pca_plt = scoreplot(
     samplelabels,
     classes,
     scores_pca;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title="PCA scores",
     xlabel="Principal Component 1", 
     ylabel="Principal Component 2",
     group_order=["minor", "major"],
-    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
+    group_marker=Dict("minor" => (; color=orange), "major" => (; color=blue)),
     default_marker=(; markersize=14)
 )
 save("pca.svg", pca_plt)
@@ -149,17 +138,15 @@ m_weighted = fit(
     samplelabels=samplelabels
 )
 
-scores_weighted = orient_scores(xscores(m_weighted)[:, 1:2], classes)
-
 cppls_weighted_plt = scoreplot(
     samplelabels,
     classes,
-    scores_weighted;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores from an inverse-frequency-weighted model",
     group_order=["minor", "major"],
-    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
+    group_marker=Dict("minor" => (; color=orange), "major" => (; color=blue)),
     default_marker=(; markersize=14)
 )
 save("cppls_weighted.svg", cppls_weighted_plt)
@@ -190,17 +177,15 @@ m_weighted_yaux = fit(
     samplelabels=samplelabels
 )
 
-scores_weighted_yaux = orient_scores(xscores(m_weighted_yaux)[:, 1:2], classes)
-
 cppls_weighted_yaux_plt = scoreplot(
     samplelabels,
     classes,
-    scores_weighted_yaux;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted_yaux, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses",
     group_order=["minor", "major"],
-    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
+    group_marker=Dict("minor" => (; color=orange), "major" => (; color=blue)),
     default_marker=(; markersize=14)
 )
 save("cppls_weighted_yaux.svg", cppls_weighted_yaux_plt)
@@ -216,16 +201,15 @@ score sets again, now shading each point by its auxiliary response value.
 
 ```@example fit_da
 aux = vec(Y_aux[:, 1])
-
 aux_min, aux_max = extrema(aux)
 point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
 
 cppls_weighted_shaded_plt = scoreplot(
     samplelabels,
     fill("samples", length(samplelabels)),
-    scores_weighted;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores from an inverse-frequency-weighted model " *
           "shaded by auxiliary values",
     show_legend=false,
@@ -237,9 +221,9 @@ save("cppls_weighted_shaded.svg", cppls_weighted_shaded_plt)
 cppls_weighted_yaux_shaded_plt = scoreplot(
     samplelabels,
     fill("samples", length(samplelabels)),
-    scores_weighted_yaux;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted_yaux, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses " *
           "shaded by auxiliary values",
     show_legend=false,
@@ -403,17 +387,15 @@ println("Selected gammas for the two latent variables: ",
     round.(gamma(m_weighted_yaux_best), digits=3))
 println("Associated rho^2: ", round.(selected_weighted_yaux_rhos, digits=6))
 
-scores_weighted_yaux_best = orient_scores(xscores(m_weighted_yaux_best)[:, 1:2], classes)
-
 cppls_weighted_yaux_best_plt = scoreplot(
     samplelabels,
     classes,
-    scores_weighted_yaux_best;
-    backend=backend,
-    figure_kwargs=figure_kwargs,
+    xscores(m_weighted_yaux_best, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores with weights, Y_aux, and optimized gamma",
     group_order=["minor", "major"],
-    group_marker=Dict("minor" => (; color=wong[2]), "major" => (; color=wong[1])),
+    group_marker=Dict("minor" => (; color=orange), "major" => (; color=blue)),
     default_marker=(; markersize=14)
 )
 save("cppls_weighted_yaux_best.svg", cppls_weighted_yaux_best_plt)

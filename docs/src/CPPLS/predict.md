@@ -36,6 +36,9 @@ using CPPLS
 using JLD2
 using CairoMakie
 
+# Get custom colors
+orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
+
 samplelabels, X, classes, Y_aux = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
     "sample_labels",
@@ -88,7 +91,6 @@ held-out sample and one column per latent component.
 ```@example project
 heldout_scores = project(model, X_holdout)
 
-wong = Makie.wong_colors()
 projected_plt = scoreplot(
     vcat(labels_train, labels_holdout),
     vcat(classes_train, plot_classes_holdout),
@@ -98,10 +100,10 @@ projected_plt = scoreplot(
     title="CPPLS-DA scores",
     group_order=["minor", "projected minor", "major", "projected major"],
     group_marker=Dict(
-        "minor" => (; color=wong[2]), 
-        "projected minor" => (; color=wong[2], marker=:x, markersize=16, strokecolor=:black, strokewidth=1),
-        "major" => (; color=wong[1]),
-        "projected major" => (; color=wong[1], marker=:x, markersize=16, strokecolor=:black, strokewidth=1)
+        "minor" => (; color=orange), 
+        "projected minor" => (; color=orange, marker=:x, markersize=16, strokecolor=:black, strokewidth=1),
+        "major" => (; color=blue),
+        "projected major" => (; color=blue, marker=:x, markersize=16, strokecolor=:black, strokewidth=1)
     ),
     default_marker=(; markersize=14)
 )

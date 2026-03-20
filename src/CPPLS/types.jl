@@ -355,12 +355,43 @@ Return the stored sample labels for the fitted model.
 """
 samplelabels(cpplsfit::CPPLSFit) = cpplsfit.samplelabels
 
-"""
-    xscores(cpplsfit::CPPLSFit)
 
-Return the predictor score matrix `T` for the fitted model.
 """
-xscores(cpplsfit::CPPLSFit) = cpplsfit.T
+    xscores(model::CPPLSFit)
+    xscores(model::CPPLSFit, comp::Integer)
+    xscores(model::CPPLSFit, comps::AbstractUnitRange{<:Integer})
+    xscores(model::CPPLSFit, comps::AbstractVector{<:Integer})
+
+Return the predictor score matrix `T` for the fitted model, or a subset of its columns:
+
+- `xscores(model)` returns the full score matrix (all components).
+- `xscores(model, comp)` returns the column for a single component as a vector.
+- `xscores(model, comps::AbstractUnitRange)` returns a matrix with the selected range of components.
+- `xscores(model, comps::AbstractVector)` returns a matrix with the specified components (in given order).
+
+Throws an error if any requested component index is out of bounds.
+"""
+function xscores(model::CPPLSFit)
+    model.T
+end
+
+function xscores(model::CPPLSFit, comp::Integer)
+    ncomp = size(model.T, 2)
+    1 <= comp <= ncomp || throw(ArgumentError("Component index $comp out of bounds (1:$ncomp)"))
+    view(model.T, :, comp)
+end
+
+function xscores(model::CPPLSFit, comps::AbstractUnitRange{<:Integer})
+    ncomp = size(model.T, 2)
+    (1 <= first(comps) <= ncomp && 1 <= last(comps) <= ncomp) || throw(ArgumentError("Component range $(comps) out of bounds (1:$ncomp)"))
+    view(model.T, :, comps)
+end
+
+function xscores(model::CPPLSFit, comps::AbstractVector{<:Integer})
+    ncomp = size(model.T, 2)
+    all(1 .<= comps .<= ncomp) || throw(ArgumentError("Component indices $(comps) out of bounds (1:$ncomp)"))
+    view(model.T, :, comps)
+end
 
 """
     CPPLSFitLight{T}

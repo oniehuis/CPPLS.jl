@@ -144,20 +144,6 @@ samplelabels, X, classes, Y_aux = load(
     "Y_aux"
 )
 
-backend = :makie
-figure_kwargs = (; size=(900, 600))
-
-function orient_scores(scores, classes; reference_class="major")
-    oriented = copy(scores)
-    reference_idx = classes .== reference_class
-    for lv in axes(oriented, 2)
-        if mean(oriented[reference_idx, lv]) < 0
-            oriented[:, lv] .*= -1
-        end
-    end
-    oriented
-end
-
 spec = CPPLSSpec(
     ncomponents=2,
     gamma=0.69,
@@ -318,7 +304,9 @@ outlier_view_model = fit(
     samplelabels=samplelabels
 )
 
-outlier_view_scores = orient_scores(xscores(outlier_view_model)[:, 1:2], classes)
+outlier_view_scores = xscores(outlier_view_model, 1:2)
+
+figure_kwargs = (; size=(900, 600))
 
 outlier_fig = Figure(size=figure_kwargs.size)
 outlier_ax = Axis(
@@ -332,7 +320,7 @@ scoreplot(
     samplelabels,
     classes,
     outlier_view_scores;
-    backend=backend,
+    backend=:makie,
     figure=outlier_fig,
     axis=outlier_ax,
     show_legend=false,

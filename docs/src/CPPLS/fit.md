@@ -5,8 +5,11 @@ Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with
 
 !!! info
     The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSSpec`](@ref), mainly determines which convenience functions are available for downstream analysis. For model fitting itself, the essential difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, while regression typically uses a $Y$ vector or matrix with continuously varying values.
-    
+
     CPPLS is highly flexible: the response $Y$ can contain both one-hot encoded columns (for classification/DA) and continuous columns (for regression) at the same time. This allows for hybrid models that align predictor variables to multiple response variables of different types. In such cases, users must encode the $Y$ matrix appropriately and extract the relevant outputs from [`project`](@ref) and [`predict`](@ref).
+
+    Whenever Y has different values, one should make sure that they are scaled so that their
+    individual impact is controlled for.
 
 You can optionally provide observation weights (keyword argument `obs_weights`) and auxiliary response information (keyword argument `Y_aux`) to [`StatsAPI.fit`](@ref). Observation weights control the influence of each sample on the model, while auxiliary responses guide the supervised projection without changing the primary prediction target. In discriminant analysis, observation weights are especially useful for addressing class imbalance. Together with the `gamma` parameter—which balances predictor and response variances and their correlation—these options allow you to tailor a CPPLS model to your dataset. Other choices, such as the number of components, may also be important depending on your analysis.
 
@@ -51,11 +54,16 @@ orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
 # Load example data from file
 data = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"))
 
+
 # Extract data of interest
 sample_labels = data["sample_labels"]
 X             = data["X"]
 classes       = data["classes"]
-Y_aux         = data["Y_aux"]
+Y_aux_raw     = data["Y_aux"]
+
+# Standardize Y_aux to ensure balanced impact with one-hot Y
+using Statistics
+Y_aux = (Y_aux_raw .- mean(Y_aux_raw; dims=1)) ./ std(Y_aux_raw; dims=1)
 
 nothing # hide
 ```

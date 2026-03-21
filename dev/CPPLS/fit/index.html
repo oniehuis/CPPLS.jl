@@ -208,7 +208,7 @@ scatter!(weighted_yaux_interval_ax, weighted_yaux_interval_gammas, weighted_yaux
 vlines!(weighted_yaux_interval_ax, [selected_weighted_yaux_gamma];
     color=:firebrick, linestyle=:dash)
 
-save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.6917448608662595
+save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.691744860864349
 Associated rho^2: 0.7722166962883602</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_spec = CPPLSSpec(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
@@ -252,6 +252,8 @@ Associated rho^2: [0.772217, 0.038351]</code></pre><p><img src="../cppls_weighte
 using JLD2
 using CairoMakie
 using Colors
+using GLM
+using DataFrames
 
 
 # Load example data
@@ -280,18 +282,26 @@ m_reg = fit(
     samplelabels=sample_labels
 )
 
-# For regression, visualize the first latent variable vs. predicted Y_aux
-t1 = xscores(m_reg, 1)
-Y_pred = predict(m_reg, X, 1)  # shape: (samples, responses, components)
 
-# Plot: first LV vs. predicted Y_aux (first response, first component)
+# For regression, visualize predicted Y vs. true Y, with regression line
+# Ensure both are 1D vectors for the first response column
+Y_pred = predict(m_reg, X, 1)[:, 1, 1]  # predicted values (vector)
+Y_true = Y_main[:, 1]  # true values (vector, first response column)
+
+# Fit regression line using GLM
+df = DataFrame(y_true=Y_true, y_pred=Y_pred)
+lm = fit(LinearModel, @formula(y_pred ~ y_true), df)
+Y_fit = predict(lm)
+
 fig = Figure(size=(900, 450))
 ax = Axis(fig[1, 1],
-    xlabel=&quot;First Latent Variable (t₁)&quot;,
+    xlabel=&quot;True Y_aux (first response)&quot;,
     ylabel=&quot;Predicted Y_aux (first response, first component)&quot;,
-    title=&quot;Regression: t₁ vs. Predicted Y_aux (first response, first component)&quot;
+    title=&quot;Regression: Predicted vs. True Y_aux (first response)&quot;
 )
-scatter!(ax, t1, Y_pred[:, 1, 1], color=:dodgerblue, markersize=10)
+scatter!(ax, Y_true, Y_pred, color=:dodgerblue, markersize=10, label=&quot;Samples&quot;)
+lines!(ax, Y_true, Y_fit, color=:firebrick, linewidth=3, label=&quot;Regression line&quot;)
+axislegend(ax)
 save(&quot;regression_scoreplot.svg&quot;, fig)</code></pre><p><img src="../regression_scoreplot.svg" alt/></p><p>In this plot, each point represents a sample, with its position determined by the first latent variable (t₁) and the predicted value of <span>$Y_{aux}$</span>. This visualization helps assess how well the main direction of variance in <span>$X$</span> (as captured by t₁) aligns with the regression target. The use of class labels as an auxiliary response ensures that the extracted components are not unduly influenced by class-related structure, but instead focus on the continuous outcome of interest.</p><p>This regression example demonstrates the versatility of CPPLS for both regression and classification, and shows how auxiliary responses can be used to disentangle complex sources of variation in supervised modeling.</p><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><p>The example above illustrates a discriminant-analysis workflow, but the same fitting entry point is used more generally throughout <code>CPPLS</code>. The reference below documents the <code>fit</code> interface itself.</p><article><details class="docstring" open="true"><summary id="StatsAPI.fit"><a class="docstring-binding" href="#StatsAPI.fit"><code>StatsAPI.fit</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">fit(model::CPPLSSpec,
     X::AbstractMatrix{&lt;:Real},
     Y_prim::AbstractMatrix{&lt;:Real};
@@ -336,4 +346,4 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
-  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/f5596154a1cae397aaf7a1b0d71124bf796308e3/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Saturday 21 March 2026 12:47">Saturday 21 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/963a695b2cdaf7aaa8942ebb1aa1327c72258532/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Saturday 21 March 2026 13:21">Saturday 21 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

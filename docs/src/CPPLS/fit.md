@@ -1,30 +1,19 @@
 # Fit
 
-Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a 
-[`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant 
-analysis.
+
+Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a [`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant analysis, providing a consistent workflow for a wide range of supervised modeling tasks.
 
 ```@info
 **Note on Regression vs. Discriminant Analysis in CPPLS**
 
-The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSSpec`](@ref), primarily affects the availability of convenience functions tailored for pure discriminant analysis. From the perspective of model fitting, the main difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, whereas regression typically involves a $Y$ vector or matrix with continuously varying values.
+The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSSpec`](@ref), mainly determines which convenience functions are available for downstream analysis. For model fitting itself, the essential difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, while regression typically uses a $Y$ vector or matrix with continuously varying values.
 
-CPPLS is flexible and supports more complex scenarios where the response $Y$ can include both one-hot encoded columns (for classification/DA) and continuous columns (for regression) simultaneously. This enables hybrid models that align predictor variables to multiple response variables of different types. In such cases, users are responsible for encoding the $Y$ matrix appropriately and for extracting the relevant outputs from the results of `project` and `predict`.
+CPPLS is highly flexible: the response $Y$ can contain both one-hot encoded columns (for classification/DA) and continuous columns (for regression) at the same time. This allows for hybrid models that align predictor variables to multiple response variables of different types. In such cases, users must encode the $Y$ matrix appropriately and extract the relevant outputs from [`project`](@ref) and [`predict`](@ref).
 ```
 
-In either case, you can optionally provide observation weights and auxiliary 
-response information. Observation weights determine how much influence each sample has on 
-the model, while auxiliary responses can guide the supervised projection without altering 
-the primary prediction target. In discriminant analysis (DA), observation weights are 
-particularly helpful for handling imbalanced classes. Along with the gamma parameter, 
-which controls the balance between predictor and response variances and their correlation, 
-observation weights and auxiliary responses are key options for tailoring a CPPLS model to 
-your dataset. Other choices, such as the number of components, may also be important 
-depending on your analysis.
+You can optionally provide observation weights (keyword argument `obs_weights`) and auxiliary response information (keyword argument `Y_aux`) to [`StatsAPI.fit`](@ref). Observation weights control the influence of each sample on the model, while auxiliary responses guide the supervised projection without changing the primary prediction target. In discriminant analysis, observation weights are especially useful for addressing class imbalance. Together with the `gamma` parameter—which balances predictor and response variances and their correlation—these options allow you to tailor a CPPLS model to your dataset. Other choices, such as the number of components, may also be important depending on your analysis.
 
-If you plan to use observation weights or auxiliary responses, specify them before 
-selecting the gamma parameter. Both can affect the supervised objective and, consequently, 
-the gamma values that are most appropriate.
+If you plan to use observation weights or auxiliary responses, specify them before selecting the `gamma` parameter, as both can affect the supervised objective and, consequently, the most appropriate gamma values.
 
 ## Example
 

@@ -255,7 +255,6 @@ using Colors
 using GLM
 using DataFrames
 
-
 # Load example data
 data = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;))
 sample_labels = data[&quot;sample_labels&quot;]
@@ -282,7 +281,6 @@ m_reg = fit(
     samplelabels=sample_labels
 )
 
-
 # For regression, visualize predicted Y vs. true Y, with regression line
 # Ensure both are 1D vectors for the first response column
 Y_pred = predict(m_reg, X, 1)[:, 1, 1]  # predicted values (vector)
@@ -302,7 +300,19 @@ ax = Axis(fig[1, 1],
 scatter!(ax, Y_true, Y_pred, color=:dodgerblue, markersize=10, label=&quot;Samples&quot;)
 lines!(ax, Y_true, Y_fit, color=:firebrick, linewidth=3, label=&quot;Regression line&quot;)
 axislegend(ax)
-save(&quot;regression_scoreplot.svg&quot;, fig)</code></pre><p><img src="../regression_scoreplot.svg" alt/></p><p>In this plot, each point represents a sample, with its position determined by the first latent variable (t₁) and the predicted value of <span>$Y_{aux}$</span>. This visualization helps assess how well the main direction of variance in <span>$X$</span> (as captured by t₁) aligns with the regression target. The use of class labels as an auxiliary response ensures that the extracted components are not unduly influenced by class-related structure, but instead focus on the continuous outcome of interest.</p><p>This regression example demonstrates the versatility of CPPLS for both regression and classification, and shows how auxiliary responses can be used to disentangle complex sources of variation in supervised modeling.</p><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><p>The example above illustrates a discriminant-analysis workflow, but the same fitting entry point is used more generally throughout <code>CPPLS</code>. The reference below documents the <code>fit</code> interface itself.</p><article><details class="docstring" open="true"><summary id="StatsAPI.fit"><a class="docstring-binding" href="#StatsAPI.fit"><code>StatsAPI.fit</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">fit(model::CPPLSSpec,
+save(&quot;regression_scoreplot.svg&quot;, fig)
+#+# Additional plot: LV1 vs. Y_true
+LV1 = xscores(m_reg, 1)[:, 1]  # first latent variable (component 1)
+
+fig_lv1 = Figure(size=(900, 450))
+ax_lv1 = Axis(fig_lv1[1, 1],
+    xlabel=&quot;LV1 (first component)&quot;,
+    ylabel=&quot;True Y_aux (first response)&quot;,
+    title=&quot;LV1 vs. True Y_aux (first response)&quot;
+)
+scatter!(ax_lv1, LV1, Y_true, color=:seagreen, markersize=10, label=&quot;Samples&quot;)
+axislegend(ax_lv1)
+save(&quot;lv1_vs_ytrue.svg&quot;, fig_lv1)</code></pre><p><img src="../regression_scoreplot.svg" alt/></p><p>In this plot, each point represents a sample, with its position determined by the first latent variable (t₁) and the predicted value of <span>$Y_{aux}$</span>. This visualization helps assess how well the main direction of variance in <span>$X$</span> (as captured by t₁) aligns with the regression target. The use of class labels as an auxiliary response ensures that the extracted components are not unduly influenced by class-related structure, but instead focus on the continuous outcome of interest.</p><p>This regression example demonstrates the versatility of CPPLS for both regression and classification, and shows how auxiliary responses can be used to disentangle complex sources of variation in supervised modeling.</p><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><p>The example above illustrates a discriminant-analysis workflow, but the same fitting entry point is used more generally throughout <code>CPPLS</code>. The reference below documents the <code>fit</code> interface itself.</p><article><details class="docstring" open="true"><summary id="StatsAPI.fit"><a class="docstring-binding" href="#StatsAPI.fit"><code>StatsAPI.fit</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">fit(model::CPPLSSpec,
     X::AbstractMatrix{&lt;:Real},
     Y_prim::AbstractMatrix{&lt;:Real};
     kwargs...
@@ -346,4 +356,4 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
-  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/963a695b2cdaf7aaa8942ebb1aa1327c72258532/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Saturday 21 March 2026 13:21">Saturday 21 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/5500396623e25c6989a406f951e6e8705d425f3e/src/CPPLS/fit.jl#L1-L101">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Saturday 21 March 2026 13:47">Saturday 21 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

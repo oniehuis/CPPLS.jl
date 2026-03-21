@@ -1,6 +1,5 @@
 # Fit
 
-
 Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a [`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant analysis, providing a consistent workflow for a wide range of supervised modeling tasks.
 
 !!! info
@@ -476,14 +475,12 @@ This example highlights several key points:
 This approach demonstrates the flexibility of CPPLS for hybrid modeling, where both continuous and categorical responses can be leveraged.
 
 ```@example fit_regression
-
 using CPPLS
 using JLD2
 using CairoMakie
 using Colors
 using GLM
 using DataFrames
-
 
 # Load example data
 data = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"))
@@ -511,8 +508,6 @@ m_reg = fit(
     samplelabels=sample_labels
 )
 
-nothing # hide
-
 # For regression, visualize predicted Y vs. true Y, with regression line
 # Ensure both are 1D vectors for the first response column
 Y_pred = predict(m_reg, X, 1)[:, 1, 1]  # predicted values (vector)
@@ -533,6 +528,19 @@ scatter!(ax, Y_true, Y_pred, color=:dodgerblue, markersize=10, label="Samples")
 lines!(ax, Y_true, Y_fit, color=:firebrick, linewidth=3, label="Regression line")
 axislegend(ax)
 save("regression_scoreplot.svg", fig)
+nothing # hide
+#+# Additional plot: LV1 vs. Y_true
+LV1 = xscores(m_reg, 1)[:, 1]  # first latent variable (component 1)
+
+fig_lv1 = Figure(size=(900, 450))
+ax_lv1 = Axis(fig_lv1[1, 1],
+    xlabel="LV1 (first component)",
+    ylabel="True Y_aux (first response)",
+    title="LV1 vs. True Y_aux (first response)"
+)
+scatter!(ax_lv1, LV1, Y_true, color=:seagreen, markersize=10, label="Samples")
+axislegend(ax_lv1)
+save("lv1_vs_ytrue.svg", fig_lv1)
 nothing # hide
 ```
 

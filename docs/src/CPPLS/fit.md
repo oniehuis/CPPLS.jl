@@ -476,10 +476,13 @@ This example highlights several key points:
 This approach demonstrates the flexibility of CPPLS for hybrid modeling, where both continuous and categorical responses can be leveraged.
 
 ```@example fit_regression
+
 using CPPLS
 using JLD2
 using CairoMakie
 using Colors
+using GLM
+using DataFrames
 
 
 # Load example data
@@ -508,18 +511,27 @@ m_reg = fit(
     samplelabels=sample_labels
 )
 
-# For regression, visualize the first latent variable vs. predicted Y_aux
-t1 = xscores(m_reg, 1)
-Y_pred = predict(m_reg, X, 1)  # shape: (samples, responses, components)
+nothing # hide
 
-# Plot: first LV vs. predicted Y_aux (first response, first component)
+# For regression, visualize predicted Y vs. true Y, with regression line
+# Ensure both are 1D vectors for the first response column
+Y_pred = predict(m_reg, X, 1)[:, 1, 1]  # predicted values (vector)
+Y_true = Y_main[:, 1]  # true values (vector, first response column)
+
+# Fit regression line using GLM
+df = DataFrame(y_true=Y_true, y_pred=Y_pred)
+lm = fit(LinearModel, @formula(y_pred ~ y_true), df)
+Y_fit = predict(lm)
+
 fig = Figure(size=(900, 450))
 ax = Axis(fig[1, 1],
-    xlabel="First Latent Variable (t₁)",
+    xlabel="True Y_aux (first response)",
     ylabel="Predicted Y_aux (first response, first component)",
-    title="Regression: t₁ vs. Predicted Y_aux (first response, first component)"
+    title="Regression: Predicted vs. True Y_aux (first response)"
 )
-scatter!(ax, t1, Y_pred[:, 1, 1], color=:dodgerblue, markersize=10)
+scatter!(ax, Y_true, Y_pred, color=:dodgerblue, markersize=10, label="Samples")
+lines!(ax, Y_true, Y_fit, color=:firebrick, linewidth=3, label="Regression line")
+axislegend(ax)
 save("regression_scoreplot.svg", fig)
 nothing # hide
 ```

@@ -546,6 +546,8 @@ nothing # hide
 
 ![](regression_scoreplot.svg)
 
+![](lv1_vs_ytrue.svg)
+
 In this plot, each point represents a sample, with its position determined by the first latent variable (t₁) and the predicted value of $Y_{aux}$. This visualization helps assess how well the main direction of variance in $X$ (as captured by t₁) aligns with the regression target. The use of class labels as an auxiliary response ensures that the extracted components are not unduly influenced by class-related structure, but instead focus on the continuous outcome of interest.
 
 This regression example demonstrates the versatility of CPPLS for both regression and classification, and shows how auxiliary responses can be used to disentangle complex sources of variation in supervised modeling.

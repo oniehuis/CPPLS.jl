@@ -1,4 +1,48 @@
 """
+    colmean(M::AbstractMatrix{<:Real})
+    colmean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
+
+Compute the (optionally weighted) column means of M.
+"""
+colmean(M::AbstractMatrix{<:Real}) = mean(M, dims=1)
+colmean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) = (obs_weights' * M) / sum(obs_weights)
+
+"""
+    colstd(M::AbstractMatrix{<:Real})
+    colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
+
+Compute the (optionally weighted) column standard deviations of M.
+"""
+colstd(M::AbstractMatrix{<:Real}) = std(M, dims=1)
+colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) = begin
+    μ = colmean(M, obs_weights)
+    sqrt.(sum(obs_weights .* (M .- μ).^2, dims=1) / sum(obs_weights))
+end
+
+"""
+    center_and_scale(M::AbstractMatrix{<:Real}; center::Bool=true, scale::Bool=true, obs_weights=nothing)
+
+Center and/or scale the columns of M. Returns (M_trans, means, stds).
+If obs_weights is provided, use weighted mean and std.
+"""
+function center_and_scale(M::AbstractMatrix{<:Real}; center::Bool=true, scale::Bool=true, obs_weights=nothing)
+    if center
+        μ = isnothing(obs_weights) ? colmean(M) : colmean(M, obs_weights)
+        M_centered = M .- μ
+    else
+        μ = zeros(1, size(M,2))
+        M_centered = M
+    end
+    if scale
+        σ = isnothing(obs_weights) ? colstd(M_centered) : colstd(M_centered, obs_weights)
+        M_scaled = M_centered ./ σ
+    else
+        σ = ones(1, size(M,2))
+        M_scaled = M_centered
+    end
+    return M_scaled, μ, σ
+end
+"""
     center_mean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
     center_mean(M::AbstractMatrix{<:Real}, ::Nothing)
 

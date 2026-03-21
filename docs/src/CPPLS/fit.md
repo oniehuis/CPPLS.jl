@@ -3,11 +3,10 @@
 
 Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a [`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant analysis, providing a consistent workflow for a wide range of supervised modeling tasks.
 
-```@info
-The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSSpec`](@ref), mainly determines which convenience functions are available for downstream analysis. For model fitting itself, the essential difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, while regression typically uses a $Y$ vector or matrix with continuously varying values.
-
-CPPLS is highly flexible: the response $Y$ can contain both one-hot encoded columns (for classification/DA) and continuous columns (for regression) at the same time. This allows for hybrid models that align predictor variables to multiple response variables of different types. In such cases, users must encode the $Y$ matrix appropriately and extract the relevant outputs from [`project`](@ref) and [`predict`](@ref).
-```
+!!! info
+    The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSSpec`](@ref), mainly determines which convenience functions are available for downstream analysis. For model fitting itself, the essential difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, while regression typically uses a $Y$ vector or matrix with continuously varying values.
+    
+    CPPLS is highly flexible: the response $Y$ can contain both one-hot encoded columns (for classification/DA) and continuous columns (for regression) at the same time. This allows for hybrid models that align predictor variables to multiple response variables of different types. In such cases, users must encode the $Y$ matrix appropriately and extract the relevant outputs from [`project`](@ref) and [`predict`](@ref).
 
 You can optionally provide observation weights (keyword argument `obs_weights`) and auxiliary response information (keyword argument `Y_aux`) to [`StatsAPI.fit`](@ref). Observation weights control the influence of each sample on the model, while auxiliary responses guide the supervised projection without changing the primary prediction target. In discriminant analysis, observation weights are especially useful for addressing class imbalance. Together with the `gamma` parameter—which balances predictor and response variances and their correlation—these options allow you to tailor a CPPLS model to your dataset. Other choices, such as the number of components, may also be important depending on your analysis.
 
@@ -488,7 +487,7 @@ Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
 
 # Set up regression spec: predict Y_main from X, use Y_aux_mat as auxiliary
 reg_spec = CPPLSSpec(
-    ncomponents=1,
+    ncomponents=2,
     gamma=intervalize(0:0.05:1),
     mode=:regression
 )
@@ -497,13 +496,13 @@ m_reg = fit(
     reg_spec,
     X,
     Y_main;
-    Y_aux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
+    # Y_aux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
     samplelabels=sample_labels
 )
 
 # For regression, visualize the first latent variable vs. predicted Y_aux
 t1 = xscores(m_reg, 1)
-Y_pred = predict(m_reg, X)  # shape: (samples, responses, components)
+Y_pred = predict(m_reg, X, 1)  # shape: (samples, responses, components)
 
 # Plot: first LV vs. predicted Y_aux (first response, first component)
 fig = Figure(size=(900, 450))

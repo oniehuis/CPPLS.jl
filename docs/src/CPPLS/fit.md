@@ -504,7 +504,7 @@ m_reg = fit(
     reg_spec,
     X,
     Y_main;
-    # Y_aux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
+    Y_aux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
     samplelabels=sample_labels
 )
 

@@ -2,7 +2,17 @@
 
 Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a 
 [`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant 
-analysis. In either case, you can optionally provide observation weights and auxiliary 
+analysis.
+
+```@info
+**Note on Regression vs. Discriminant Analysis in CPPLS**
+
+The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSSpec`](@ref), primarily affects the availability of convenience functions tailored for pure discriminant analysis. From the perspective of model fitting, the main difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, whereas regression typically involves a $Y$ vector or matrix with continuously varying values.
+
+CPPLS is flexible and supports more complex scenarios where the response $Y$ can include both one-hot encoded columns (for classification/DA) and continuous columns (for regression) simultaneously. This enables hybrid models that align predictor variables to multiple response variables of different types. In such cases, users are responsible for encoding the $Y$ matrix appropriately and for extracting the relevant outputs from the results of `project` and `predict`.
+```
+
+In either case, you can optionally provide observation weights and auxiliary 
 response information. Observation weights determine how much influence each sample has on 
 the model, while auxiliary responses can guide the supervised projection without altering 
 the primary prediction target. In discriminant analysis (DA), observation weights are 
@@ -107,8 +117,6 @@ We start with a plain model in which neither observational weights nore  auxilia
 information is considered.
 
 ```@example fit_da
-class_weights = invfreqweights(classes)
-
 spec = CPPLSSpec(
     ncomponents=2,
     gamma=0.5,
@@ -151,17 +159,11 @@ imbalance.
 ```@example fit_da
 class_weights = invfreqweights(classes)
 
-spec = CPPLSSpec(
-    ncomponents=2,
-    gamma=0.5,
-    mode=:discriminant
-)
-
 m_weighted = fit(
     spec,
     X,
     classes;
-    obs_weights=class_weights,
+    obs_weights=class_weights,   # <- added parameter
     samplelabels=sample_labels
 )
 
@@ -209,7 +211,7 @@ m_weighted_yaux = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Y_aux=Y_aux,
+    Y_aux=Y_aux,                 # <- added parameter
     samplelabels=sample_labels
 )
 
@@ -236,7 +238,10 @@ by a correlated covariate. To make that difference easier to see, we plot the la
 score sets again, now shading each point by its auxiliary response value.
 
 ```@example fit_da
+# Convert auxialliary matrix to a vector
 aux = vec(Y_aux[:, 1])
+
+# Generate colors for each Y_aux value within range Gray(0.1) and Gray(0.8)
 aux_min, aux_max = extrema(aux)
 point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
 

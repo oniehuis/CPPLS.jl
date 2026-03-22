@@ -1,14 +1,14 @@
 """
     compute_cppls_weights(
+        m::CPPLSModel,
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
         Y_prim::AbstractMatrix{<:Real}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
-        gamma::Real, 
-        gamma_rel_tol::Real, 
-        gamma_abs_tol::Real
+        gamma::Real
     )
     compute_cppls_weights(
+        m::CPPLSModel,
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
         Y_prim::AbstractMatrix{<:Real}, 
@@ -16,9 +16,7 @@
         gamma::Union{
             <:NTuple{2, <:Real}, 
             <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
-        }, 
-        gamma_rel_tol::Real, 
-        gamma_abs_tol::Real
+        }
     )
 
 Compute CPPLS supervised weights and the associated CCA quantities. This is the entry
@@ -27,20 +25,13 @@ aligning Z with the primary responses through CCA. A fixed gamma can be supplied
 or a search/grid specification can be used to select gamma by maximizing the leading
 canonical correlation.
 """
-gamma_search_candidate_count(::Real) = 1
-gamma_search_candidate_count(::NTuple{2, <:Real}) = 1
-gamma_search_candidate_count(
-    gamma::AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
-) = length(gamma)
-
 function compute_cppls_weights(
+    m::CPPLSModel,
     X_def::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
-    gamma::Real,
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real
+    gamma::Real
 )
 
     if gamma == 0.5
@@ -50,21 +41,19 @@ function compute_cppls_weights(
         w = vec(W0 * a[:, 1])
         return w, rho^2, a[:, 1], b[:, 1], 0.5, W0, [0.5], [rho^2]
     else
-        return compute_cppls_weights(X_def, Y, Y_prim, obs_weights, (gamma, gamma),
-            gamma_rel_tol, gamma_abs_tol)
+        return compute_cppls_weights(m, X_def, Y, Y_prim, obs_weights, (gamma, gamma))
     end
 end
 
 function compute_cppls_weights(
+    m::CPPLSModel,
     X_def::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     gamma::Union{<:NTuple{2, <:Real},
                  <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
-    },
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real
+    }
 )
 
     # Correlation and scale statistics form the ingredients of W0(gamma).
@@ -86,12 +75,19 @@ function compute_cppls_weights(
         S_x .= 0
     end
 
-    compute_best_loadings(X_def, S_x, C, C_sign, Y_prim, obs_weights, gamma, gamma_rel_tol,
-        gamma_abs_tol, size(Y, 2))
+    compute_best_loadings(m, X_def, S_x, C, C_sign, Y_prim, obs_weights, gamma, size(Y, 2))
 end
+
+gamma_search_candidate_count(::Real) = 1
+gamma_search_candidate_count(::NTuple{2, <:Real}) = 1
+gamma_search_candidate_count(
+    gamma::AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
+) = length(gamma)
+
 
 """
     compute_best_loadings(
+        m::CPPLSModel,
         X_def::AbstractMatrix{<:Real}, 
         S_x::AbstractMatrix{<:Real}, 
         C::AbstractMatrix{<:Real}, 
@@ -101,9 +97,7 @@ end
         gamma_bounds::Union{
             <:NTuple{2, <:Real}, 
             <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
-        }, 
-        gamma_rel_tol::Real, 
-        gamma_abs_tol::Real, 
+        },
         q::Integer
     )
 
@@ -115,6 +109,7 @@ total number of response columns (primary + auxiliary) used to construct the sup
 projection space.
 """
 function compute_best_loadings(
+    m::CPPLSModel,
     X_def::AbstractMatrix{<:Real},
     S_x::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
@@ -125,8 +120,6 @@ function compute_best_loadings(
         <:NTuple{2, <:Real},
         <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}},
     },
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
     q::Integer
 )
 
@@ -134,15 +127,14 @@ function compute_best_loadings(
     obs_weights = isnothing(obs_weights) ? obs_weights : sqrt.(obs_weights)
 
     gamma, rho2, gammas, rhos = compute_best_gamma(
+        m,
         X_def,
         S_x,
         C,
         C_sign,
         Y_prim,
         obs_weights,
-        gamma_bounds,
-        gamma_rel_tol,
-        gamma_abs_tol,
+        gamma_bounds
     )
 
     if gamma == 0
@@ -172,6 +164,7 @@ end
 
 """
     compute_best_gamma(
+        m::CPPLSModel,
         X_def::AbstractMatrix{<:Real}, 
         S_x::AbstractMatrix{<:Real}, 
         C::AbstractMatrix{<:Real}, 
@@ -183,6 +176,7 @@ end
         gamma_abs_tol::Real
     )
     compute_best_gamma(
+        m::CPPLSModel,
         X_def::AbstractMatrix{<:Real}, 
         S_x::AbstractMatrix{<:Real}, 
         C::AbstractMatrix{<:Real}, 
@@ -199,15 +193,14 @@ and Y_prim. The tuple form uses a bounded Brent search, while the vector form ev
 set of candidate values or bounds and returns the best.
 """
 function compute_best_gamma(
+    m::CPPLSModel,
     X_def::AbstractMatrix{<:Real},
     S_x::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
     C_sign::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
-    gamma_bounds::NTuple{2, <:Real},
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
+    gamma_bounds::NTuple{2, <:Real}
 )
 
     a = first(gamma_bounds)
@@ -234,7 +227,7 @@ function compute_best_gamma(
     fa = f(a)
     fb = f(b)
 
-    result = optimize(f, a, b, Brent(); rel_tol=gamma_rel_tol, abs_tol=gamma_abs_tol)
+    result = optimize(f, a, b, Brent(); rel_tol=m.gamma_rel_tol, abs_tol=m.gamma_abs_tol)
     Optim.converged(result) || @warn("gamma optimization failed to converge.")
 
     γm = result.minimizer
@@ -255,15 +248,14 @@ function compute_best_gamma(
 end
 
 function compute_best_gamma(
+    m::CPPLSModel,
     X_def::AbstractMatrix{<:Real},
     S_x::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
     C_sign::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
-    gamma_bounds::AbstractVector{<:Union{NTuple{2, <:Real}, Real}},
-    gamma_rel_tol::Real,
-    gamma_abs_tol::Real,
+    gamma_bounds::AbstractVector{<:Union{NTuple{2, <:Real}, Real}}
 )
 
     n = length(gamma_bounds)
@@ -274,8 +266,8 @@ function compute_best_gamma(
     for i = 1:n
         if gamma_bounds[i] isa NTuple{2,<:Real}
             if first(gamma_bounds[i]) ≠ last(gamma_bounds[i])
-                gamma_vals[i], rho2_vals[i] = compute_best_gamma(X_def, S_x, C, C_sign,
-                    Y_prim, obs_weights, gamma_bounds[i], gamma_rel_tol, gamma_abs_tol)
+                gamma_vals[i], rho2_vals[i] = compute_best_gamma(m, X_def, S_x, C, C_sign,
+                    Y_prim, obs_weights, gamma_bounds[i])
             else
                 gamma_vals[i] = first(gamma_bounds[i])
                 rho2_vals[i] = -evaluate_canonical_correlation(gamma_vals[i], X_def, S_x,

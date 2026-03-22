@@ -151,14 +151,14 @@ Low-level CPPLS fitting routine used by `fit`. Prefer `fit` with a CPPLSModel fo
 public entry point and full parameter documentation.
 """
 function fit_cppls_core(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
-    ncomponents::Int=2;
+    ncomponents::Int=2;  # not used anymore
     gamma::T1=0.5,
     obs_weights::T2=nothing,
     Y_aux::T3=nothing,
-    center::Bool=true,
+    center::Bool=true,  # not used anymore
     X_tolerance::T4=1e-12,
     X_loading_weight_tolerance::T5=eps(Float64),
     gamma_rel_tol::T6=1e-6,
@@ -191,52 +191,48 @@ function fit_cppls_core(
     T13<:Union{AbstractString, Nothing}
 }
 
-    mode in (:discriminant, :regression) || throw(ArgumentError(
-        "mode must be :discriminant or :regression, got $mode"))
-
-    mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
+    m.mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
         "sampleclasses can only be provided for discriminant analysis"))
 
     n_predictors = size(X, 2)
 
     (X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B,
-        n_samples_X, n_targets_Y) = cppls_prepare_data(model, X, Y_prim, Y_aux, obs_weights)
+        n_samples_X, n_targets_Y) = cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
 
     samplelabels = default_sample_labels(validate_label_length(samplelabels, n_samples_X,
         "samplelabels"), n_samples_X)
     predictorlabels = validate_label_length(predictorlabels, n_predictors, 
         "predictorlabels")
     responselabels = validate_response_labels(responselabels, n_targets_Y)
-    if mode ≡ :discriminant && isempty(responselabels)
+    if m.mode ≡ :discriminant && isempty(responselabels)
         throw(ArgumentError(
             "responselabels must list class names for discriminant analysis"))
     end
 
-    T = Matrix{Float64}(undef, n_samples_X, ncomponents)
-    a = Matrix{Float64}(undef, size(Y, 2), ncomponents)
-    b = Matrix{Float64}(undef, n_targets_Y, ncomponents)
-    rho = Vector{Float64}(undef, ncomponents)
-    gamma_vals = fill(0.5, ncomponents)
-    gammas = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
-        ncomponents)
-    rhos = Matrix{Float64}(undef, gamma_search_candidate_count(gamma),
-        ncomponents)
-    t_norms = Vector{Float64}(undef, ncomponents)
-    U = Matrix{Float64}(undef, n_samples_X, ncomponents)
-    Y_hat = Array{Float64}(undef, n_samples_X, n_targets_Y, ncomponents)
-    W0 = Array{Float64}(undef, n_predictors, size(Y, 2), ncomponents)
-    Z = Array{Float64}(undef, n_samples_X, size(Y, 2), ncomponents)
+    T = Matrix{Float64}(undef, n_samples_X, m.ncomponents)
+    a = Matrix{Float64}(undef, size(Y, 2), m.ncomponents)
+    b = Matrix{Float64}(undef, n_targets_Y, m.ncomponents)
+    rho = Vector{Float64}(undef, m.ncomponents)
+    gamma_vals = fill(0.5, m.ncomponents)
+    gammas = Matrix{Float64}(undef, gamma_search_candidate_count(m.gamma),
+        m.ncomponents)
+    rhos = Matrix{Float64}(undef, gamma_search_candidate_count(m.gamma),
+        m.ncomponents)
+    t_norms = Vector{Float64}(undef, m.ncomponents)
+    U = Matrix{Float64}(undef, n_samples_X, m.ncomponents)
+    Y_hat = Array{Float64}(undef, n_samples_X, n_targets_Y, m.ncomponents)
+    W0 = Array{Float64}(undef, n_predictors, size(Y, 2), m.ncomponents)
+    Z = Array{Float64}(undef, n_samples_X, size(Y, 2), m.ncomponents)
 
-    for i = 1:ncomponents
+    for i = 1:m.ncomponents
         wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gammas[:, i],
-        rhos[:, i] = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
-            gamma, gamma_rel_tol, gamma_abs_tol)
+        rhos[:, i] = compute_cppls_weights(m, X_def, Y, Y_prim, obs_weights, m.gamma)
         
         W0[:, :, i] = W0ᵢ
         Z[:, :, i] = X_def * W0ᵢ
 
-        tᵢ, tᵢ_squared_norm, cᵢ = process_component!(i, X_def, wᵢ, Y_prim, W_comp, P, C, B,
-            zero_mask, X_tolerance, X_loading_weight_tolerance, t_squared_norm_tolerance)
+        tᵢ, tᵢ_squared_norm, cᵢ = process_component!(m, i, X_def, wᵢ, Y_prim, W_comp, P, C, 
+            B, zero_mask)
 
         T[:, i] = tᵢ
         t_norms[i] = tᵢ_squared_norm
@@ -258,9 +254,9 @@ function fit_cppls_core(
         gamma_vals, rho, gammas, rhos, zero_mask, a, b, W0,
         Z; samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels,
-        mode=mode, sampleclasses=sampleclasses)
+        mode=m.mode, sampleclasses=sampleclasses)
 
-    if orient_scores && mode ≡ :discriminant && !isnothing(sampleclasses) && !isempty(responselabels)
+    if orient_scores && m.mode ≡ :discriminant && !isnothing(sampleclasses) && !isempty(responselabels)
         ref = isnothing(reference_class) ? sort!(collect(responselabels))[1] : reference_class
         idx = findall(==(ref), sampleclasses)
         for lv in axes(fitobj.T, 2)
@@ -499,6 +495,7 @@ end
 
 """
     process_component!(
+        m::CPPLSModel,
         i::Int,
         X_def::AbstractMatrix{<:Real},
         wᵢ::AbstractVector{<:Real},
@@ -507,10 +504,7 @@ end
         P::AbstractMatrix{<:Real},
         C::AbstractMatrix{<:Real},
         B::Array{<:Real, 3},
-        zero_mask::AbstractMatrix{Bool},
-        X_tolerance::Real,
-        X_loading_weight_tolerance::Real,
-        tᵢ_squared_norm_tolerance::Real
+        zero_mask::AbstractMatrix{Bool}
     )
 
 Compute the i-th component from the current deflated predictors and update the CPPLS work 
@@ -521,6 +515,7 @@ and regression coefficients are updated, and the function returns the score, its
 norm, and the Y loading vector.
 """
 function process_component!(
+    m::CPPLSModel,
     i::Int,
     X_def::AbstractMatrix{<:Real},
     wᵢ::AbstractVector{<:Real},
@@ -529,19 +524,16 @@ function process_component!(
     P::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
     B::Array{<:Real, 3},
-    zero_mask::AbstractMatrix{Bool},
-    X_tolerance::Real,
-    X_loading_weight_tolerance::Real,
-    tᵢ_squared_norm_tolerance::Real
+    zero_mask::AbstractMatrix{Bool}
 )
 
-    wᵢ .= wᵢ ./ norm(wᵢ) .* (abs.(wᵢ) .≥ X_loading_weight_tolerance)
+    wᵢ .= wᵢ ./ norm(wᵢ) .* (abs.(wᵢ) .≥ m.X_loading_weight_tolerance)
 
     tᵢ = X_def * wᵢ
     tᵢ_squared_norm = tᵢ' * tᵢ
 
     if isapprox(tᵢ_squared_norm, 0.0)
-        tᵢ_squared_norm += tᵢ_squared_norm_tolerance
+        tᵢ_squared_norm += m.t_squared_norm_tolerance
     end
 
     pᵢ = (X_def' * tᵢ) / tᵢ_squared_norm
@@ -549,7 +541,7 @@ function process_component!(
 
     X_def .-= tᵢ * pᵢ'
 
-    zero_mask[i, :] .= vec(sum(abs.(X_def), dims=1) .< X_tolerance)
+    zero_mask[i, :] .= vec(sum(abs.(X_def), dims=1) .< m.X_tolerance)
     X_def[:, zero_mask[i, :]] .= 0
 
     W_comp[:, i] .= wᵢ

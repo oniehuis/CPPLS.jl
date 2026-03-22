@@ -137,7 +137,6 @@ end
         X,
         Y,
         1;
-        gamma = 0.5,
         samplelabels = samplelabels,
         predictorlabels = predictorlabels,
         responselabels = responselabels,
@@ -153,7 +152,6 @@ end
         X,
         Y,
         1;
-        gamma = 0.5,
         samplelabels = ["only_two"],
     )
 
@@ -163,7 +161,6 @@ end
         X,
         Y,
         1;
-        gamma = 0.5,
         predictorlabels = [:p1],
     )
 
@@ -173,18 +170,15 @@ end
         X,
         Y,
         1;
-        gamma = 0.5,
         responselabels = ["r1"],
     )
 
-    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, mode = :discriminant)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
         model,
         X,
         Y,
         1;
-        gamma = 0.5,
-        mode = :discriminant,
     )
 
     model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
@@ -193,20 +187,10 @@ end
         X,
         Y,
         1;
-        gamma = 0.5,
-        sampleclasses = ["classA"],
+        sampleclasses = ["classA"]
     )
 
-    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
-    @test_throws ArgumentError CPPLS.fit_cppls_core(
-        model,
-        X,
-        Y,
-        1;
-        gamma = 0.5,
-        mode = :unsupported_mode,
-        responselabels = responselabels,
-    )
+    @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, mode=:unsupported_mode)
 end
 
 @testset "fit_cppls with CPPLSModel enforces analysis mode for labels" begin
@@ -289,6 +273,7 @@ end
     )
 
     Y_vec = Float64[1, 0, 1, 0]
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:regression)
     vec_model = CPPLS.fit_cppls(model, X, Y_vec)
     mat_model = CPPLS.fit_cppls_core(model, X, reshape(Y_vec, :, 1), 2; gamma=0.5)
 
@@ -393,7 +378,8 @@ end
     ]
     ncomponents = 1
 
-    model = CPPLS.CPPLSModel(ncomponents=ncomponents, gamma=0.5, center=true)
+    m = CPPLS.CPPLSModel(ncomponents=ncomponents, gamma=0.5, center=true, X_tolerance=1e-12, 
+    X_loading_weight_tolerance=1e-12, t_squared_norm_tolerance=1e-10)
 
     X,
     Y_prim,
@@ -409,7 +395,7 @@ end
     B,
     _,
     _ = CPPLS.cppls_prepare_data(
-        model,
+        m,
         X,
         Y,
         nothing,
@@ -420,6 +406,7 @@ end
     X_def_original = copy(X_def)
 
     tᵢ, t_norm, _ = CPPLS.process_component!(
+        m,
         1,
         X_def,
         copy(initial_weights),
@@ -428,10 +415,7 @@ end
         P,
         C,
         B,
-        zero_mask,
-        1e-12,
-        1e-12,
-        1e-10,
+        zero_mask  
     )
 
     normalized_weights = initial_weights / CPPLS.norm(initial_weights)
@@ -462,7 +446,7 @@ end
         1 0
     ]
 
-    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center=true)
+    m = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center=true)
 
     X,
     Y_prim,
@@ -477,13 +461,16 @@ end
     zero_mask,
     B,
     _,
-    _ = CPPLS.cppls_prepare_data(model, X, Y, nothing, nothing)
+    _ = CPPLS.cppls_prepare_data(m, X, Y, nothing, nothing)
 
     X_def .= 0  # force zero scores regardless of weights
     initial_weights = [1.0, 2.0]
     tol = 1e-8
 
+    m = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center=true, X_tolerance=1e-12,
+        X_loading_weight_tolerance=1e-12, t_squared_norm_tolerance=tol)
     _, t_norm, _ = CPPLS.process_component!(
+        m,
         1,
         X_def,
         copy(initial_weights),
@@ -492,10 +479,7 @@ end
         P,
         C,
         B,
-        zero_mask,
-        1e-12,
-        1e-12,
-        tol,
+        zero_mask
     )
 
     @test t_norm == tol

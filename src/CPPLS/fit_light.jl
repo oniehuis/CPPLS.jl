@@ -24,7 +24,7 @@ a `CPPLSFitLight`. Prefer `fit` with a CPPLSModel for the public entry point and
 parameter documentation.
 """
 function fit_cppls_light_core(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     ncomponents::Int=2;
@@ -54,20 +54,16 @@ function fit_cppls_light_core(
 }
 
     X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B, _, _ = 
-        cppls_prepare_data(model, X, Y_prim, Y_aux, obs_weights)
+        cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
 
-    for i = 1:ncomponents
-        wᵢ, _, _, _, _, _, _, _ = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
-            gamma, gamma_rel_tol, gamma_abs_tol)
+    for i = 1:m.ncomponents
+        wᵢ, _, _, _, _, _, _, _ = compute_cppls_weights(m, X_def, Y, Y_prim, obs_weights,
+            m.gamma)
 
-        process_component!(i, X_def, wᵢ, Y_prim, W_comp, P, C, B, zero_mask, X_tolerance,
-            X_loading_weight_tolerance, t_squared_norm_tolerance)
+        process_component!(m, i, X_def, wᵢ, Y_prim, W_comp, P, C, B, zero_mask)
     end
 
-    mode in (:discriminant, :regression) || throw( ArgumentError(
-        "mode must be :discriminant or :regression, got $mode"))
-
-    CPPLSFitLight(B, X_bar, Y_bar, mode)
+    CPPLSFitLight(B, X_bar, Y_bar, m.mode)
 end
 
 

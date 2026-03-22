@@ -84,27 +84,27 @@ end
     Y = rand(5, 2)
     Y = hcat(Y, rand(5, 1))
 
+    m = CPPLSModel(gamma_rel_tol=1e-6, gamma_abs_tol=1e-12)
+     # Test scalar gamma
     weights = CPPLS.compute_cppls_weights(
+        m,
         X,
         Y,
         Y,
         nothing,
-        0.5,
-        1e-6,
-        1e-12,
+        0.5
     )
     @test length(weights) == 8
     @test weights[7] == [0.5]
     @test weights[8] == [weights[2]]
 
     weights_bounds = CPPLS.compute_cppls_weights(
+        m,
         X,
         Y,
         Y,
         nothing,
-        (0.1, 0.9),
-        1e-6,
-        1e-12,
+        (0.1, 0.9)
     )
     @test length(weights_bounds) == 8
     @test length(weights_bounds[7]) == 1
@@ -125,32 +125,29 @@ end
         1.0 1.0 0.0
     ]
     @test length(CPPLS.compute_cppls_weights(
+        m,
         X_rank_zero_candidate,
         Y_rank_zero_candidate,
         Y_rank_zero_candidate,
         nothing,
-        (0.1, 0.9),
-        1e-6,
-        1e-12,
+        (0.1, 0.9)
     )) == 8
 
     scalar_gamma = CPPLS.compute_cppls_weights(
+        m,
         X,
         Y,
         Y,
         nothing,
-        0.3,
-        1e-6,
-        1e-12,
+        0.3
     )
     tuple_gamma = CPPLS.compute_cppls_weights(
+        m,
         X,
         Y,
         Y,
         nothing,
-        (0.3, 0.3),
-        1e-6,
-        1e-12,
+        (0.3, 0.3)
     )
     @test all(isapprox.(scalar_gamma[1], tuple_gamma[1]))
     @test scalar_gamma[2] ≈ tuple_gamma[2]
@@ -160,13 +157,12 @@ end
     loadings_one, corr_one, coeffs_one, coeffs_one_y, gamma_one, _, gamma_trace_one,
     rho_trace_one =
         CPPLS.compute_cppls_weights(
+            m,
             X,
             Y,
             Y,
             nothing,
             (1.0, 1.0),
-            1e-6,
-            1e-12,
         )
     @test gamma_one == 1.0
     @test all(isfinite.(loadings_one))
@@ -191,14 +187,15 @@ end
         -1.0 -1.0
     ]
 
+    m = CPPLSModel(    gamma_rel_tol=1e-6, gamma_abs_tol=1e-12)
+     # Test scalar gamma
     loadings, _, _, _, gamma, _, _, _ = CPPLS.compute_cppls_weights(
+        m,
         X,
         Y,
         Y,
         nothing,
-        (0.0, 0.0),
-        1e-6,
-        1e-12,
+        (0.0, 0.0)
     )
     @test gamma == 0.0
     @test all(isfinite.(loadings))
@@ -206,13 +203,12 @@ end
     # max_std == 0 path: X has zero variance everywhere
     X_zero = zeros(4, 2)
     @test_throws ErrorException CPPLS.compute_cppls_weights(
+        m,
         X_zero,
         Y,
         Y,
         nothing,
-        (0.0, 0.0),
-        1e-6,
-        1e-12,
+        (0.0, 0.0)
     )
 end
 
@@ -280,37 +276,38 @@ end
     @test val0 ≤ 0
     @test val1 ≤ 0
 
+    m = CPPLSModel(gamma_rel_tol=1e-6, gamma_abs_tol=1e-12)
     γ_tuple, corr_tuple = CPPLS.compute_best_gamma(
+        m,
         X_def,
         X_std,
         X_Y_corr,
         corr_signs,
         Y_prim,
         nothing,
-        (0.0, 1.0),
-        1e-6,
-        1e-12,
+        (0.0, 1.0)
     )
     @test 0.0 ≤ γ_tuple ≤ 1.0
     @test 0.0 ≤ corr_tuple ≤ 1.0
 
     gamma_choices = Union{Float64,NTuple{2,Float64}}[0.0, 0.5, (0.2, 0.8), (0.3, 0.3)]
     γ_vec, corr_vec = CPPLS.compute_best_gamma(
+        m,
         X_def,
         X_std,
         X_Y_corr,
         corr_signs,
         Y_prim,
         nothing,
-        gamma_choices,
-        1e-6,
-        1e-12,
+        gamma_choices
     )
     @test 0.0 ≤ γ_vec ≤ 1.0
     @test 0.0 ≤ corr_vec ≤ 1.0
 
+    m = CPPLSModel(gamma_rel_tol=1e-6, gamma_abs_tol=1e-12)
     loadings_zero, corr_zero, coeffs_zero, coeffs_zero_y, γ_zero, _ =
         CPPLS.compute_best_loadings(
+            m,
             X_def,
             X_std,
             X_Y_corr,
@@ -318,8 +315,6 @@ end
             Y_prim,
             nothing,
             (0.0, 0.0),
-            1e-6,
-            1e-12,
             size(Y_prim, 2),
         )
     @test γ_zero == 0.0
@@ -330,6 +325,7 @@ end
 
     loadings_general, corr_general, coeffs_general, coeffs_general_y, γ_general, _ =
         CPPLS.compute_best_loadings(
+            m,
             X_def,
             X_std,
             X_Y_corr,
@@ -337,8 +333,6 @@ end
             Y_prim,
             nothing,
             (0.2, 0.8),
-            1e-6,
-            1e-12,
             size(Y_prim, 2),
         )
     @test 0.2 ≤ γ_general ≤ 0.8

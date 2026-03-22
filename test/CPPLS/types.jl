@@ -263,14 +263,14 @@ end
     end
 end
 
-@testset "CPPLSSpec stores hyperparameters" begin
-    spec = CPPLS.CPPLSSpec()
+@testset "CPPLSModel stores hyperparameters" begin
+    spec = CPPLS.CPPLSModel()
     @test spec.ncomponents == 2
     @test spec.gamma == 0.5
     @test spec.center === true
     @test spec.mode === :regression
 
-    tuned = CPPLS.CPPLSSpec(
+    tuned = CPPLS.CPPLSModel(
         ncomponents = 3,
         gamma = (0.2, 0.8),
         center = false,
@@ -286,18 +286,18 @@ end
     @test tuned.center === false
     @test tuned.mode === :discriminant
 
-    @test_throws ArgumentError CPPLS.CPPLSSpec(ncomponents = 0)
-    @test_throws ArgumentError CPPLS.CPPLSSpec(mode = :unsupported)
+    @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents = 0)
+    @test_throws ArgumentError CPPLS.CPPLSModel(mode = :unsupported)
 end
 
 @testset "custom show methods summarize CPPLS types" begin
-    spec = CPPLS.CPPLSSpec(ncomponents = 3, gamma = (0.2, 0.8), mode = :discriminant)
+    spec = CPPLS.CPPLSModel(ncomponents = 3, gamma = (0.2, 0.8), mode = :discriminant)
     spec_inline = sprint(show, spec)
     spec_plain = sprint(io -> show(io, MIME"text/plain"(), spec))
-    @test occursin("CPPLSSpec(", spec_inline)
+    @test occursin("CPPLSModel(", spec_inline)
     @test occursin("ncomponents=3", spec_inline)
     @test occursin("mode=discriminant", spec_inline)
-    @test occursin("CPPLSSpec", spec_plain)
+    @test occursin("CPPLSModel", spec_plain)
     @test occursin("ncomponents: 3", spec_plain)
     @test occursin("mode: discriminant", spec_plain)
 

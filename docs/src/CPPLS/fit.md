@@ -1,9 +1,9 @@
 # Fit
 
-Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a [`CPPLSSpec`](@ref). This unified interface supports both regression and discriminant analysis, providing a consistent workflow for a wide range of supervised modeling tasks.
+Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with a [`CPPLSModel`](@ref). This unified interface supports both regression and discriminant analysis, providing a consistent workflow for a wide range of supervised modeling tasks.
 
 !!! info
-    The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSSpec`](@ref), mainly determines which convenience functions are available for downstream analysis. For model fitting itself, the essential difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, while regression typically uses a $Y$ vector or matrix with continuously varying values.
+    The distinction between regression and discriminant analysis in CPPLS, as specified by the `mode` keyword in [`CPPLSModel`](@ref), mainly determines which convenience functions are available for downstream analysis. For model fitting itself, the essential difference is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response, while regression typically uses a $Y$ vector or matrix with continuously varying values.
 
     CPPLS is highly flexible: the response $Y$ can contain both one-hot encoded columns (for classification/DA) and continuous columns (for regression) at the same time. This allows for hybrid models that align predictor variables to multiple response variables of different types. In such cases, users must encode the $Y$ matrix appropriately and extract the relevant outputs from [`project`](@ref) and [`predict`](@ref).
 
@@ -110,7 +110,7 @@ We start with a plain model in which neither observational weights nore  auxilia
 information is considered.
 
 ```@example fit_da
-spec = CPPLSSpec(
+spec = CPPLSModel(
     ncomponents=2,
     gamma=0.5,
     mode=:discriminant
@@ -308,7 +308,7 @@ We first inspect the objective landscape on a dense grid and
 then use interval-based optimization to obtain a practical two-component fit.
 
 ```@example fit_da
-weighted_yaux_grid_spec = CPPLSSpec(
+weighted_yaux_grid_spec = CPPLSModel(
     ncomponents=1,
     gamma=0:0.001:1,
     mode=:discriminant
@@ -355,7 +355,7 @@ the best values retained from each interval, and the dashed line marks the overa
 winner.
 
 ```@example fit_da
-weighted_yaux_interval_spec = CPPLSSpec(
+weighted_yaux_interval_spec = CPPLSModel(
     ncomponents=1,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant
@@ -413,7 +413,7 @@ setup examined in this example because weighting, auxiliary supervision, and gam
 selection are all aligned with the same objective.
 
 ```@example fit_da
-weighted_yaux_best_spec = CPPLSSpec(
+weighted_yaux_best_spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant
@@ -494,7 +494,7 @@ Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
 
 
 # Set up regression spec: predict Y_main from X, use Y_aux_mat as auxiliary
-reg_spec = CPPLSSpec(
+reg_spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
     mode=:regression

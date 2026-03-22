@@ -20,7 +20,7 @@
     )
 
 Low-level CPPLS fitting routine used by internal cross-validation helpers that returns
-a `CPPLSFitLight`. Prefer `fit` with a CPPLSSpec for the public entry point and full
+a `CPPLSFitLight`. Prefer `fit` with a CPPLSModel for the public entry point and full
 parameter documentation.
 """
 function fit_cppls_light(
@@ -108,27 +108,27 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
     
     mode(model) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
+        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_light_from_sample_classes(X, sampleclasses, model.ncomponents;
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 function fit_cppls_light(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
     kwargs...,
 )
     mode(model) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
+        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
@@ -219,7 +219,7 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
@@ -233,7 +233,7 @@ function fit_cppls_light(
 end
 
 function fit_cppls_light(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractVector{<:Real};
     obs_weights::T1=nothing,

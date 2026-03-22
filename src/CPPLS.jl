@@ -27,7 +27,7 @@ include("Utils/statistics.jl")
 export AbstractCPPLSFit
 export CPPLSFit
 export CPPLSFitLight
-export CPPLSSpec
+export CPPLSModel
 export coef
 export cvda
 export cvreg

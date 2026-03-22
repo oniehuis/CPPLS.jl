@@ -144,7 +144,7 @@ samplelabels, X, classes, Y_aux = load(
     "Y_aux"
 )
 
-spec = CPPLSSpec(
+spec = CPPLSModel(
     ncomponents=2,
     gamma=0.69,
     mode=:discriminant

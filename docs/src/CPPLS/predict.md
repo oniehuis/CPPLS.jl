@@ -72,7 +72,7 @@ We next fit a discriminant model with two latent components and allow `gamma` to
 selected during fitting.
 
 ```@example project
-spec = CPPLSSpec(
+spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.25:1),
     mode=:discriminant

@@ -1,11 +1,11 @@
 """
-    CPPLSSpec{T}
+    CPPLSModel{T}
 
-Model specification passed to `fit`. A `CPPLSSpec` stores the user-controlled settings
+Model specification passed to `fit`. A `CPPLSModel` stores the user-controlled settings
 for CPPLS fitting, most importantly `ncomponents`, `gamma`, `center`, and
 `mode`.
 """
-struct CPPLSSpec{T}
+struct CPPLSModel{T}
     ncomponents::Int
     gamma::T
     center::Bool
@@ -18,7 +18,7 @@ struct CPPLSSpec{T}
 end
 
 """
-    CPPLSSpec(; 
+    CPPLSModel(; 
         ncomponents::Integer=2, 
         gamma=0.5, 
         center::Bool=true, 
@@ -34,7 +34,7 @@ Construct a model specification for `fit`. The most commonly adjusted settings a
 `ncomponents`, `gamma`, `center`, and `mode`. `gamma` may be a fixed value, a
 `(lo, hi)` interval, or a collection of such candidates used during fitting.
 """
-function CPPLSSpec(;
+function CPPLSModel(;
     ncomponents::T1=2,
     gamma=0.5,
     center::Bool=true,
@@ -57,7 +57,7 @@ function CPPLSSpec(;
     mode in (:regression, :discriminant) || throw(ArgumentError(
             "mode must be :regression or :discriminant, got $mode"))
 
-    CPPLSSpec(
+    CPPLSModel(
         Int(ncomponents),
         gamma,
         center,
@@ -70,8 +70,8 @@ function CPPLSSpec(;
     )
 end
 
-function Base.show(io::IO, spec::CPPLSSpec)
-    print(io, "CPPLSSpec(",
+function Base.show(io::IO, spec::CPPLSModel)
+    print(io, "CPPLSModel(",
         "ncomponents=", spec.ncomponents,
         ", gamma=", repr(spec.gamma),
         ", center=", spec.center,
@@ -79,8 +79,8 @@ function Base.show(io::IO, spec::CPPLSSpec)
         ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSSpec)
-    println(io, "CPPLSSpec")
+function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSModel)
+    println(io, "CPPLSModel")
     println(io, "  ncomponents: ", spec.ncomponents)
     println(io, "  gamma: ", repr(spec.gamma))
     println(io, "  center: ", spec.center)
@@ -88,25 +88,25 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSSpec)
 end
 
 """
-    gamma(spec::CPPLSSpec)
+    gamma(spec::CPPLSModel)
 
 Return the gamma requested in the specification.
 """
-gamma(spec::CPPLSSpec) = spec.gamma
+gamma(spec::CPPLSModel) = spec.gamma
 
 """
-    ncomponents(spec::CPPLSSpec)
+    ncomponents(spec::CPPLSModel)
 
 Return the number of components requested in the specification.
 """
-ncomponents(spec::CPPLSSpec) = spec.ncomponents
+ncomponents(spec::CPPLSModel) = spec.ncomponents
 
 """
-    mode(spec::CPPLSSpec)
+    mode(spec::CPPLSModel)
 
 Return the analysis mode requested in the specification.
 """
-mode(spec::CPPLSSpec) = spec.mode
+mode(spec::CPPLSModel) = spec.mode
 
 """
     AbstractCPPLSFit

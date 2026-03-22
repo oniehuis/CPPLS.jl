@@ -23,7 +23,7 @@ julia> using CPPLS
 ## Scope
 
 The package supports supervised latent-variable modelling with either matrix-valued
-responses or class labels. Fitting is controlled through `CPPLSSpec`, which separates
+responses or class labels. Fitting is controlled through `CPPLSModel`, which separates
 model configuration from the data passed to `fit`. The resulting fitted models provide
 prediction, class assignment, latent projections, regression coefficients, fitted values,
 residuals, and labels or metadata retained from model fitting.

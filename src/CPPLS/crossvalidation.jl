@@ -210,7 +210,7 @@ end
     cvreg(
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real};
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
         num_outer_folds::Integer=8,
         num_outer_folds_repeats::Integer=num_outer_folds,
@@ -262,7 +262,7 @@ julia> X = reshape(collect(1.0:16.0), :, 1);
 
 julia> Y = reshape(2 .* vec(X) .+ 1, :, 1);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:regression);
+julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:regression);
 
 julia> scores, best_k = cvreg(
            X,
@@ -287,7 +287,7 @@ true
 function cvreg(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     num_outer_folds::T1=8,
     num_outer_folds_repeats::T2=num_outer_folds,
@@ -340,7 +340,7 @@ Reshape a univariate response vector into a single-column matrix and forward to 
 function cvreg(
     X::AbstractMatrix{<:Real},
     y::AbstractVector{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     num_outer_folds::T1=8,
     num_outer_folds_repeats::T2=num_outer_folds,
@@ -377,7 +377,7 @@ end
     permreg(
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real};
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
         num_permutations::Integer=999,
         num_outer_folds::Integer=8,
@@ -428,7 +428,7 @@ julia> X = reshape(collect(1.0:16.0), :, 1);
 
 julia> y = 2 .* vec(X) .+ 1;
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:regression);
+julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:regression);
 
 julia> permutation_scores = permreg(
            X,
@@ -451,7 +451,7 @@ julia> length(permutation_scores)
 function permreg(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     num_permutations::T1=999,
     num_outer_folds::T2=8,
@@ -507,7 +507,7 @@ Reshape a univariate response vector into a single-column matrix and forward to 
 function permreg(
     X::AbstractMatrix{<:Real},
     y::AbstractVector{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     num_permutations::T1=999,
     num_outer_folds::T2=8,
@@ -547,7 +547,7 @@ end
     cvda(
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real};
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
         weighted::Bool=true,
         num_outer_folds::Integer=8,
@@ -608,7 +608,7 @@ julia> classes = repeat(["A", "B"], inner=6);
 
 julia> Y, responselabels = onehot(classes);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
+julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> scores, best_k = cvda(
            X,
@@ -637,7 +637,7 @@ true
 function cvda(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
     num_outer_folds::T1=8,
@@ -696,7 +696,7 @@ automatically.
 function cvda(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T, 1, R, V, C, U};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
     num_outer_folds::T1=8,
@@ -753,7 +753,7 @@ are rejected because they are ambiguous with regression targets.
 function cvda(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
     num_outer_folds::T1=8,
@@ -798,7 +798,7 @@ end
     permda(
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real};
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
         weighted::Bool=true,
         num_permutations::Integer=999,
@@ -854,7 +854,7 @@ julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
 
 julia> classes = repeat(["A", "B"], inner=6);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
+julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> permutation_scores = permda(
            X,
@@ -880,7 +880,7 @@ true
 function permda(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
     num_permutations::T1=999,
@@ -942,7 +942,7 @@ automatically.
 function permda(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T, 1, R, V, C, U};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
     num_permutations::T1=999,
@@ -1001,7 +1001,7 @@ vectors are rejected because they are ambiguous with regression targets.
 function permda(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     weighted::Bool=true,
     num_permutations::T1=999,
@@ -1054,7 +1054,7 @@ end
     nestedcv(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real};
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
         obs_weight_fn::Union{Function, Nothing}=default_da_obs_weight_fn,
         score_fn::Function,
@@ -1156,7 +1156,7 @@ Returns
     value comes from repeated inner cross-validation on that outer training split.
 
 See also
-[`CPPLSSpec`](@ref CPPLS.CPPLSSpec),
+[`CPPLSModel`](@ref CPPLS.CPPLSModel),
 [`fit`](@ref CPPLS.fit),
 [`pvalue`](@ref CPPLS.pvalue),
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
@@ -1193,7 +1193,7 @@ julia> Y, responselabels = onehot(classes)
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
+julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(sampleclasses(Y_train));
 
@@ -1229,7 +1229,7 @@ true
 function nestedcv(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple = (;),
     obs_weight_fn::Union{Function, Nothing}=nothing,
     score_fn::Function,
@@ -1334,7 +1334,7 @@ end
     nestedcvperm(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real};
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
         obs_weight_fn::Union{Function, Nothing}=nothing,
         score_fn::Function,
@@ -1381,7 +1381,7 @@ analysis must use the same `score_fn`, `predict_fn`, `select_fn`, fold settings,
 `reshuffle_outer_folds` choice, and score aggregation.
 
 See also
-[`CPPLSSpec`](@ref CPPLS.CPPLSSpec),
+[`CPPLSModel`](@ref CPPLS.CPPLSModel),
 [`fit`](@ref CPPLS.fit),
 [`pvalue`](@ref CPPLS.pvalue),
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
@@ -1417,7 +1417,7 @@ julia> Y, responselabels = onehot(classes);
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
+julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(sampleclasses(Y_train));
 
@@ -1451,7 +1451,7 @@ true
 function nestedcvperm(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple = (;),
     obs_weight_fn::Union{Function, Nothing}=nothing,
     score_fn::Function,
@@ -1514,7 +1514,7 @@ end
     outlierscan(
         X::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real};
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
         obs_weight_fn::Union{Function, Nothing}=nothing,
         num_outer_folds::Integer=8,
@@ -1592,7 +1592,7 @@ Returns
     tested receives rate `0.0`.
 
 See also
-[`CPPLSSpec`](@ref CPPLS.CPPLSSpec),
+[`CPPLSModel`](@ref CPPLS.CPPLSModel),
 [`fit`](@ref CPPLS.fit),
 [`CPPLS.cv_classification`](@ref CPPLS.cv_classification),
 [`invfreqweights`](@ref CPPLS.invfreqweights),
@@ -1610,7 +1610,7 @@ julia> classes = repeat(["A", "B"], inner=6);
 
 julia> Y, responselabels = onehot(classes);
 
-julia> spec = CPPLSSpec(ncomponents=1, gamma=0.5, mode=:discriminant);
+julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:discriminant);
 
 julia> out = outlierscan(
            X,
@@ -1639,7 +1639,7 @@ true
 function outlierscan(
     X::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real};
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     obs_weight_fn::Union{Function, Nothing}=default_da_obs_weight_fn,
     num_outer_folds::T1=8,
@@ -1784,7 +1784,7 @@ end
         max_components::Integer,
         num_inner_folds::Integer,
         num_inner_folds_repeats::Integer,
-        spec::CPPLSSpec,
+        spec::CPPLSModel,
         fit_kwargs::NamedTuple,
         obs_weight_fn::Union{Function, Nothing},
         score_fn::Function,
@@ -1807,7 +1807,7 @@ function optimize_num_latent_variables(
     max_components::T1,
     num_inner_folds::T2,
     num_inner_folds_repeats::T3,
-    spec::CPPLSSpec,
+    spec::CPPLSModel,
     fit_kwargs::NamedTuple,
     obs_weight_fn::Union{Function, Nothing},
     score_fn::Function,
@@ -1892,7 +1892,7 @@ end
         X_train::AbstractMatrix{<:Real},
         Y_train::AbstractMatrix{<:Real},
         sample_indices::AbstractVector{<:Integer},
-        spec::CPPLSSpec
+        spec::CPPLSModel
     )
 
 Return `fit_kwargs` with fold-local observation weights applied. Fixed `obs_weights`
@@ -1905,7 +1905,7 @@ function resolve_obs_weights(
     X_train::AbstractMatrix{<:Real},
     Y_train::AbstractMatrix{<:Real},
     sample_indices::AbstractVector{<:Integer},
-    spec::CPPLSSpec
+    spec::CPPLSModel
 )
     isnothing(obs_weight_fn) && return fit_kwargs
 
@@ -2121,12 +2121,12 @@ function subset_matrix_like(
 end
 
 """
-    with_n_components(spec::CPPLSSpec, ncomponents::Integer)
+    with_n_components(spec::CPPLSModel, ncomponents::Integer)
 
 Return a copy of `spec` with `ncomponents` replaced and all other fields preserved.
 """
-function with_n_components(spec::CPPLSSpec, ncomponents::Integer)
-    CPPLSSpec(
+function with_n_components(spec::CPPLSModel, ncomponents::Integer)
+    CPPLSModel(
         ncomponents=ncomponents, gamma=spec.gamma, center=spec.center,
         X_tolerance=spec.X_tolerance,
         X_loading_weight_tolerance=spec.X_loading_weight_tolerance,

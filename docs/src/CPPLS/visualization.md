@@ -70,7 +70,7 @@ function orient_like(reference_scores, reference_classes, scores; reference_clas
 	oriented
 end
 
-basic_spec = CPPLSSpec(
+basic_spec = CPPLSModel(
 	ncomponents=2,
 	gamma=0.5,
 	mode=:discriminant
@@ -98,7 +98,7 @@ classes_holdout = classes[holdout_idx]
 labels_holdout = samplelabels[holdout_idx]
 plot_classes_holdout = ["projected $class" for class in classes_holdout]
 
-advanced_spec = CPPLSSpec(
+advanced_spec = CPPLSModel(
 	ncomponents=2,
 	gamma=intervalize(0:0.25:1),
 	mode=:discriminant

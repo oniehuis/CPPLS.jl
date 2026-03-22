@@ -7,7 +7,7 @@ consecutive entries. This is useful for building gamma intervals from a range. I
 throws an `ArgumentError`.
 
 See also
-[`CPPLSSpec`](@ref CPPLS.CPPLSSpec),
+[`CPPLSModel`](@ref CPPLS.CPPLSModel),
 [`fit`](@ref CPPLS.fit)
 
 # Examples

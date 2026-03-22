@@ -1,7 +1,7 @@
 # Types
 
 `CPPLS` relies on two main custom types in the [`StatsAPI.fit`](@ref) and 
-[`StatsAPI.predict`](@ref) workflow. [`CPPLSSpec`](@ref) stores the user-controlled model 
+[`StatsAPI.predict`](@ref) workflow. [`CPPLSModel`](@ref) stores the user-controlled model 
 specification, including the number of components, the gamma configuration, centering, the 
 analysis mode, and numerical tolerances. [`CPPLSFit`](@ref) is the full fitted model 
 returned by [`fit`](@ref); it contains regression coefficients, scores, labels, and other 
@@ -11,7 +11,7 @@ cross-validation. It is an internal optimization and is typically not accessed d
 users.
 
 The package provides getters for fields that are commonly useful in downstream
-work. For [`CPPLSSpec`](@ref), the getters are [`gamma`](@ref), [`mode`](@ref), 
+work. For [`CPPLSModel`](@ref), the getters are [`gamma`](@ref), [`mode`](@ref), 
 and [`ncomponents`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
 [`mode`](@ref), [`fitted`](@ref), [`gamma`](@ref), [`gammas`](@ref), [`rhos`](@ref),
 [`predictorlabels`](@ref), [`responselabels`](@ref), [`residuals`](@ref),
@@ -21,13 +21,13 @@ Both container types contain additional named fields of possible interest. You c
 them with `names(spec)` or `names(model)` and access them directly via dot notation, for 
 example `spec.X_loading_weight_tolerance`.
 
-## CPPLSSpec
+## CPPLSModel
 
 ```@docs
-CPPLS.CPPLSSpec
-CPPLS.gamma(::CPPLSSpec)
-CPPLS.mode(::CPPLSSpec)
-CPPLS.ncomponents(::CPPLSSpec)
+CPPLS.CPPLSModel
+CPPLS.gamma(::CPPLSModel)
+CPPLS.mode(::CPPLSModel)
+CPPLS.ncomponents(::CPPLSModel)
 ```
 
 ## AbstractCPPLSFit

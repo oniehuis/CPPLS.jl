@@ -1,21 +1,21 @@
 """
-    fit(model::CPPLSSpec,
+    fit(model::CPPLSModel,
         X::AbstractMatrix{<:Real},
         Y_prim::AbstractMatrix{<:Real};
         kwargs...
     )
-    fit(model::CPPLSSpec,
+    fit(model::CPPLSModel,
         X::AbstractMatrix{<:Real},
         sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
         kwargs...
     ) where {T,R,V,C,U}
-    fit(model::CPPLSSpec,
+    fit(model::CPPLSModel,
         X::AbstractMatrix{<:Real},
         sampleclasses::AbstractVector;
         kwargs...
     )
 
-Fit a CPPLS model using the StatsAPI entry point and an explicit CPPLSSpec. The model
+Fit a CPPLS model using the StatsAPI entry point and an explicit CPPLSModel. The model
 specification supplies the number of components, the gamma configuration, centering, the
 analysis mode, and all numerical tolerances, while the call to `fit` supplies data,
 optional weights, auxiliary responses, and label metadata.
@@ -51,7 +51,7 @@ and the metadata needed for downstream prediction and diagnostics. Use `CPPLS.fi
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit), 
-[`CPPLSSpec`](@ref CPPLS.CPPLSSpec), 
+[`CPPLSModel`](@ref CPPLS.CPPLSModel), 
 [`coef`](@ref CPPLS.coef(::AbstractCPPLSFit)), 
 [`fitted`](@ref CPPLS.fitted(::CPPLSFit)), 
 [`gamma`](@ref CPPLS.gamma(::CPPLSFit)), 
@@ -70,8 +70,8 @@ julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
 julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
-CPPLSSpec
+julia> spec = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
+CPPLSModel
   ncomponents: 2
   gamma: 0.01:0.01:1.0
   center: true
@@ -82,8 +82,8 @@ julia> model = fit(spec, X, classes; samplelabels=labels);
 julia> size(CPPLS.xscores(model))
 (100, 2)
 
-julia> spec = CPPLSSpec(ncomponents=2, gamma=0.75, mode=:discriminant)
-CPPLSSpec
+julia> spec = CPPLSModel(ncomponents=2, gamma=0.75, mode=:discriminant)
+CPPLSModel
   ncomponents: 2
   gamma: 0.75
   center: true
@@ -100,7 +100,7 @@ CPPLSFit
 ```
 """
 function fit(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real};
     kwargs...
@@ -109,7 +109,7 @@ function fit(
 end
 
 function fit(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
@@ -119,7 +119,7 @@ function fit(
 end
 
 function fit(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
     kwargs...
@@ -135,7 +135,7 @@ end
         kwargs...
     )
 
-Low-level CPPLS fitting routine used by `fit`. Prefer `fit` with a CPPLSSpec for the
+Low-level CPPLS fitting routine used by `fit`. Prefer `fit` with a CPPLSModel for the
 public entry point and full parameter documentation.
 """
 function fit_cppls(
@@ -262,7 +262,7 @@ function fit_cppls(
 end
 
 function fit_cppls(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
@@ -342,7 +342,7 @@ function fit_cppls(
 end
 
 function fit_cppls(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractVector{<:Real};
     obs_weights::T1=nothing,
@@ -389,26 +389,26 @@ function fit_cppls(
 end
 
 function fit_cppls(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
     model.mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
+        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 function fit_cppls(
-    model::CPPLSSpec,
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
     kwargs...
 )
     model.mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSSpec must use mode=:discriminant when fitting from sampleclasses."))
+        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
@@ -484,12 +484,12 @@ end
 # Helper
 ############################################################################################
 """
-    cppls_model_fit_kwargs(model::CPPLSSpec)
+    cppls_model_fit_kwargs(model::CPPLSModel)
 
-Collect the CPPLSSpec fields that correspond to `fit_cppls` keyword arguments and return
+Collect the CPPLSModel fields that correspond to `fit_cppls` keyword arguments and return
 them as a NamedTuple for forwarding to fit helpers.
 """
-function cppls_model_fit_kwargs(model::CPPLSSpec)
+function cppls_model_fit_kwargs(model::CPPLSModel)
     (
         gamma = model.gamma,
         center = model.center,
@@ -502,12 +502,12 @@ function cppls_model_fit_kwargs(model::CPPLSSpec)
 end
 
 """
-    cppls_model_fit_kwargs_with_mode(model::CPPLSSpec)
+    cppls_model_fit_kwargs_with_mode(model::CPPLSModel)
 
 Return the same NamedTuple as `cppls_model_fit_kwargs` but include `mode` to
 preserve regression versus discriminant intent in wrapper calls.
 """
-function cppls_model_fit_kwargs_with_mode(model::CPPLSSpec)
+function cppls_model_fit_kwargs_with_mode(model::CPPLSModel)
     merge(cppls_model_fit_kwargs(model), (mode = mode(model),))
 end
 

@@ -23,7 +23,8 @@ Low-level CPPLS fitting routine used by internal cross-validation helpers that r
 a `CPPLSFitLight`. Prefer `fit` with a CPPLSModel for the public entry point and full
 parameter documentation.
 """
-function fit_cppls_light(
+function fit_cppls_light_core(
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     ncomponents::Int=2;
@@ -53,7 +54,7 @@ function fit_cppls_light(
 }
 
     X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B, _, _ = 
-        cppls_prepare_data(X, Y_prim, ncomponents, Y_aux, obs_weights, center)
+        cppls_prepare_data(model, X, Y_prim, Y_aux, obs_weights)
 
     for i = 1:ncomponents
         wᵢ, _, _, _, _, _, _, _ = compute_cppls_weights(X_def, Y, Y_prim, obs_weights,
@@ -69,42 +70,51 @@ function fit_cppls_light(
     CPPLSFitLight(B, X_bar, Y_bar, mode)
 end
 
-"""
-    fit_cppls_light(
-        X::AbstractMatrix{<:Real}, 
-        sampleclasses::AbstractCategoricalArray, 
-        ncomponents::Int=2; 
-        kwargs...
-    )
-    
-    fit_cppls_light(
-        X::AbstractMatrix{<:Real}, 
-        sampleclasses::AbstractVector,
-        ncomponents:Int=2; 
-        kwargs...
-    )
 
-Label-based convenience wrappers that convert class labels to a one-hot response matrix
-and forward into `fit_cppls_light`. Intended for internal cross-validation; prefer `fit`
-for the public entry point and full docs.
-"""
 function fit_cppls_light(
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U},
-    ncomponents::Int=2;
-    kwargs...
-) where {T,R,V,C,U}
-    
-    fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
+    Y_prim::AbstractMatrix{<:Real};
+    obs_weights::T1=nothing,
+    Y_aux::T2=nothing,
+) where {
+    T1<:Union{AbstractVector{<:Real}, Nothing}, 
+    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
+}
+    fit_cppls_light_core(
+        model,
+        X, 
+        Y_prim, 
+        ncomponents(model); 
+        obs_weights=obs_weights, 
+        Y_aux=Y_aux,
+        cppls_model_fit_kwargs_with_mode(model)...
+    )
 end
 
 function fit_cppls_light(
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    sampleclasses::AbstractVector,
-    ncomponents::Int=2;
-    kwargs...
-)
-    fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
+    Y_prim::AbstractVector{<:Real};
+    obs_weights::T1=nothing,
+    Y_aux::T2=nothing,
+) where {
+    T1<:Union{AbstractVector{<:Real}, Nothing}, 
+    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
+}
+
+    Y_matrix = reshape(Y_prim, :, 1)
+
+    fit_cppls_light_core(
+        model,
+        X, 
+        Y_matrix, 
+        ncomponents(model); 
+        cppls_model_fit_kwargs(model)..., 
+        mode=:regression,
+        obs_weights=obs_weights, 
+        Y_aux=Y_aux
+    )
 end
 
 function fit_cppls_light(
@@ -117,8 +127,14 @@ function fit_cppls_light(
     mode(model) ≡ :discriminant || throw(ArgumentError(
         "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_light_from_sample_classes(X, sampleclasses, model.ncomponents;
-        cppls_model_fit_kwargs(model)..., kwargs...)
+    fit_cppls_light_from_sample_classes(
+        model,
+        X, 
+        sampleclasses, 
+        model.ncomponents;
+        cppls_model_fit_kwargs(model)..., 
+        kwargs...
+    )
 end
 
 function fit_cppls_light(
@@ -130,11 +146,17 @@ function fit_cppls_light(
     mode(model) ≡ :discriminant || throw(ArgumentError(
         "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_light_from_sample_classes(X, sampleclasses, ncomponents(model);
-        cppls_model_fit_kwargs(model)..., kwargs...)
+    fit_cppls_light_from_sample_classes(
+        model,
+        X, 
+        sampleclasses, 
+        ncomponents(model);
+        cppls_model_fit_kwargs(model)..., 
+        kwargs...)
 end
 
 function fit_cppls_light_from_sample_classes(
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses,
     ncomponents::Int;
@@ -163,85 +185,9 @@ function fit_cppls_light_from_sample_classes(
 }
     Y_prim, _ = onehot(sampleclasses)
 
-    fit_cppls_light(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights,
+    fit_cppls_light_core(model, X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights,
         Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
         mode=:discriminant)
-end
-
-"""
-    fit_cppls_light(
-        X::AbstractMatrix{<:Real}, 
-        y::AbstractVector{<:Real}, 
-        ncomponents::Int=2;
-        kwargs...
-    )
-
-Convenience wrapper that reshapes a single response vector to a one-column matrix and
-forwards into `fit_cppls_light`. Intended for internal cross-validation; prefer `fit`
-for the public entry point and full docs.
-"""
-function fit_cppls_light(
-    X::AbstractMatrix{<:Real},
-    Y_prim::AbstractVector{<:Real},
-    ncomponents::Int=2;
-    gamma::T1=0.5,
-    obs_weights::T2=nothing,
-    Y_aux::T3=nothing,
-    center::Bool=true,
-    X_tolerance::T4=1e-12,
-    X_loading_weight_tolerance::T5=eps(Float64),
-    gamma_rel_tol::T6=1e-6,
-    gamma_abs_tol::T7=1e-12,
-    t_squared_norm_tolerance::T8=1e-10
-) where {
-    T1<:Union{
-        <:Real, 
-        <:NTuple{2, <:Real},
-        <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
-    },
-    T2<:Union{AbstractVector{<:Real}, Nothing},
-    T3<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T4<:Real,
-    T5<:Real,
-    T6<:Real,
-    T7<:Real,
-    T8<:Real
-}
-    Y_matrix = reshape(Y_prim, :, 1)
-
-    fit_cppls_light(X, Y_matrix, ncomponents; gamma=gamma, obs_weights=obs_weights,
-        Y_aux=Y_aux, center=center, X_tolerance=X_tolerance, 
-        X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
-        gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
-        mode=:regression)
-end
-
-function fit_cppls_light(
-    model::CPPLSModel,
-    X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real};
-    obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
-) where {
-    T1<:Union{AbstractVector{<:Real}, Nothing}, 
-    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
-}
-    fit_cppls_light(X, Y_prim, ncomponents(model); 
-        cppls_model_fit_kwargs_with_mode(model)..., obs_weights=obs_weights, Y_aux=Y_aux)
-end
-
-function fit_cppls_light(
-    model::CPPLSModel,
-    X::AbstractMatrix{<:Real},
-    Y_prim::AbstractVector{<:Real};
-    obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
-) where {
-    T1<:Union{AbstractVector{<:Real}, Nothing}, 
-    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
-}
-    fit_cppls_light(X, Y_prim, ncomponents(model);
-        cppls_model_fit_kwargs_with_mode(model)..., obs_weights=obs_weights, Y_aux=Y_aux)
 end

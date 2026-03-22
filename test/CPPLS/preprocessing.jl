@@ -74,6 +74,8 @@ end
     Y_aux = Float32[0.1 0.2; 0.2 0.3; 0.3 0.4; 0.4 0.5]
     weights = Float32[1, 2, 1, 2]
 
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, center=true)  
+
     X_prep,
     Y_prim_prep,
     Y_all,
@@ -87,7 +89,7 @@ end
     zero_mask,
     B,
     n_samples,
-    n_targets = CPPLS.cppls_prepare_data(X, Y_prim, 2, Y_aux, weights, true)
+    n_targets = CPPLS.cppls_prepare_data(model, X, Y_prim, Y_aux, weights)
 
     @test X_prep isa Matrix{Float64}
     @test Y_prim_prep isa Matrix{Float64}
@@ -105,19 +107,17 @@ end
     @test n_targets == size(Y_prim, 2)
 
     @test_throws DimensionMismatch CPPLS.cppls_prepare_data(
+        model,
         X,
         Y_prim[1:3, :],
-        2,
         nothing,
-        nothing,
-        true,
+        nothing
     )
     @test_throws DimensionMismatch CPPLS.cppls_prepare_data(
+        model,
         X,
         Y_prim,
-        2,
         nothing,
-        [1, 2, 3],
-        true,
+        [1, 2, 3]
     )
 end

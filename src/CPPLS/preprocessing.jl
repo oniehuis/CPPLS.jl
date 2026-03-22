@@ -150,53 +150,51 @@ end
 
 """
     cppls_prepare_data(
+        m::CPPLSModel,
         X::AbstractMatrix{<:Real}, 
-        Y_prim::AbstractMatrix{<:Real}, 
-        ncomponents::Integer, 
-        Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}, 
-        obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
-        center::Bool
+        Yprim::AbstractMatrix{<:Real}, 
+        Yaux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}, 
+        obs_weights::Union{AbstractVector{<:Real}, Nothing}
     )
 
 Prepare input data for CPPLS by converting to `Float64`, validating dimensions, applying
-optional centering, constructing the combined response matrix, and allocating working
-arrays needed by the fit routine.
+optional centering and scaling, constructing the combined response matrix, and
+allocating working arrays needed by the fit routine.
 """
 function cppls_prepare_data(
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
-    ncomponents::Integer,
-    Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing},
-    obs_weights::Union{AbstractVector{<:Real}, Nothing},
-    center::Bool
+    Yprim::AbstractMatrix{<:Real},
+    Yaux::Union{LinearAlgebra.AbstractVecOrMat, Nothing},
+    obs_weights::Union{AbstractVector{<:Real}, Nothing}
 )
     X = convert_to_float64(X)
-    Y_prim = convert_to_float64(Y_prim)
-    if !isnothing(Y_aux)
-        Y_aux = convert_auxiliary_to_float64(Y_aux)
+    Yprim = convert_to_float64(Yprim)
+    if !isnothing(Yaux)
+        Yaux = convert_auxiliary_to_float64(Yaux)
     end
-    Y = isnothing(Y_aux) ? Y_prim : hcat(Y_prim, Y_aux)
+    Y = isnothing(Yaux) ? Yprim : hcat(Yprim, Yaux)
     n_samples_X, n_features_X = size(X)
-    n_samples_Y, n_targets_Y = size(Y_prim)
+    n_samples_Y, n_targets_Y = size(Yprim)
     n_samples_X ≠ n_samples_Y && throw(
-        DimensionMismatch("Number of rows in X and Y_prim must be equal"))
+        DimensionMismatch("Number of rows in X and Yprim must be equal"))
     if !isnothing(obs_weights) && length(obs_weights) ≠ n_samples_X
         throw(DimensionMismatch(
-            "Length of observation_weights must match the number of rows in X and Y_prim"))
+            "Length of observation_weights must match the number of rows in X and Yprim"))
     end
-    if center
-        X, X_bar = center_mean(X, obs_weights)
-        Y_bar = mean(Y_prim, dims = 1)
+    if m.center
+        X, X̄ = center_mean(X, obs_weights)
+        Ȳ = mean(Yprim, dims = 1)
     else
-        X_bar = zeros(Float64, (1, n_features_X))
-        Y_bar = zeros(Float64, (1, n_targets_Y))
+        X̄ = zeros(Float64, (1, n_features_X))
+        Ȳ = zeros(Float64, (1, n_targets_Y))
     end
     X_def = copy(X)
-    W_comp = Matrix{Float64}(undef, n_features_X, ncomponents)
-    P = Matrix{Float64}(undef, n_features_X, ncomponents)
-    C = Matrix{Float64}(undef, n_targets_Y, ncomponents)
-    zero_mask = Matrix{Bool}(undef, (ncomponents, n_features_X))
-    B = Array{Float64}(undef, (n_features_X, n_targets_Y, ncomponents))
-    (X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B,
-        n_samples_X, n_targets_Y)
+    W_comp = Matrix{Float64}(undef, n_features_X, ncomponents(m))
+    P = Matrix{Float64}(undef, n_features_X, ncomponents(m))
+    C = Matrix{Float64}(undef, n_targets_Y, ncomponents(m))
+    zero_mask = Matrix{Bool}(undef, (ncomponents(m), n_features_X))
+    B = Array{Float64}(undef, (n_features_X, n_targets_Y, ncomponents(m)))
+    (X, Yprim, Y, obs_weights, X̄, Ȳ, X_def, W_comp, P, C, zero_mask, B, n_samples_X, 
+    n_targets_Y)
 end

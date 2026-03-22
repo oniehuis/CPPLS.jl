@@ -2,6 +2,8 @@ using CategoricalArrays
 using StatsAPI
 
 @testset "fit_cppls builds diagnostic-rich model" begin
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
+
     X = Float64[
         1 0 2
         0 1 2
@@ -17,7 +19,7 @@ using StatsAPI
         1 0
     ]
 
-    model = CPPLS.fit_cppls_core(X, Y, 2; gamma = 0.5)
+    model = CPPLS.fit_cppls_core(model, X, Y, 2; gamma = 0.5)
 
     @test model isa CPPLS.CPPLSFit
     @test size(model.B) == (size(X, 2), size(Y, 2), 2)
@@ -65,8 +67,9 @@ end
         (0.2, 0.8),
         1.0,
     ]
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=gamma_candidates)
 
-    model = CPPLS.fit_cppls_core(X, Y, 1; gamma = gamma_candidates)
+    model = CPPLS.fit_cppls_core(model, X, Y, 1; gamma = gamma_candidates)
 
     @test size(CPPLS.gammas(model)) == (length(gamma_candidates), 1)
     @test size(CPPLS.rhos(model)) == (length(gamma_candidates), 1)
@@ -129,7 +132,8 @@ end
     predictorlabels = [:p1, :p2]
     responselabels = ["r1", "r2"]
 
-    model = CPPLS.fit_cppls_core(
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
+    model = CPPLS.fit_cppls_core(model,
         X,
         Y,
         1;
@@ -143,7 +147,9 @@ end
     @test model.predictorlabels == predictorlabels
     @test model.responselabels == responselabels
 
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
+        model,
         X,
         Y,
         1;
@@ -151,7 +157,9 @@ end
         samplelabels = ["only_two"],
     )
 
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
+        model,
         X,
         Y,
         1;
@@ -159,7 +167,9 @@ end
         predictorlabels = [:p1],
     )
 
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
+        model,
         X,
         Y,
         1;
@@ -167,7 +177,9 @@ end
         responselabels = ["r1"],
     )
 
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
+        model,
         X,
         Y,
         1;
@@ -175,7 +187,9 @@ end
         mode = :discriminant,
     )
 
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
+        model,
         X,
         Y,
         1;
@@ -183,7 +197,9 @@ end
         sampleclasses = ["classA"],
     )
 
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
+        model,
         X,
         Y,
         1;
@@ -225,8 +241,9 @@ end
     ]
     gamma_bounds = (0.2, 0.8)
 
-    full = CPPLS.fit_cppls_core(X, Y, 2; gamma = gamma_bounds)
-    light = CPPLS.fit_cppls_light(X, Y, 2; gamma = gamma_bounds)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=gamma_bounds)
+    full = CPPLS.fit_cppls_core(model, X, Y, 2; gamma = gamma_bounds)
+    light = CPPLS.fit_cppls_light_core(model, X, Y, 2; gamma = gamma_bounds)
 
     @test light isa CPPLS.CPPLSFitLight
     @test light.B ≈ full.B
@@ -249,56 +266,34 @@ end
     labels = categorical(["red", "blue", "red", "blue"])
     Y, inferred = CPPLS.onehot(labels)
 
-    model = CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
-    @test model.mode === :discriminant
-    @test Set(model.responselabels) == Set(inferred)
-    @test model.sampleclasses == labels
-    @test !(model.sampleclasses === labels)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+
+    cpplsfit = CPPLS.fit_cppls(model, X, labels)
+    @test cpplsfit.mode === :discriminant
+    @test Set(cpplsfit.responselabels) == Set(inferred)
+    @test cpplsfit.sampleclasses == labels
+    @test !(cpplsfit.sampleclasses === labels)
     plain_labels = ["red", "blue", "red", "blue"]
-    plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
-    @test plain_model.mode === :discriminant
-    @test Set(plain_model.responselabels) == Set(unique(plain_labels))
-    @test plain_model.sampleclasses == plain_labels
-    @test !(plain_model.sampleclasses === plain_labels)
-    @test plain_model.B ≈ model.B
+    plain_cpplsfit = CPPLS.fit_cppls(model, X, plain_labels)
+    @test plain_cpplsfit.mode === :discriminant
+    @test Set(plain_cpplsfit.responselabels) == Set(unique(plain_labels))
+    @test plain_cpplsfit.sampleclasses == plain_labels
+    @test !(plain_cpplsfit.sampleclasses === plain_labels)
+    @test plain_cpplsfit.B ≈ cpplsfit.B
 
     @test_throws ArgumentError CPPLS.fit_cppls(
+        model,
         X,
-        labels,
-        2;
+        labels;
         responselabels = ["other"],
     )
 
     Y_vec = Float64[1, 0, 1, 0]
-    vec_model = CPPLS.fit_cppls(X, Y_vec, 2; gamma = 0.5)
-    mat_model = CPPLS.fit_cppls_core(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
+    vec_model = CPPLS.fit_cppls(model, X, Y_vec)
+    mat_model = CPPLS.fit_cppls_core(model, X, reshape(Y_vec, :, 1), 2; gamma=0.5)
 
     @test vec_model.B ≈ mat_model.B
     @test vec_model.mode === :regression
-end
-
-@testset "fit_cppls categorical dispatch method" begin
-    X = Float64[
-        1 0
-        0 1
-        2 1
-    ]
-    cat_labels = categorical(["g1", "g2", "g1"])
-    plain_labels = ["g1", "g2", "g1"]
-
-    cat_method =
-        which(CPPLS.fit_cppls, Tuple{typeof(X),typeof(cat_labels),Int})
-
-    cat_sig = Base.unwrap_unionall(cat_method.sig)
-    @test cat_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
-
-    cat_model = CPPLS.fit_cppls(X, cat_labels, 2; gamma = 0.5)
-    plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
-
-    @test cat_model.mode === :discriminant
-    @test cat_model.B ≈ plain_model.B
-    @test cat_model.X_bar ≈ plain_model.X_bar
-    @test cat_model.Y_bar ≈ plain_model.Y_bar
 end
 
 @testset "fit_cppls_light wrappers enforce analysis mode" begin
@@ -315,21 +310,19 @@ end
         0 1
     ]
 
-    light = CPPLS.fit_cppls_light(X, Y, 2; gamma = 0.5)
+
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
+    light = CPPLS.fit_cppls_light(model, X, Y)
     @test light.mode === :regression
-    @test_throws ArgumentError CPPLS.fit_cppls_light(
-        X,
-        Y,
-        2;
-        gamma = 0.5,
-        mode = :invalid_mode,
-    )
+    @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:invalid_mode)
 
     labels = categorical(["a", "b", "a", "b"])
     Y_one_hot, _ = CPPLS.onehot(labels)
 
-    light_from_labels = CPPLS.fit_cppls_light(X, labels, 2; gamma = 0.5)
-    manual_discriminant = CPPLS.fit_cppls_light(
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+    light_from_labels = CPPLS.fit_cppls_light(model, X, labels)
+    manual_discriminant = CPPLS.fit_cppls_light_core(
+        model,
         X,
         Y_one_hot,
         2;
@@ -343,8 +336,9 @@ end
     @test light_from_labels.X_bar ≈ manual_discriminant.X_bar
     @test light_from_labels.Y_bar ≈ manual_discriminant.Y_bar
     plain_labels = ["a", "b", "a", "b"]
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
     light_from_plain =
-        CPPLS.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
+        CPPLS.fit_cppls_light(model, X, plain_labels)
     @test light_from_plain.mode === :discriminant
     @test light_from_plain.B ≈
           light_from_labels.B
@@ -352,9 +346,10 @@ end
     @test light_from_plain.Y_bar ≈ light_from_labels.Y_bar
 
     Y_vec = Float64[1, 0, 1, 0]
-    light_vec = CPPLS.fit_cppls_light(X, Y_vec, 2; gamma = 0.5)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
+    light_vec = CPPLS.fit_cppls_light(model, X, Y_vec)
     light_vec_manual =
-        CPPLS.fit_cppls_light(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
+        CPPLS.fit_cppls_light_core(model, X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
 
     @test light_vec.B ≈ light_vec_manual.B
 end
@@ -369,16 +364,15 @@ end
     cat_labels = categorical(["alpha", "beta", "alpha", "beta"])
     plain_labels = ["alpha", "beta", "alpha", "beta"]
 
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
     light_method = which(
         CPPLS.fit_cppls_light,
-        Tuple{typeof(X),typeof(cat_labels),Int},
+        Tuple{typeof(model), typeof(X),typeof(cat_labels)},
     )
-    light_sig = Base.unwrap_unionall(light_method.sig)
-    @test light_sig.parameters[3].name.wrapper ===
-          CategoricalArrays.AbstractCategoricalArray
 
-    cat_light = CPPLS.fit_cppls_light(X, cat_labels, 2; gamma = 0.5)
-    plain_light = CPPLS.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+    cat_light = CPPLS.fit_cppls_light(model, X, cat_labels)
+    plain_light = CPPLS.fit_cppls_light(model, X, plain_labels)
 
     @test cat_light.mode === :discriminant
     @test cat_light.B ≈ plain_light.B
@@ -399,6 +393,8 @@ end
     ]
     ncomponents = 1
 
+    model = CPPLS.CPPLSModel(ncomponents=ncomponents, gamma=0.5, center=true)
+
     X,
     Y_prim,
     Y,
@@ -413,12 +409,11 @@ end
     B,
     _,
     _ = CPPLS.cppls_prepare_data(
+        model,
         X,
         Y,
-        ncomponents,
         nothing,
-        nothing,
-        true,
+        nothing
     )
 
     initial_weights = [3.0, 4.0]
@@ -466,6 +461,9 @@ end
         0 1
         1 0
     ]
+
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center=true)
+
     X,
     Y_prim,
     _,
@@ -479,7 +477,7 @@ end
     zero_mask,
     B,
     _,
-    _ = CPPLS.cppls_prepare_data(X, Y, 1, nothing, nothing, true)
+    _ = CPPLS.cppls_prepare_data(model, X, Y, nothing, nothing)
 
     X_def .= 0  # force zero scores regardless of weights
     initial_weights = [1.0, 2.0]

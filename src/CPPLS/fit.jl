@@ -151,6 +151,7 @@ Low-level CPPLS fitting routine used by `fit`. Prefer `fit` with a CPPLSModel fo
 public entry point and full parameter documentation.
 """
 function fit_cppls_core(
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     ncomponents::Int=2;
@@ -199,8 +200,7 @@ function fit_cppls_core(
     n_predictors = size(X, 2)
 
     (X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B,
-        n_samples_X, n_targets_Y) = cppls_prepare_data(X, Y_prim, ncomponents, Y_aux,
-        obs_weights, center)
+        n_samples_X, n_targets_Y) = cppls_prepare_data(model, X, Y_prim, Y_aux, obs_weights)
 
     samplelabels = default_sample_labels(validate_label_length(samplelabels, n_samples_X,
         "samplelabels"), n_samples_X)
@@ -291,66 +291,10 @@ function fit_cppls(
     T5<:AbstractVector,
     T6<:Union{AbstractVector, Nothing}  
 }
-    fit_cppls_core(X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
+    fit_cppls_core(model, X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
         obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels,
         sampleclasses=sampleclasses)
-end
-
-"""
-    fit_cppls(
-        X::AbstractMatrix{<:Real},
-        y::AbstractVector{<:Real},
-        ncomponents::Int=2;
-        kwargs...
-    )
-
-Convenience wrapper that reshapes a single response vector to a one-column matrix and
-forwards into `fit_cppls`. Prefer `fit` for the public entry point and full docs.
-"""
-function fit_cppls(
-    X::AbstractMatrix{<:Real},
-    Y_prim::AbstractVector{<:Real},
-    ncomponents::Int=2;
-    gamma::T1=0.5,
-    obs_weights::T2=nothing,
-    Y_aux::T3=nothing,
-    center::Bool=true,
-    X_tolerance::T4=1e-12,
-    X_loading_weight_tolerance::T5=eps(Float64),
-    gamma_rel_tol::T6=1e-6,
-    gamma_abs_tol::T7=1e-12,
-    t_squared_norm_tolerance::T8=1e-10,
-    samplelabels::T9=String[],
-    predictorlabels::T10=String[],
-    responselabels::T11=String[],
-) where {
-    T1<:Union{
-        <:Real,
-        <:NTuple{2, <:Real},
-        <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
-    },
-    T2<:Union{AbstractVector{<:Real}, Nothing},
-    T3<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T4<:Real,
-    T5<:Real,
-    T6<:Real,
-    T7<:Real,
-    T8<:Real,
-    T9<:AbstractVector,
-    T10<:AbstractVector,
-    T11<:AbstractVector  
-}
-
-    Y_matrix = reshape(Y_prim, :, 1)
-
-    fit_cppls_core(X, Y_matrix, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
-        center=center, X_tolerance=X_tolerance, 
-        X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
-        gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
-        samplelabels=samplelabels, predictorlabels=predictorlabels, 
-        responselabels=responselabels, mode=:regression
-    )
 end
 
 function fit_cppls(
@@ -370,34 +314,21 @@ function fit_cppls(
     T5<:AbstractVector
 }
 
-    fit_cppls(X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
-        obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
-        predictorlabels=predictorlabels, responselabels=responselabels)
-end
+    Y_matrix = reshape(Y_prim, :, 1)
 
-"""
-    fit_cppls(X, sampleclasses::AbstractCategoricalArray, ncomponents::Int=2; kwargs...)
-    fit_cppls(X, sampleclasses::AbstractVector, n_component::Int=2; kwargs...)
-
-Label-based convenience wrappers that convert class labels to a one-hot response matrix
-and forward into `fit_cppls`. Prefer `fit` for the public entry point and full docs.
-"""
-function fit_cppls(
-    X::AbstractMatrix{<:Real},
-    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U},
-    ncomponents::Int=2;
-    kwargs...
-) where {T,R,V,C,U}
-    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
-end
-
-function fit_cppls(
-    X::AbstractMatrix{<:Real},
-    sampleclasses::AbstractVector,
-    ncomponents::Int=2;
-    kwargs...
-)
-    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents; kwargs...)
+    fit_cppls_core(
+        model, 
+        X, 
+        Y_matrix, 
+        ncomponents(model); 
+        obs_weights=obs_weights, 
+        Y_aux=Y_aux,
+        samplelabels=samplelabels, 
+        predictorlabels=predictorlabels, 
+        responselabels=responselabels,
+        cppls_model_fit_kwargs(model)...,
+        mode=:regression
+    )
 end
 
 function fit_cppls(
@@ -409,7 +340,7 @@ function fit_cppls(
     model.mode ≡ :discriminant || throw(ArgumentError(
         "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
+    fit_cppls_from_sample_classes(model, X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
@@ -422,12 +353,13 @@ function fit_cppls(
     model.mode ≡ :discriminant || throw(ArgumentError(
         "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(X, sampleclasses, ncomponents(model);
+    fit_cppls_from_sample_classes(model, X, sampleclasses, ncomponents(model);
         cppls_model_fit_kwargs(model)..., kwargs...)
 end
 
 """
     fit_cppls_from_sample_classes(
+        model::CPPLSModel,
         X::AbstractMatrix{<:Real},
         sampleclasses,
         ncomponents::Int=2;
@@ -439,6 +371,7 @@ and is primarily used by the label-based `fit_cppls` wrappers. Prefer `fit` for 
 documentation and public entry points.
 """
 function fit_cppls_from_sample_classes(
+    model::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses,
     ncomponents::Int=2;
@@ -479,7 +412,7 @@ function fit_cppls_from_sample_classes(
 
     Y_prim, classes = onehot(sampleclasses)
 
-    fitobj = fit_cppls_core(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
+    fit_cppls_core(model, X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
@@ -488,8 +421,6 @@ function fit_cppls_from_sample_classes(
         sampleclasses=copy(sampleclasses),
         orient_scores=orient_scores, reference_class=reference_class
     )
-    
-    fitobj
 end
 
 ############################################################################################

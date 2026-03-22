@@ -66,9 +66,12 @@ function center_and_scale(
 
     if scale && center
         σ = colstd(M_centered, obs_weights, μ)
+        # Safeguard: set zero stds to 1.0 to avoid division by zero
+        σ = map(x -> x == 0.0 ? 1.0 : x, σ)
         M_scaled = M_centered ./ σ
     elseif scale && !center
         σ = colstd(M, obs_weights)
+        σ = map(x -> x == 0.0 ? 1.0 : x, σ)
         M_scaled = M ./ σ
     else
         σ = ones(1, size(M,2))

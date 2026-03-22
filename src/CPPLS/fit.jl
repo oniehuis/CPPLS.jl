@@ -1,15 +1,15 @@
 """
-    fit(model::CPPLSModel,
+    fit(m::CPPLSModel,
         X::AbstractMatrix{<:Real},
         Y_prim::AbstractMatrix{<:Real};
         kwargs...
     )
-    fit(model::CPPLSModel,
+    fit(m::CPPLSModel,
         X::AbstractMatrix{<:Real},
         sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
         kwargs...
     ) where {T,R,V,C,U}
-    fit(model::CPPLSModel,
+    fit(m::CPPLSModel,
         X::AbstractMatrix{<:Real},
         sampleclasses::AbstractVector;
         kwargs...
@@ -23,7 +23,7 @@ optional weights, auxiliary responses, and label metadata.
 When `Y_prim` is provided, it is treated as the primary response block. When
 `sampleclasses` is provided, the labels are converted to a one-hot response matrix,
 class names are inferred as response labels, and the fit is forced to discriminant
-analysis; `model.mode` must be `:discriminant` or an ArgumentError is thrown.
+analysis; `m.mode` must be `:discriminant` or an ArgumentError is thrown.
 
 The `gamma` setting in `model` may be a fixed scalar, a `(lo, hi)` tuple, or a vector
 mixing scalars and tuples. Non-scalar settings trigger per-component selection by
@@ -70,7 +70,7 @@ julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
 julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
 
-julia> spec = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
+julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.01:0.01:1.0
@@ -83,12 +83,12 @@ CPPLSModel
   scale_Yaux: false
   mode: discriminant
 
-julia> cpplsfit = fit(spec, X, classes; samplelabels=labels);
+julia> cpplsfit = fit(m, X, classes; samplelabels=labels);
 
 julia> size(CPPLS.xscores(cpplsfit))
 (100, 2)
 
-julia> spec = CPPLSModel(ncomponents=2, gamma=0.75, mode=:discriminant)
+julia> m = CPPLSModel(ncomponents=2, gamma=0.75, mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.75
@@ -101,7 +101,7 @@ CPPLSModel
   scale_Yaux: false
   mode: discriminant
 
-julia> cpplsfit = fit(spec, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
+julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
 CPPLSFit
   mode: discriminant
   samples: 100
@@ -112,38 +112,38 @@ CPPLSFit
 ```
 """
 function fit(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real};
     kwargs...
 )
-    fit_cppls(model, X, Y_prim; kwargs...)
+    fit_cppls(m, X, Y_prim; kwargs...)
 end
 
 function fit(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
 
-    fit_cppls(model, X, sampleclasses; kwargs...)
+    fit_cppls(m, X, sampleclasses; kwargs...)
 end
 
 function fit(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
     kwargs...
 )
-    fit_cppls(model, X, sampleclasses; kwargs...)
+    fit_cppls(m, X, sampleclasses; kwargs...)
 end
 
 """
     fit_cppls_core(
+        m::CPPLSModel,
         X::AbstractMatrix{<:Real},
-        Y::AbstractMatrix{<:Real},
-        ncomponents::Integer=2;
+        Y_prim::AbstractMatrix{<:Real};
         kwargs...
     )
 
@@ -153,44 +153,24 @@ public entry point and full parameter documentation.
 function fit_cppls_core(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
-    ncomponents::Int=2;  # not used anymore
-    gamma::T1=0.5,
-    obs_weights::T2=nothing,
-    Y_aux::T3=nothing,
-    center::Bool=true,  # not used anymore
-    X_tolerance::T4=1e-12,
-    X_loading_weight_tolerance::T5=eps(Float64),
-    gamma_rel_tol::T6=1e-6,
-    gamma_abs_tol::T7=1e-12,
-    t_squared_norm_tolerance::T8=1e-10,
-    samplelabels::T9=String[],
-    predictorlabels::T10=String[],
-    responselabels::T11=String[],
-    mode::Symbol = :regression,
-    sampleclasses::T12=nothing,
+    Y_prim::AbstractMatrix{<:Real};
+    obs_weights::T1=nothing,
+    Y_aux::T2=nothing,
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
+    sampleclasses::T6=nothing,
     orient_scores::Bool=true,
-    reference_class::T13=nothing
+    reference_class::T7=nothing
 ) where {
-    T1<:Union{
-        <:Real, 
-        <:NTuple{2, <:Real},
-        <:AbstractVector{<:Union{Real, <:NTuple{2, <:Real}}}
-    },
-    T2<:Union{AbstractVector{<:Real}, Nothing},
-    T3<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T4<:Real,
-    T5<:Real,
-    T6<:Real,
-    T7<:Real,
-    T8<:Real,
-    T9<:AbstractVector,
-    T10<:AbstractVector,
-    T11<:AbstractVector,
-    T12<:Union{AbstractVector, Nothing},
-    T13<:Union{AbstractString, Nothing}
+    T1<:Union{AbstractVector{<:Real}, Nothing},
+    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
+    T3<:AbstractVector,
+    T4<:AbstractVector,
+    T5<:AbstractVector,
+    T6<:Union{AbstractVector, Nothing},
+    T7<:Union{AbstractString, Nothing}
 }
-
     m.mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
         "sampleclasses can only be provided for discriminant analysis"))
 
@@ -270,7 +250,7 @@ function fit_cppls_core(
 end
 
 function fit_cppls(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
@@ -287,14 +267,17 @@ function fit_cppls(
     T5<:AbstractVector,
     T6<:Union{AbstractVector, Nothing}  
 }
-    fit_cppls_core(model, X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
-        obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
-        predictorlabels=predictorlabels, responselabels=responselabels,
+    fit_cppls_core(m, X, Y_prim;
+        obs_weights=obs_weights, 
+        Y_aux=Y_aux, 
+        samplelabels=samplelabels,
+        predictorlabels=predictorlabels, 
+        responselabels=responselabels,
         sampleclasses=sampleclasses)
 end
 
 function fit_cppls(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractVector{<:Real};
     obs_weights::T1=nothing,
@@ -309,53 +292,50 @@ function fit_cppls(
     T4<:AbstractVector,
     T5<:AbstractVector
 }
-
     Y_matrix = reshape(Y_prim, :, 1)
 
+    # Hier wurde mode = :regression an fit_cppls_core übergeben. Relevant?
+
     fit_cppls_core(
-        model, 
+        m, 
         X, 
-        Y_matrix, 
-        ncomponents(model); 
+        Y_matrix; 
         obs_weights=obs_weights, 
         Y_aux=Y_aux,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
-        responselabels=responselabels,
-        cppls_model_fit_kwargs(model)...,
-        mode=:regression
+        responselabels=responselabels
     )
 end
 
 function fit_cppls(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
-    model.mode ≡ :discriminant || throw(ArgumentError(
+
+    m.mode ≡ :discriminant || throw(ArgumentError(
         "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(model, X, sampleclasses, ncomponents(model);
-        cppls_model_fit_kwargs(model)..., kwargs...)
+    fit_cppls_from_sample_classes(m, X, sampleclasses; kwargs...)
 end
 
 function fit_cppls(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
     kwargs...
 )
-    model.mode ≡ :discriminant || throw(ArgumentError(
+    m.mode ≡ :discriminant || throw(ArgumentError(
         "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
     
-    fit_cppls_from_sample_classes(model, X, sampleclasses, ncomponents(model);
-        cppls_model_fit_kwargs(model)..., kwargs...)
+    fit_cppls_from_sample_classes(m, X, sampleclasses; kwargs...)
 end
 
 """
     fit_cppls_from_sample_classes(
-        model::CPPLSModel,
+        m::CPPLSModel,
         X::AbstractMatrix{<:Real},
         sampleclasses,
         ncomponents::Int=2;
@@ -367,89 +347,44 @@ and is primarily used by the label-based `fit_cppls` wrappers. Prefer `fit` for 
 documentation and public entry points.
 """
 function fit_cppls_from_sample_classes(
-    model::CPPLSModel,
+    m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    sampleclasses,
-    ncomponents::Int=2;
-    gamma::T1=0.5,
-    obs_weights::T2=nothing,
-    Y_aux::T3=nothing,
-    center::Bool=true,
-    X_tolerance::T4=1e-12,
-    X_loading_weight_tolerance::T5=eps(Float64),
-    gamma_rel_tol::T6=1e-6,
-    gamma_abs_tol::T7=1e-12,
-    t_squared_norm_tolerance::T8=1e-10,
-    samplelabels::T9=String[],
-    predictorlabels::T10=String[],
-    responselabels::T11=String[],
+    sampleclasses;
+    obs_weights::T1=nothing,
+    Y_aux::T2=nothing,
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
     orient_scores::Bool=true,
-    reference_class::T12=nothing
+    reference_class::T6=nothing
 ) where {
-    T1<:Union{
-        <:Real, 
-        <:NTuple{2, <:Real}, 
-        <:AbstractVector{<:Union{Real, <:NTuple{2, <:Real}}}
-    },
-    T2<:Union{AbstractVector{<:Real}, Nothing},
-    T3<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T4<:Real,
-    T5<:Real,
-    T6<:Real,
-    T7<:Real,
-    T8<:Real,
-    T9<:AbstractVector,
-    T10<:AbstractVector,
-    T11<:AbstractVector,
-    T12<:Union{AbstractString, Nothing}
+    T1<:Union{AbstractVector{<:Real}, Nothing},
+    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
+    T3<:AbstractVector,
+    T4<:AbstractVector,
+    T5<:AbstractVector,
+    T6<:Union{AbstractString, Nothing}
 }
     isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
         " when passing sample classes; response labels are inferred automatically."))
 
     Y_prim, classes = onehot(sampleclasses)
 
-    fit_cppls_core(model, X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
-        center=center, X_tolerance=X_tolerance, 
-        X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
-        gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
-        samplelabels=samplelabels, predictorlabels=predictorlabels, 
-        responselabels=classes, mode=:discriminant, 
+    fit_cppls_core(m, X, Y_prim; 
+        obs_weights=obs_weights, 
+        Y_aux=Y_aux,
+        samplelabels=samplelabels, 
+        predictorlabels=predictorlabels, 
+        responselabels=classes,
         sampleclasses=copy(sampleclasses),
-        orient_scores=orient_scores, reference_class=reference_class
+        orient_scores=orient_scores, 
+        reference_class=reference_class
     )
 end
 
 ############################################################################################
 # Helper
 ############################################################################################
-"""
-    cppls_model_fit_kwargs(model::CPPLSModel)
-
-Collect the CPPLSModel fields that correspond to `fit_cppls` keyword arguments and return
-them as a NamedTuple for forwarding to fit helpers.
-"""
-function cppls_model_fit_kwargs(model::CPPLSModel)
-    (
-        gamma = model.gamma,
-        center = model.center,
-        X_tolerance = model.X_tolerance,
-        X_loading_weight_tolerance = model.X_loading_weight_tolerance,
-        t_squared_norm_tolerance = model.t_squared_norm_tolerance,
-        gamma_rel_tol = model.gamma_rel_tol,
-        gamma_abs_tol = model.gamma_abs_tol,
-    )
-end
-
-"""
-    cppls_model_fit_kwargs_with_mode(model::CPPLSModel)
-
-Return the same NamedTuple as `cppls_model_fit_kwargs` but include `mode` to
-preserve regression versus discriminant intent in wrapper calls.
-"""
-function cppls_model_fit_kwargs_with_mode(model::CPPLSModel)
-    merge(cppls_model_fit_kwargs(model), (mode = mode(model),))
-end
-
 """
     validate_label_length(
         labels::AbstractVector,

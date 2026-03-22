@@ -78,7 +78,7 @@ function center_and_scale(
         M_scaled = M_centered
     end
 
-    M_scaled, μ, σ
+    M_scaled, vec(μ), vec(σ)
 end
 
 """

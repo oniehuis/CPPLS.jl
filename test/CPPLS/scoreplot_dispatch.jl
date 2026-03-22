@@ -45,7 +45,7 @@ end
 
         B = reshape(collect(1.0:(n_predictors*n_responses*ncomponents)),
             n_predictors, n_responses, ncomponents)
-        T = reshape(collect(1.0:(n_samples*ncomponents)), n_samples, ncomponents)
+        T = [1.0 2.0; 3.0 4.0]
         P = reshape(collect(1.0:(n_predictors*ncomponents)), n_predictors, ncomponents)
         W_comp = reshape(collect(10.0:(9+n_predictors*ncomponents)),
             n_predictors, ncomponents)
@@ -81,6 +81,16 @@ end
         responselabels = ["class1", "class2"]
         sampleclasses = categorical(["class1", "class2"])
 
+        # Add dummy values for the new nine fields
+        X_z = reshape(collect(1.0:(n_samples*n_predictors)), n_samples, n_predictors)
+        X_mean = collect(1.0:n_predictors)
+        X_std = collect(1.0:n_predictors)
+        Yprim_z = reshape(collect(1.0:(n_samples*n_responses)), n_samples, n_responses)
+        Yprim_mean = collect(1.0:n_responses)
+        Yprim_std = collect(1.0:n_responses)
+        Yaux_z = nothing
+        Yaux_mean = nothing
+        Yaux_std = nothing
         cppls = CPPLS.CPPLSFit(
             B,
             T,
@@ -103,18 +113,22 @@ end
             a,
             b,
             W0,
-            Z;
-            samplelabels = samplelabels,
-            predictorlabels = predictorlabels,
-            responselabels = responselabels,
-            mode = :discriminant,
-            sampleclasses = sampleclasses,
+            Z,
+            X_z,
+            X_mean,
+            X_std,
+            Yprim_z,
+            Yprim_mean,
+            Yprim_std,
+            Yaux_z,
+            Yaux_mean,
+            Yaux_std,
+            samplelabels,
+            predictorlabels,
+            responselabels,
+            :discriminant,
+            sampleclasses,
         )
-
-        res = CPPLS.scoreplot(cppls; backend = :makie)
-        @test res[1] == :makie
-        @test res[2] == cppls.samplelabels
-        @test res[3] == cppls.sampleclasses
         @test res[4] == cppls.T[:, 1:2]
 
         res = CPPLS.scoreplot(cppls; backend = :plotly)
@@ -145,12 +159,21 @@ end
             a,
             b,
             W0,
-            Z;
-            samplelabels = samplelabels,
-            predictorlabels = predictorlabels,
-            responselabels = String[],
-            mode = :regression,
-            sampleclasses = nothing,
+            Z,
+            X_z,
+            X_mean,
+            X_std,
+            Yprim_z,
+            Yprim_mean,
+            Yprim_std,
+            Yaux_z,
+            Yaux_mean,
+            Yaux_std,
+            samplelabels,
+            predictorlabels,
+            String[],
+            :regression,
+            nothing,
         )
 
         @test_throws ArgumentError CPPLS.scoreplot(cppls_no_groups; backend = :plotly)

@@ -190,10 +190,12 @@ directly.
 struct CPPLSFit{
     T1<:Real,
     T2<:Integer,
-    T3<:AbstractVector,
-    T4<:AbstractVector,
+    T3<:Union{Matrix{T1}, Nothing},
+    T4<:Union{Vector{T1}, Nothing},
     T5<:AbstractVector,
-    T6<:Union{AbstractVector, Nothing}
+    T6<:AbstractVector,
+    T7<:AbstractVector,
+    T8<:Union{AbstractVector, Nothing}
 } <: AbstractCPPLSFit
 
     B::Array{T1,3}
@@ -218,11 +220,20 @@ struct CPPLSFit{
     b::Matrix{T1}
     W0::Array{T1,3}
     Z::Array{T1,3}
-    samplelabels::T3
-    predictorlabels::T4
-    responselabels::T5
+    X_z::Matrix{T1}
+    X_mean::Vector{T1}
+    X_std::Vector{T1}
+    Yprim_z::Matrix{T1}
+    Yprim_mean::Vector{T1}
+    Yprim_std::Vector{T1}
+    Yaux_z::T3
+    Yaux_mean::T4
+    Yaux_std::T4
+    samplelabels::T5
+    predictorlabels::T6
+    responselabels::T7
     mode::Symbol
-    sampleclasses::T6
+    sampleclasses::T8
 end
 
 function CPPLSFit(
@@ -247,19 +258,30 @@ function CPPLSFit(
     a::Matrix{T1},
     b::Matrix{T1},
     W0::Array{T1,3},
-    Z::Array{T1,3};
-    samplelabels::T3=String[],
-    predictorlabels::T4=String[],
-    responselabels::T5=String[],
+    Z::Array{T1,3},
+    X_z::Matrix{T1},
+    X_mean::Vector{T1},
+    X_std::Vector{T1},
+    Yprim_z::Matrix{T1},
+    Yprim_mean::Vector{T1},
+    Yprim_std::Vector{T1},
+    Yaux_z::T3,
+    Yaux_mean::T4,
+    Yaux_std::T4;
+    samplelabels::T5=String[],
+    predictorlabels::T6=String[],
+    responselabels::T7=String[],
     mode::Symbol=:regression,
-    sampleclasses::T6=nothing
+    sampleclasses::T8=nothing
 ) where {
         T1<:Real,
         T2<:Integer,
-        T3<:AbstractVector,
-        T4<:AbstractVector,
+        T3<:Union{Matrix{T1}, Nothing},
+        T4<:Union{Vector{T1}, Nothing},
         T5<:AbstractVector,
-        T6<:Union{AbstractVector, Nothing}
+        T6<:AbstractVector,
+        T7<:AbstractVector,
+        T8<:Union{AbstractVector, Nothing}
     }
 
     mode in (:regression, :discriminant) || throw(ArgumentError(
@@ -268,10 +290,10 @@ function CPPLSFit(
     mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
         "sampleclasses are only stored for discriminant analysis models"))
 
-    CPPLSFit{T1, T2, T3, T4, T5, T6}(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, 
-        X_var, X_var_total, gamma, rho, gammas, rhos,
-        zero_mask, a, b, W0, Z, samplelabels, predictorlabels, responselabels,
-        mode, sampleclasses)
+    CPPLSFit{T1, T2, T3, T4, T5, T6, T7, T8}(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, 
+        F, X_var, X_var_total, gamma, rho, gammas, rhos, zero_mask, a, b, W0, Z, 
+        X_z, X_mean, X_std, Yprim_z, Yprim_mean, Yprim_std, Yaux_z, Yaux_mean, Yaux_std,
+        samplelabels, predictorlabels, responselabels, mode, sampleclasses)
 end
 
 function Base.show(io::IO, model::CPPLSFit)

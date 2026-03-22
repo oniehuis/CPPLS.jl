@@ -230,7 +230,9 @@ function fit_cppls_core(
     X_var_total = sum(d.X .* d.X)
 
     fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, d.X_bar, d.Y_bar, Y_hat, F, X_var, 
-        X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z; 
+        X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z, 
+        d.X_z, d.X_mean, d.X_std, d.Yprim_z, d.Yprim_mean, d.Yprim_std, d.Yaux_z, 
+        d.Yaux_mean, d.Yaux_std; 
         samplelabels=samplelabels,
         predictorlabels=predictorlabels, 
         responselabels=responselabels,

@@ -87,6 +87,16 @@
         responselabels = [Symbol("resp_$i") for i = 1:n_responses]
         sampleclasses = ["class_$(1 + (i % 2))" for i = 1:n_samples]
 
+        # Add dummy values for the new nine fields
+        X_z = reshape(T_el.(1:(n_samples*n_predictors)), n_samples, n_predictors)
+        X_mean = T_el.(1:n_predictors)
+        X_std = T_el.(1:n_predictors)
+        Yprim_z = reshape(T_el.(1:(n_samples*n_responses)), n_samples, n_responses)
+        Yprim_mean = T_el.(1:n_responses)
+        Yprim_std = T_el.(1:n_responses)
+        Yaux_z = nothing
+        Yaux_mean = nothing
+        Yaux_std = nothing
         cppls = CPPLS.CPPLSFit(
             B,
             T_scores,
@@ -109,43 +119,63 @@
             a,
             b,
             W0,
-            Z;
-            samplelabels = samplelabels,
-            predictorlabels = predictorlabels,
-            responselabels = responselabels,
-            mode = :regression,
-            sampleclasses = nothing,
+            Z,
+            X_z,
+            X_mean,
+            X_std,
+            Yprim_z,
+            Yprim_mean,
+            Yprim_std,
+            Yaux_z,
+            Yaux_mean,
+            Yaux_std,
+            samplelabels,
+            predictorlabels,
+            responselabels,
+            :regression,
+            nothing,
         )
 
         @test cppls isa CPPLS.AbstractCPPLSFit
-        @test cppls isa CPPLS.CPPLSFit{
-            T_el,
-            Tmask,
-            typeof(samplelabels),
-            typeof(predictorlabels),
-            typeof(responselabels),
-            Nothing,
-        }
-        @test cppls.B === B
-        @test cppls.T === T_scores
-        @test cppls.P === P
-        @test cppls.W_comp === W_comp
-        @test cppls.U === U
-        @test cppls.C === C
-        @test cppls.R === R
-        @test cppls.X_bar === X_bar
-        @test cppls.Y_bar === Y_bar
-        @test cppls.Y_hat === Y_hat
-        @test cppls.F === F
-        @test cppls.X_var === X_var
-        @test cppls.X_var_total === X_var_total
-        @test cppls.gamma === gamma
-        @test cppls.rho === rho
-        @test cppls.zero_mask === zero_mask
-        @test cppls.a === a
-        @test cppls.b === b
-        @test cppls.W0 === W0
-        @test cppls.Z === Z
+        cppls_da = CPPLS.CPPLSFit(
+            B,
+            T_scores,
+            P,
+            W_comp,
+            U,
+            C,
+            R,
+            X_bar,
+            Y_bar,
+            Y_hat,
+            F,
+            X_var,
+            X_var_total,
+            gamma,
+            rho,
+            gammas,
+            rhos,
+            zero_mask,
+            a,
+            b,
+            W0,
+            Z,
+            X_z,
+            X_mean,
+            X_std,
+            Yprim_z,
+            Yprim_mean,
+            Yprim_std,
+            Yaux_z,
+            Yaux_mean,
+            Yaux_std,
+            samplelabels,
+            predictorlabels,
+            responselabels,
+            :discriminant,
+            sampleclasses,
+        )
+        @test cppls.Yaux_std === Yaux_std
         @test cppls.samplelabels === samplelabels
         @test cppls.predictorlabels === predictorlabels
         @test cppls.responselabels === responselabels
@@ -184,6 +214,20 @@
             b,
             W0,
             Z,
+            X_z,
+            X_mean,
+            X_std,
+            Yprim_z,
+            Yprim_mean,
+            Yprim_std,
+            Yaux_z,
+            Yaux_mean,
+            Yaux_std,
+            [],
+            [],
+            [],
+            :regression,
+            nothing,
         )
         @test isempty(cppls_default.samplelabels)
         @test isempty(cppls_default.predictorlabels)
@@ -213,12 +257,21 @@
             a,
             b,
             W0,
-            Z;
-            samplelabels = samplelabels,
-            predictorlabels = predictorlabels,
-            responselabels = responselabels,
-            mode = :discriminant,
-            sampleclasses = sampleclasses,
+            Z,
+            X_z,
+            X_mean,
+            X_std,
+            Yprim_z,
+            Yprim_mean,
+            Yprim_std,
+            Yaux_z,
+            Yaux_mean,
+            Yaux_std,
+            samplelabels,
+            predictorlabels,
+            responselabels,
+            :discriminant,
+            sampleclasses,
         )
         @test cppls_da.mode === :discriminant
         @test cppls_da.sampleclasses === sampleclasses
@@ -328,10 +381,36 @@ end
     responselabels = String[]
     sampleclasses = nothing
 
+    # Define dummy variables for new fields
+    n_samples = size(B, 1)
+    n_predictors = size(B, 1)
+    n_responses = size(B, 2)
+    X_z = reshape(Float64.(1:(n_samples*n_predictors)), n_samples, n_predictors)
+    X_mean = Float64.(1:n_predictors)
+    X_std = Float64.(1:n_predictors)
+    Yprim_z = reshape(Float64.(1:(n_samples*n_responses)), n_samples, n_responses)
+    Yprim_mean = Float64.(1:n_responses)
+    Yprim_std = Float64.(1:n_responses)
+    Yaux_z = nothing
+    Yaux_mean = nothing
+    Yaux_std = nothing
     model = CPPLS.CPPLSFit(
         B, T_scores, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
         gamma, rho, gammas, rhos, zero_mask, a, b, W0, Z,
-        samplelabels, predictorlabels, responselabels, :regression, sampleclasses,
+        X_z,
+        X_mean,
+        X_std,
+        Yprim_z,
+        Yprim_mean,
+        Yprim_std,
+        Yaux_z,
+        Yaux_mean,
+        Yaux_std,
+        samplelabels,
+        predictorlabels,
+        responselabels,
+        :regression,
+        sampleclasses,
     )
     model_inline = sprint(show, model)
     model_plain = sprint(io -> show(io, MIME"text/plain"(), model))

@@ -371,21 +371,8 @@ end
 
     m = CPPLS.CPPLSModel(ncomponents=ncomponents, gamma=0.5, center=true, X_tolerance=1e-12, 
     X_loading_weight_tolerance=1e-12, t_squared_norm_tolerance=1e-10)
-
-    X,
-    Y_prim,
-    Y,
-    observation_weights,
-    X_bar,
-    Y_bar,
-    X_def,
-    W_comp,
-    P,
-    C,
-    zero_mask,
-    B,
-    _,
-    _ = CPPLS.cppls_prepare_data(
+    
+    d = CPPLS.cppls_prepare_data(
         m,
         X,
         Y,
@@ -394,35 +381,35 @@ end
     )
 
     initial_weights = [3.0, 4.0]
-    X_def_original = copy(X_def)
+    X_def_original = copy(d.X_def)
 
     tᵢ, t_norm, _ = CPPLS.process_component!(
         m,
         1,
-        X_def,
+        d.X_def,
         copy(initial_weights),
-        Y_prim,
-        W_comp,
-        P,
-        C,
-        B,
-        zero_mask  
+        d.Y_prim,
+        d.W_comp,
+        d.P,
+        d.C,
+        d.B,
+        d.zero_mask  
     )
 
     normalized_weights = initial_weights / CPPLS.norm(initial_weights)
     expected_scores = X_def_original * normalized_weights
     expected_norm = CPPLS.dot(expected_scores, expected_scores)
-    expected_Y_loadings = (Y_prim' * expected_scores) / expected_norm
+    expected_Y_loadings = (d.Y_prim' * expected_scores) / expected_norm
     expected_B =
-        W_comp[:, 1:1] *
-        CPPLS.pinv(P[:, 1:1]' * W_comp[:, 1:1]) *
-        C[:, 1:1]'
+        d.W_comp[:, 1:1] *
+        CPPLS.pinv(d.P[:, 1:1]' * d.W_comp[:, 1:1]) *
+        d.C[:, 1:1]'
 
-    @test W_comp[:, 1] ≈ normalized_weights
+    @test d.W_comp[:, 1] ≈ normalized_weights
     @test tᵢ ≈ expected_scores
     @test t_norm ≈ expected_norm
-    @test C[:, 1] ≈ expected_Y_loadings
-    @test B[:, :, 1] ≈ expected_B
+    @test d.C[:, 1] ≈ expected_Y_loadings
+    @test d.B[:, :, 1] ≈ expected_B
 end
 
 @testset "process_component! guards zero-norm scores" begin
@@ -439,22 +426,23 @@ end
 
     m = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center=true)
 
-    X,
-    Y_prim,
-    _,
-    _,
-    _,
-    _,
-    X_def,
-    W_comp,
-    P,
-    C,
-    zero_mask,
-    B,
-    _,
-    _ = CPPLS.cppls_prepare_data(m, X, Y, nothing, nothing)
+    # X,
+    # Y_prim,
+    # _,
+    # _,
+    # _,
+    # _,
+    # X_def,
+    # W_comp,
+    # P,
+    # C,
+    # zero_mask,
+    # B,
+    # _,
+    # _ 
+    d = CPPLS.cppls_prepare_data(m, X, Y, nothing, nothing)
 
-    X_def .= 0  # force zero scores regardless of weights
+    d.X_def .= 0  # force zero scores regardless of weights
     initial_weights = [1.0, 2.0]
     tol = 1e-8
 
@@ -463,14 +451,14 @@ end
     _, t_norm, _ = CPPLS.process_component!(
         m,
         1,
-        X_def,
+        d.X_def,
         copy(initial_weights),
-        Y_prim,
-        W_comp,
-        P,
-        C,
-        B,
-        zero_mask
+        d.Y_prim,
+        d.W_comp,
+        d.P,
+        d.C,
+        d.B,
+        d.zero_mask
     )
 
     @test t_norm == tol

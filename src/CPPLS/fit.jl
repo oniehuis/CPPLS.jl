@@ -176,22 +176,21 @@ function fit_cppls_core(
 
     n_predictors = size(X, 2)
 
-    (X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B,
-        n_samples_X, n_targets_Y) = cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
+    d = cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
 
-    samplelabels = default_sample_labels(validate_label_length(samplelabels, n_samples_X,
-        "samplelabels"), n_samples_X)
+    samplelabels = default_sample_labels(validate_label_length(samplelabels, d.n_samples_X,
+        "samplelabels"), d.n_samples_X)
     predictorlabels = validate_label_length(predictorlabels, n_predictors, 
         "predictorlabels")
-    responselabels = validate_response_labels(responselabels, n_targets_Y)
+    responselabels = validate_response_labels(responselabels, d.n_targets_Y)
     if m.mode ≡ :discriminant && isempty(responselabels)
         throw(ArgumentError(
             "responselabels must list class names for discriminant analysis"))
     end
 
-    T = Matrix{Float64}(undef, n_samples_X, m.ncomponents)
-    a = Matrix{Float64}(undef, size(Y, 2), m.ncomponents)
-    b = Matrix{Float64}(undef, n_targets_Y, m.ncomponents)
+    T = Matrix{Float64}(undef, d.n_samples_X, m.ncomponents)
+    a = Matrix{Float64}(undef, size(d.Y, 2), m.ncomponents)
+    b = Matrix{Float64}(undef, d.n_targets_Y, m.ncomponents)
     rho = Vector{Float64}(undef, m.ncomponents)
     gamma_vals = fill(0.5, m.ncomponents)
     gammas = Matrix{Float64}(undef, gamma_search_candidate_count(m.gamma),
@@ -199,41 +198,42 @@ function fit_cppls_core(
     rhos = Matrix{Float64}(undef, gamma_search_candidate_count(m.gamma),
         m.ncomponents)
     t_norms = Vector{Float64}(undef, m.ncomponents)
-    U = Matrix{Float64}(undef, n_samples_X, m.ncomponents)
-    Y_hat = Array{Float64}(undef, n_samples_X, n_targets_Y, m.ncomponents)
-    W0 = Array{Float64}(undef, n_predictors, size(Y, 2), m.ncomponents)
-    Z = Array{Float64}(undef, n_samples_X, size(Y, 2), m.ncomponents)
+    U = Matrix{Float64}(undef, d.n_samples_X, m.ncomponents)
+    Y_hat = Array{Float64}(undef, d.n_samples_X, d.n_targets_Y, m.ncomponents)
+    W0 = Array{Float64}(undef, n_predictors, size(d.Y, 2), m.ncomponents)
+    Z = Array{Float64}(undef, d.n_samples_X, size(d.Y, 2), m.ncomponents)
 
     for i = 1:m.ncomponents
         wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gammas[:, i],
-        rhos[:, i] = compute_cppls_weights(m, X_def, Y, Y_prim, obs_weights, m.gamma)
+        rhos[:, i] = compute_cppls_weights(m, d.X_def, d.Y, d.Y_prim, obs_weights, m.gamma)
         
         W0[:, :, i] = W0ᵢ
-        Z[:, :, i] = X_def * W0ᵢ
+        Z[:, :, i] = d.X_def * W0ᵢ
 
-        tᵢ, tᵢ_squared_norm, cᵢ = process_component!(m, i, X_def, wᵢ, Y_prim, W_comp, P, C, 
-            B, zero_mask)
+        tᵢ, tᵢ_squared_norm, cᵢ = process_component!(m, i, d.X_def, wᵢ, d.Y_prim, d.W_comp, 
+            d.P, d.C, d.B, d.zero_mask)
 
         T[:, i] = tᵢ
         t_norms[i] = tᵢ_squared_norm
-        U[:, i] = Y_prim * cᵢ / (cᵢ' * cᵢ)
+        U[:, i] = d.Y_prim * cᵢ / (cᵢ' * cᵢ)
 
         if i > 1
             U[:, i] -= T * (T' * U[:, i] ./ t_norms)
         end
-        Y_hat[:, :, i] = X * B[:, :, i]
+        Y_hat[:, :, i] = d.X * d.B[:, :, i]
     end
 
-    Y_hat .+= reshape(repeat(Y_bar, n_samples_X), n_samples_X, length(Y_bar), 1)
-    F = Y_prim .- Y_hat
-    R = W_comp * pinv(P' * W_comp)
-    X_var = vec(sum(P .* P, dims = 1)) .* t_norms
-    X_var_total = sum(X .* X)
+    Y_hat .+= reshape(repeat(d.Y_bar, d.n_samples_X), d.n_samples_X, length(d.Y_bar), 1)
+    F = d.Y_prim .- Y_hat
+    R = d.W_comp * pinv(d.P' * d.W_comp)
+    X_var = vec(sum(d.P .* d.P, dims = 1)) .* t_norms
+    X_var_total = sum(d.X .* d.X)
 
-    fitobj = CPPLSFit(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
-        gamma_vals, rho, gammas, rhos, zero_mask, a, b, W0,
-        Z; samplelabels=samplelabels,
-        predictorlabels=predictorlabels, responselabels=responselabels,
+    fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, d.X_bar, d.Y_bar, Y_hat, F, X_var, 
+        X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z; 
+        samplelabels=samplelabels,
+        predictorlabels=predictorlabels, 
+        responselabels=responselabels,
         mode=m.mode, sampleclasses=sampleclasses)
 
     if orient_scores && m.mode ≡ :discriminant && !isnothing(sampleclasses) && !isempty(responselabels)

@@ -20,16 +20,16 @@ function fit_cppls_light_core(
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
-    X, Y_prim, Y, obs_weights, X_bar, Y_bar, X_def, W_comp, P, C, zero_mask, B, _, _ = 
-        cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
+
+    d = cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
 
     for i = 1:m.ncomponents
-        wᵢ, _, _, _, _, _, _, _ = 
-            compute_cppls_weights(m, X_def, Y, Y_prim, obs_weights, m.gamma)
-        process_component!(m, i, X_def, wᵢ, Y_prim, W_comp, P, C, B, zero_mask)
+        wᵢ = compute_cppls_weights(m, d.X_def, d.Y, d.Y_prim, obs_weights, m.gamma)[1]
+        process_component!(m, i, d.X_def, wᵢ, d.Y_prim, d.W_comp, d.P, d.C, d.B, 
+            d.zero_mask)
     end
 
-    CPPLSFitLight(B, X_bar, Y_bar, m.mode)
+    CPPLSFitLight(d.B, d.X_bar, d.Y_bar, m.mode)
 end
 
 

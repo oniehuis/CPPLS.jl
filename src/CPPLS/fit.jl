@@ -83,9 +83,9 @@ CPPLSModel
   scale_Yaux: false
   mode: discriminant
 
-julia> model = fit(spec, X, classes; samplelabels=labels);
+julia> cpplsfit = fit(spec, X, classes; samplelabels=labels);
 
-julia> size(CPPLS.xscores(model))
+julia> size(CPPLS.xscores(cpplsfit))
 (100, 2)
 
 julia> spec = CPPLSModel(ncomponents=2, gamma=0.75, mode=:discriminant)
@@ -101,7 +101,7 @@ CPPLSModel
   scale_Yaux: false
   mode: discriminant
 
-julia> model = fit(spec, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
+julia> cpplsfit = fit(spec, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
 CPPLSFit
   mode: discriminant
   samples: 100
@@ -140,7 +140,7 @@ function fit(
 end
 
 """
-    fit_cppls(
+    fit_cppls_core(
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real},
         ncomponents::Integer=2;
@@ -150,7 +150,7 @@ end
 Low-level CPPLS fitting routine used by `fit`. Prefer `fit` with a CPPLSModel for the
 public entry point and full parameter documentation.
 """
-function fit_cppls(
+function fit_cppls_core(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real},
     ncomponents::Int=2;
@@ -291,7 +291,7 @@ function fit_cppls(
     T5<:AbstractVector,
     T6<:Union{AbstractVector, Nothing}  
 }
-    fit_cppls(X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
+    fit_cppls_core(X, Y_prim, ncomponents(model); cppls_model_fit_kwargs_with_mode(model)...,
         obs_weights=obs_weights, Y_aux=Y_aux, samplelabels=samplelabels,
         predictorlabels=predictorlabels, responselabels=responselabels,
         sampleclasses=sampleclasses)
@@ -344,7 +344,7 @@ function fit_cppls(
 
     Y_matrix = reshape(Y_prim, :, 1)
 
-    fit_cppls(X, Y_matrix, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
+    fit_cppls_core(X, Y_matrix, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,
@@ -479,7 +479,7 @@ function fit_cppls_from_sample_classes(
 
     Y_prim, classes = onehot(sampleclasses)
 
-    fitobj = fit_cppls(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
+    fitobj = fit_cppls_core(X, Y_prim, ncomponents; gamma=gamma, obs_weights=obs_weights, Y_aux=Y_aux,
         center=center, X_tolerance=X_tolerance, 
         X_loading_weight_tolerance=X_loading_weight_tolerance, gamma_rel_tol=gamma_rel_tol,
         gamma_abs_tol=gamma_abs_tol, t_squared_norm_tolerance=t_squared_norm_tolerance,

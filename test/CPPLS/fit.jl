@@ -17,7 +17,7 @@ using StatsAPI
         1 0
     ]
 
-    model = CPPLS.fit_cppls(X, Y, 2; gamma = 0.5)
+    model = CPPLS.fit_cppls_core(X, Y, 2; gamma = 0.5)
 
     @test model isa CPPLS.CPPLSFit
     @test size(model.B) == (size(X, 2), size(Y, 2), 2)
@@ -66,7 +66,7 @@ end
         1.0,
     ]
 
-    model = CPPLS.fit_cppls(X, Y, 1; gamma = gamma_candidates)
+    model = CPPLS.fit_cppls_core(X, Y, 1; gamma = gamma_candidates)
 
     @test size(CPPLS.gammas(model)) == (length(gamma_candidates), 1)
     @test size(CPPLS.rhos(model)) == (length(gamma_candidates), 1)
@@ -129,7 +129,7 @@ end
     predictorlabels = [:p1, :p2]
     responselabels = ["r1", "r2"]
 
-    model = CPPLS.fit_cppls(
+    model = CPPLS.fit_cppls_core(
         X,
         Y,
         1;
@@ -143,7 +143,7 @@ end
     @test model.predictorlabels == predictorlabels
     @test model.responselabels == responselabels
 
-    @test_throws ArgumentError CPPLS.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls_core(
         X,
         Y,
         1;
@@ -151,7 +151,7 @@ end
         samplelabels = ["only_two"],
     )
 
-    @test_throws ArgumentError CPPLS.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls_core(
         X,
         Y,
         1;
@@ -159,7 +159,7 @@ end
         predictorlabels = [:p1],
     )
 
-    @test_throws ArgumentError CPPLS.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls_core(
         X,
         Y,
         1;
@@ -167,7 +167,7 @@ end
         responselabels = ["r1"],
     )
 
-    @test_throws ArgumentError CPPLS.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls_core(
         X,
         Y,
         1;
@@ -175,7 +175,7 @@ end
         mode = :discriminant,
     )
 
-    @test_throws ArgumentError CPPLS.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls_core(
         X,
         Y,
         1;
@@ -183,7 +183,7 @@ end
         sampleclasses = ["classA"],
     )
 
-    @test_throws ArgumentError CPPLS.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls_core(
         X,
         Y,
         1;
@@ -225,7 +225,7 @@ end
     ]
     gamma_bounds = (0.2, 0.8)
 
-    full = CPPLS.fit_cppls(X, Y, 2; gamma = gamma_bounds)
+    full = CPPLS.fit_cppls_core(X, Y, 2; gamma = gamma_bounds)
     light = CPPLS.fit_cppls_light(X, Y, 2; gamma = gamma_bounds)
 
     @test light isa CPPLS.CPPLSFitLight
@@ -271,7 +271,7 @@ end
 
     Y_vec = Float64[1, 0, 1, 0]
     vec_model = CPPLS.fit_cppls(X, Y_vec, 2; gamma = 0.5)
-    mat_model = CPPLS.fit_cppls(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
+    mat_model = CPPLS.fit_cppls_core(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
 
     @test vec_model.B ≈ mat_model.B
     @test vec_model.mode === :regression

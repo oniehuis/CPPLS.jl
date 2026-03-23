@@ -2,13 +2,12 @@
     CPPLSModel{T}
 
 Model specification passed to `fit`. A `CPPLSModel` stores the user-controlled settings
-for CPPLS fitting, most importantly `ncomponents`, `gamma`, `center`, and
-`mode`.
+for CPPLS fitting, most importantly `ncomponents`, `gamma`, centering and scaling of predictor 
+and response variables, and `mode`.
 """
 struct CPPLSModel{T}
     ncomponents::Int
     gamma::T
-    center::Bool
     center_X::Bool
     scale_X::Bool
     center_Y::Bool
@@ -26,8 +25,13 @@ end
 """
     CPPLSModel(; 
         ncomponents::Integer=2, 
-        gamma=0.5, 
-        center::Bool=true, 
+        gamma=0.5,
+        center_X::Bool=true,
+        scale_X::Bool=false,
+        center_Y::Bool=true,
+        scale_Y::Bool=false,
+        center_Yaux::Bool=true,
+        scale_Yaux::Bool=false,
         X_tolerance::Real=1e-12, 
         X_loading_weight_tolerance::Real=eps(Float64), 
         t_squared_norm_tolerance::Real=1e-10, 
@@ -37,13 +41,12 @@ end
     )
 
 Construct a model specification for `fit`. The most commonly adjusted settings are
-`ncomponents`, `gamma`, `center`, and `mode`. `gamma` may be a fixed value, a
+`ncomponents`, `gamma`, and `mode`. `gamma` may be a fixed value, a
 `(lo, hi)` interval, or a collection of such candidates used during fitting.
 """
 function CPPLSModel(;
     ncomponents::T1=2,
     gamma=0.5,
-    center::Bool=true,
     center_X::Bool=true,
     scale_X::Bool=false,
     center_Y::Bool=true,
@@ -72,7 +75,6 @@ function CPPLSModel(;
     CPPLSModel(
         Int(ncomponents),
         gamma,
-        center,
         center_X,
         scale_X,
         center_Y,
@@ -92,7 +94,6 @@ function Base.show(io::IO, spec::CPPLSModel)
     print(io, "CPPLSModel(",
         "ncomponents=", spec.ncomponents,
         ", gamma=", repr(spec.gamma),
-        ", center=", spec.center,
         ", center_X=", spec.center_X,
         ", scale_X=", spec.scale_X,
         ", center_Y=", spec.center_Y,
@@ -107,7 +108,6 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSModel)
     println(io, "CPPLSModel")
     println(io, "  ncomponents: ", spec.ncomponents)
     println(io, "  gamma: ", repr(spec.gamma))
-    println(io, "  center: ", spec.center)
     println(io, "  center_X: ", spec.center_X)
     println(io, "  scale_X: ", spec.scale_X)
     println(io, "  center_Y: ", spec.center_Y)
@@ -204,12 +204,11 @@ directly.
 struct CPPLSFit{
     T1<:Real,
     T2<:Integer,
-    T3<:Union{Matrix{T1}, Nothing},
-    T4<:Union{Vector{T1}, Nothing},
+    T3<:Union{Vector{T1}, Nothing},
+    T4<:AbstractVector,
     T5<:AbstractVector,
     T6<:AbstractVector,
-    T7<:AbstractVector,
-    T8<:Union{AbstractVector, Nothing}
+    T7<:Union{AbstractVector, Nothing}
 } <: AbstractCPPLSFit
 
     B::Array{T1,3}
@@ -219,8 +218,6 @@ struct CPPLSFit{
     U::Matrix{T1}
     C::Matrix{T1}
     R::Matrix{T1}
-    X_bar::Matrix{T1}
-    Y_bar::Matrix{T1}
     Y_hat::Array{T1,3}
     F::Array{T1,3}
     X_var::Vector{T1}
@@ -234,20 +231,17 @@ struct CPPLSFit{
     b::Matrix{T1}
     W0::Array{T1,3}
     Z::Array{T1,3}
-    X_z::Matrix{T1}
     X_mean::Vector{T1}
     X_std::Vector{T1}
-    Yprim_z::Matrix{T1}
     Yprim_mean::Vector{T1}
     Yprim_std::Vector{T1}
-    Yaux_z::T3
-    Yaux_mean::T4
-    Yaux_std::T4
-    samplelabels::T5
-    predictorlabels::T6
-    responselabels::T7
+    Yaux_mean::T3
+    Yaux_std::T3
+    samplelabels::T4
+    predictorlabels::T5
+    responselabels::T6
     mode::Symbol
-    sampleclasses::T8
+    sampleclasses::T7
 end
 
 function CPPLSFit(
@@ -258,8 +252,6 @@ function CPPLSFit(
     U::Matrix{T1},
     C::Matrix{T1},
     R::Matrix{T1},
-    X_bar::Matrix{T1},
-    Y_bar::Matrix{T1},
     Y_hat::Array{T1,3},
     F::Array{T1,3},
     X_var::Vector{T1},
@@ -273,29 +265,25 @@ function CPPLSFit(
     b::Matrix{T1},
     W0::Array{T1,3},
     Z::Array{T1,3},
-    X_z::Matrix{T1},
     X_mean::Vector{T1},
     X_std::Vector{T1},
-    Yprim_z::Matrix{T1},
     Yprim_mean::Vector{T1},
     Yprim_std::Vector{T1},
-    Yaux_z::T3,
-    Yaux_mean::T4,
-    Yaux_std::T4;
-    samplelabels::T5=String[],
-    predictorlabels::T6=String[],
-    responselabels::T7=String[],
+    Yaux_mean::T3,
+    Yaux_std::T3;
+    samplelabels::T4=String[],
+    predictorlabels::T5=String[],
+    responselabels::T6=String[],
     mode::Symbol=:regression,
-    sampleclasses::T8=nothing
+    sampleclasses::T7=nothing
 ) where {
         T1<:Real,
         T2<:Integer,
-        T3<:Union{Matrix{T1}, Nothing},
-        T4<:Union{Vector{T1}, Nothing},
+        T3<:Union{Vector{T1}, Nothing},
+        T4<:AbstractVector,
         T5<:AbstractVector,
         T6<:AbstractVector,
-        T7<:AbstractVector,
-        T8<:Union{AbstractVector, Nothing}
+        T7<:Union{AbstractVector, Nothing}
     }
 
     mode in (:regression, :discriminant) || throw(ArgumentError(
@@ -304,9 +292,9 @@ function CPPLSFit(
     mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
         "sampleclasses are only stored for discriminant analysis models"))
 
-    CPPLSFit{T1, T2, T3, T4, T5, T6, T7, T8}(B, T, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, 
+    CPPLSFit{T1, T2, T3, T4, T5, T6, T7}(B, T, P, W_comp, U, C, R, Y_hat, 
         F, X_var, X_var_total, gamma, rho, gammas, rhos, zero_mask, a, b, W0, Z, 
-        X_z, X_mean, X_std, Yprim_z, Yprim_mean, Yprim_std, Yaux_z, Yaux_mean, Yaux_std,
+        X_mean, X_std, Yprim_mean, Yprim_std, Yaux_mean, Yaux_std,
         samplelabels, predictorlabels, responselabels, mode, sampleclasses)
 end
 

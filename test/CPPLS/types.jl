@@ -33,8 +33,6 @@
             reshape(T_el.(51:(50+n_responses*ncomponents)), n_responses, ncomponents)
         R =
             reshape(T_el.(11:(10+n_predictors*ncomponents)), n_predictors, ncomponents)
-        X_bar = reshape(T_el.(1:n_predictors), 1, n_predictors)
-        Y_bar = reshape(T_el.(1:n_responses), 1, n_responses)
         Y_hat = reshape(
             T_el.(1:(n_samples*n_responses*ncomponents)),
             n_samples,
@@ -105,8 +103,6 @@
             U,
             C,
             R,
-            X_bar,
-            Y_bar,
             Y_hat,
             F,
             X_var,
@@ -120,13 +116,10 @@
             b,
             W0,
             Z,
-            X_z,
             X_mean,
             X_std,
-            Yprim_z,
             Yprim_mean,
             Yprim_std,
-            Yaux_z,
             Yaux_mean,
             Yaux_std,
             samplelabels,
@@ -145,8 +138,6 @@
             U,
             C,
             R,
-            X_bar,
-            Y_bar,
             Y_hat,
             F,
             X_var,
@@ -160,13 +151,10 @@
             b,
             W0,
             Z,
-            X_z,
             X_mean,
             X_std,
-            Yprim_z,
             Yprim_mean,
             Yprim_std,
-            Yaux_z,
             Yaux_mean,
             Yaux_std,
             samplelabels,
@@ -199,8 +187,6 @@
             U,
             C,
             R,
-            X_bar,
-            Y_bar,
             Y_hat,
             F,
             X_var,
@@ -214,13 +200,10 @@
             b,
             W0,
             Z,
-            X_z,
             X_mean,
             X_std,
-            Yprim_z,
             Yprim_mean,
             Yprim_std,
-            Yaux_z,
             Yaux_mean,
             Yaux_std,
             [],
@@ -243,8 +226,6 @@
             U,
             C,
             R,
-            X_bar,
-            Y_bar,
             Y_hat,
             F,
             X_var,
@@ -258,13 +239,10 @@
             b,
             W0,
             Z,
-            X_z,
             X_mean,
             X_std,
-            Yprim_z,
             Yprim_mean,
             Yprim_std,
-            Yaux_z,
             Yaux_mean,
             Yaux_std,
             samplelabels,
@@ -326,13 +304,15 @@ end
     spec = CPPLS.CPPLSModel()
     @test spec.ncomponents == 2
     @test spec.gamma == 0.5
-    @test spec.center === true
+    @test spec.center_X === true
+    @test spec.center_Y === true
     @test spec.mode === :regression
 
     tuned = CPPLS.CPPLSModel(
         ncomponents = 3,
         gamma = (0.2, 0.8),
-        center = false,
+        center_X = false,
+        center_Y = false,
         X_tolerance = 1e-8,
         X_loading_weight_tolerance = 1e-9,
         t_squared_norm_tolerance = 1e-7,
@@ -342,7 +322,8 @@ end
     )
     @test tuned.ncomponents == 3
     @test tuned.gamma == (0.2, 0.8)
-    @test tuned.center === false
+    @test tuned.center_X === false
+    @test tuned.center_Y === false
     @test tuned.mode === :discriminant
 
     @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents = 0)
@@ -367,8 +348,6 @@ end
     U = reshape(Float64.(21:26), 3, 2)
     C = reshape(Float64.(31:34), 2, 2)
     R = reshape(Float64.(41:44), 2, 2)
-    X_bar = reshape([0.5, 1.5], 1, :)
-    Y_bar = reshape([2.5, 3.5], 1, :)
     Y_hat = reshape(Float64.(51:62), 3, 2, 2)
     F = reshape(Float64.(71:82), 3, 2, 2)
     X_var = [0.1, 0.2]
@@ -401,15 +380,12 @@ end
     Yaux_mean = nothing
     Yaux_std = nothing
     model = CPPLS.CPPLSFit(
-        B, T_scores, P, W_comp, U, C, R, X_bar, Y_bar, Y_hat, F, X_var, X_var_total,
+        B, T_scores, P, W_comp, U, C, R, Y_hat, F, X_var, X_var_total,
         gamma, rho, gammas, rhos, zero_mask, a, b, W0, Z,
-        X_z,
         X_mean,
         X_std,
-        Yprim_z,
         Yprim_mean,
         Yprim_std,
-        Yaux_z,
         Yaux_mean,
         Yaux_std,
         samplelabels,

@@ -2133,13 +2133,21 @@ end
 
 Return a copy of `spec` with `ncomponents` replaced and all other fields preserved.
 """
-function with_n_components(spec::CPPLSModel, ncomponents::Integer)
+function with_n_components(m::CPPLSModel, ncomponents::Integer)
     CPPLSModel(
-        ncomponents=ncomponents, gamma=spec.gamma, center=spec.center,
-        X_tolerance=spec.X_tolerance,
-        X_loading_weight_tolerance=spec.X_loading_weight_tolerance,
-        t_squared_norm_tolerance=spec.t_squared_norm_tolerance,
-        gamma_rel_tol=spec.gamma_rel_tol, gamma_abs_tol=spec.gamma_abs_tol,
-        mode=spec.mode
+        ncomponents=ncomponents, 
+        gamma=m.gamma,
+        center_X=m.center_X, 
+        scale_X=m.scale_X, 
+        center_Y=m.center_Y, 
+        scale_Y=m.scale_Y,
+        center_Yaux=m.center_Yaux,
+        scale_Yaux=m.scale_Yaux,
+        X_tolerance=m.X_tolerance,
+        X_loading_weight_tolerance=m.X_loading_weight_tolerance,
+        t_squared_norm_tolerance=m.t_squared_norm_tolerance,
+        gamma_rel_tol=m.gamma_rel_tol, 
+        gamma_abs_tol=m.gamma_abs_tol,
+        mode=m.mode
     )
 end

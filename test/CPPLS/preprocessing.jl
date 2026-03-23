@@ -80,9 +80,9 @@ end
 
     X_prep      = d.X
     Y_prim_prep = d.Y_prim
+    X_mean      = d.X_mean
+    Y_mean      = d.Yprim_mean
     Y_all       = d.Y
-    X_bar       = d.X_bar
-    Y_bar       = d.Y_bar
     X_def       = d.X_def
     W_comp      = d.W_comp
     P           = d.P
@@ -95,8 +95,8 @@ end
     @test X_prep isa Matrix{Float64}
     @test Y_prim_prep isa Matrix{Float64}
     # @test Y_all == hcat(Y_prim_prep, Float64.(Y_aux))
-    @test size(X_bar) == (1, size(X, 2))
-    @test size(Y_bar) == (1, size(Y_prim, 2))
+    @test length(X_mean) == size(X, 2)
+    @test length(Y_mean) == size(Y_prim, 2)
     @test size(X_def) == size(X_prep)
     @test size(W_comp) == (size(X, 2), 2)
     @test size(P) == (size(X, 2), 2)

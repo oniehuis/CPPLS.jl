@@ -74,7 +74,6 @@ julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.01:0.01:1.0
-  center: true
   center_X: true
   scale_X: false
   center_Y: true
@@ -92,7 +91,6 @@ julia> m = CPPLSModel(ncomponents=2, gamma=0.75, mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.75
-  center: true
   center_X: true
   scale_X: false
   center_Y: true
@@ -223,16 +221,23 @@ function fit_cppls_core(
         Y_hat[:, :, i] = d.X * d.B[:, :, i]
     end
 
-    Y_hat .+= reshape(repeat(d.Y_bar, d.n_samples_X), d.n_samples_X, length(d.Y_bar), 1)
+    Y_hat .+= reshape(repeat(reshape(d.Yprim_mean, 1, :), d.n_samples_X), d.n_samples_X, length(reshape(d.Yprim_mean, 1, :)), 1)
     F = d.Y_prim .- Y_hat
     R = d.W_comp * pinv(d.P' * d.W_comp)
     X_var = vec(sum(d.P .* d.P, dims = 1)) .* t_norms
     X_var_total = sum(d.X .* d.X)
 
-    fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, d.X_bar, d.Y_bar, Y_hat, F, X_var, 
+    # fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, reshape(d.X_mean, 1, :), reshape(d.Yprim_mean, 1, :), Y_hat, F, X_var, 
+    #     X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z, 
+    #     d.X_z, d.X_mean, d.X_std, d.Yprim_z, d.Yprim_mean, d.Yprim_std, d.Yaux_z, 
+    #     d.Yaux_mean, d.Yaux_std; 
+    #     samplelabels=samplelabels,
+    #     predictorlabels=predictorlabels, 
+    #     responselabels=responselabels,
+    #     mode=m.mode, sampleclasses=sampleclasses)
+    fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, Y_hat, F, X_var, 
         X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z, 
-        d.X_z, d.X_mean, d.X_std, d.Yprim_z, d.Yprim_mean, d.Yprim_std, d.Yaux_z, 
-        d.Yaux_mean, d.Yaux_std; 
+        d.X_mean, d.X_std, d.Yprim_mean, d.Yprim_std, d.Yaux_mean, d.Yaux_std; 
         samplelabels=samplelabels,
         predictorlabels=predictorlabels, 
         responselabels=responselabels,

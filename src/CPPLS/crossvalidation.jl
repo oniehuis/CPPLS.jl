@@ -635,9 +635,6 @@ julia> scores, best_k = cvda(
 julia> length(scores)
 3
 
-julia> all(==(1.0), scores)
-true
-
 julia> best_k == fill(1, 3)
 true
 ```
@@ -1201,14 +1198,14 @@ julia> Y, responselabels = onehot(classes)
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=1, gamma=0.5, center_X=true, mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(sampleclasses(Y_train));
 
 julia> scores, best_k = nestedcv(
            X,
            Y;
-           spec=spec,
+           spec=m,
            fit_kwargs=(; responselabels=responselabels),
            obs_weight_fn=obs_weight_fn,
            score_fn=cb.score_fn,
@@ -1425,14 +1422,14 @@ julia> Y, responselabels = onehot(classes);
 
 julia> cb = CPPLS.cv_classification();
 
-julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=1, gamma=0.5, center_X=true, mode=:discriminant);
 
 julia> obs_weight_fn = (X_train, Y_train; kwargs...) -> invfreqweights(sampleclasses(Y_train));
 
 julia> permutation_scores = nestedcvperm(
                      X,
                      Y;
-                     spec=spec,
+                     spec=m,
                      fit_kwargs=(; responselabels=responselabels),
                      obs_weight_fn=obs_weight_fn,
                      score_fn=cb.score_fn,

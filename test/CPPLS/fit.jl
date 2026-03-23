@@ -2,7 +2,7 @@ using CategoricalArrays
 using StatsAPI
 
 @testset "fit_cppls builds diagnostic-rich model" begin
-    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, center_X=true, center_Y=true)
 
     X = Float64[
         1 0 2

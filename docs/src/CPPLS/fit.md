@@ -114,6 +114,8 @@ spec = CPPLSModel(
     ncomponents=2,
     gamma=0.5,
     mode=:discriminant,
+    center_X=true,
+    scale_X=true,
     center_Yaux=true,
     scale_Yaux=true
 )
@@ -314,6 +316,8 @@ weighted_yaux_grid_spec = CPPLSModel(
     ncomponents=1,
     gamma=0:0.001:1,
     mode=:discriminant,
+    center_X=true,
+    scale_X=true,
     center_Yaux=true,
     scale_Yaux=true
 )
@@ -363,6 +367,8 @@ weighted_yaux_interval_spec = CPPLSModel(
     ncomponents=1,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant,
+    center_X=true,
+    scale_X=true,
     center_Yaux=true,
     scale_Yaux=true
 )
@@ -423,6 +429,8 @@ weighted_yaux_best_spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant,
+    center_X=true,
+    scale_X=true,
     center_Yaux=true,
     scale_Yaux=true
 )

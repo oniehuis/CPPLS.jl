@@ -146,7 +146,7 @@ samplelabels, X, classes, Y_aux = load(
 
 m = CPPLSModel(
     ncomponents=2,
-    gamma=intervalize(0:0.05:1),
+    gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
     scale_X=true,
@@ -261,7 +261,7 @@ still override that behavior with a custom `obs_weight_fn` or disable it by pass
 outlier_scan = outlierscan(
     X,
     classes;
-    spec=spec,
+    spec=m,
     fit_kwargs=(; Y_aux=Y_aux, samplelabels=samplelabels),
     num_outer_folds=5,
     num_outer_folds_repeats=500,
@@ -300,7 +300,7 @@ major_outlier_idx = findall(>=(major_outlier_threshold), outlier_scan.rate)
 class_weights = invfreqweights(classes)
 
 outlier_view_model = fit(
-    spec,
+    m,
     X,
     classes;
     obs_weights=class_weights,

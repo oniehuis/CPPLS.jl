@@ -157,17 +157,14 @@ function fit_cppls_core(
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
-    sampleclasses::T6=nothing,
-    orient_scores::Bool=true,
-    reference_class::T7=nothing
+    sampleclasses::T6=nothing
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
     T3<:AbstractVector,
     T4<:AbstractVector,
     T5<:AbstractVector,
-    T6<:Union{AbstractVector, Nothing},
-    T7<:Union{AbstractString, Nothing}
+    T6<:Union{AbstractVector, Nothing}
 }
     m.mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
         "sampleclasses can only be provided for discriminant analysis"))
@@ -234,16 +231,6 @@ function fit_cppls_core(
         predictorlabels=predictorlabels, 
         responselabels=responselabels,
         mode=m.mode, sampleclasses=sampleclasses)
-
-    # if orient_scores && m.mode ≡ :discriminant && !isnothing(sampleclasses) && !isempty(responselabels)
-    #     ref = isnothing(reference_class) ? sort!(collect(responselabels))[1] : reference_class
-    #     idx = findall(==(ref), sampleclasses)
-    #     for lv in axes(fitobj.T, 2)
-    #         if mean(fitobj.T[idx, lv]) < 0
-    #             fitobj.T[:, lv] .*= -1
-    #         end
-    #     end
-    # end
 
     fitobj
 end
@@ -353,16 +340,13 @@ function fit_cppls_from_sample_classes(
     Y_aux::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
-    responselabels::T5=String[],
-    orient_scores::Bool=true,
-    reference_class::T6=nothing
+    responselabels::T5=String[]
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
     T3<:AbstractVector,
     T4<:AbstractVector,
-    T5<:AbstractVector,
-    T6<:Union{AbstractString, Nothing}
+    T5<:AbstractVector
 }
     isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
         " when passing sample classes; response labels are inferred automatically."))
@@ -375,9 +359,7 @@ function fit_cppls_from_sample_classes(
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
         responselabels=classes,
-        sampleclasses=copy(sampleclasses),
-        orient_scores=orient_scores, 
-        reference_class=reference_class
+        sampleclasses=copy(sampleclasses)
     )
 end
 

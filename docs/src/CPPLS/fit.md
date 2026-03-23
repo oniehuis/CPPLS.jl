@@ -113,7 +113,9 @@ information is considered.
 spec = CPPLSModel(
     ncomponents=2,
     gamma=0.5,
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 m_plain = fit(
@@ -311,7 +313,9 @@ then use interval-based optimization to obtain a practical two-component fit.
 weighted_yaux_grid_spec = CPPLSModel(
     ncomponents=1,
     gamma=0:0.001:1,
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 weighted_yaux_grid_model = fit(
@@ -358,7 +362,9 @@ winner.
 weighted_yaux_interval_spec = CPPLSModel(
     ncomponents=1,
     gamma=intervalize(0:0.05:1),
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 weighted_yaux_interval_model = fit(
@@ -416,7 +422,9 @@ selection are all aligned with the same objective.
 weighted_yaux_best_spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 m_weighted_yaux_best = fit(
@@ -497,7 +505,9 @@ Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
 reg_spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
-    mode=:regression
+    mode=:regression,
+    center_X=true,
+    scale_X=true
 )
 
 m_reg = fit(

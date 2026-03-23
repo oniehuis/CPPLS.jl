@@ -12,14 +12,15 @@ MultivariateStats = "6f286f6a-111f-5878-ab1e-185364afe411"
 PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"
 StatsAPI = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
 
-[sources]
-CPPLS = {path = ".."}
+[sources.CPPLS]
+path = ".."
 
 [compat]
 CPPLS = "0.0.1"
 CairoMakie = "0.15"
 CategoricalArrays = "0.10, 1"
 Colors = "0.13"
+DataFrames = "1"
 Documenter = "1"
 JLD2 = "0.6"
 Makie = "0.24"

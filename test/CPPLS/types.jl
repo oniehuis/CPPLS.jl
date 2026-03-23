@@ -187,8 +187,8 @@
         @test size(cppls.F) == (n_samples, n_responses, ncomponents)
         @test size(cppls.T) == (n_samples, ncomponents)
         @test size(cppls.U) == (n_samples, ncomponents)
-        @test size(cppls.X_bar) == (1, n_predictors)
-        @test size(cppls.Y_bar) == (1, n_responses)
+        @test size(xmean(cppls)) == (n_predictors,)
+        @test size(ymean(cppls)) == (n_responses,)
         @test size(cppls.Z) == (n_samples, n_responses, ncomponents)
 
         cppls_default = CPPLS.CPPLSFit(
@@ -312,13 +312,13 @@ end
         @test light_model.X_std === X_std
         @test light_model.Yprim_mean === Yprim_mean
         @test light_model.Yprim_std === Yprim_std
-        @test light_model.X_bar === X_bar
-        @test light_model.Y_bar === Y_bar
+        @test xmean(light_model) === X_mean
+        @test ymean(light_model) === Yprim_mean
         @test light_model.mode === :regression
         @test size(light_model.B) ==
               (n_predictors, n_responses, ncomponents)
-        @test size(light_model.X_bar) == (1, n_predictors)
-        @test size(light_model.Y_bar) == (1, n_responses)
+        @test size(xmean(light_model)) == (n_predictors,)
+        @test size(ymean(light_model)) == (n_responses,)
         light_da = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, X_bar, Y_bar, :discriminant)
         @test light_da.mode === :discriminant
     end

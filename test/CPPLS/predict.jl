@@ -180,7 +180,7 @@ end
     #     2.0 1.0
     # ]
 
-    # centered = X_new .- model.X_bar
+    # centered = X_new .- xmean(model)
     # expected_scores = centered * model.R
 
     # scores = CPPLS.project(model, X_new)

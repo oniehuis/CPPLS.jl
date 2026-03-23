@@ -27,8 +27,8 @@ using StatsAPI
     @test size(model.F) == size(model.Y_hat)
     @test size(model.T) == (size(X, 1), 2)
     @test size(model.U) == (size(Y, 1), 2)
-    @test model.X_bar ≈ CPPLS.mean(X, dims = 1)
-    @test model.Y_bar ≈ CPPLS.mean(Y, dims = 1)
+    @test xmean(model) ≈ vec(CPPLS.mean(X, dims = 1))
+    @test ymean(model) ≈ vec(CPPLS.mean(Y, dims = 1))
     @test model.gamma ≈ fill(0.5, 2)
     @test length(model.rho) == 2
     @test size(CPPLS.gammas(model)) == (1, 2)
@@ -225,8 +225,8 @@ end
 
     @test light isa CPPLS.CPPLSFitLight
     @test light.B ≈ full.B
-    @test light.X_bar ≈ full.X_bar
-    @test light.Y_bar ≈ full.Y_bar
+    @test xmean(light) ≈ xmean(full)
+    @test ymean(light) ≈ ymean(full)
     @test light.X_mean ≈ full.X_mean
     @test light.X_std ≈ full.X_std
     @test light.Yprim_mean ≈ full.Yprim_mean
@@ -317,8 +317,8 @@ end
     @test light_from_labels.mode === :discriminant
     @test light_from_labels.B ≈
           manual_discriminant.B
-    @test light_from_labels.X_bar ≈ manual_discriminant.X_bar
-    @test light_from_labels.Y_bar ≈ manual_discriminant.Y_bar
+    @test xmean(light_from_labels) ≈ xmean(manual_discriminant)
+    @test ymean(light_from_labels) ≈ ymean(manual_discriminant)
     plain_labels = ["a", "b", "a", "b"]
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
     light_from_plain =
@@ -326,8 +326,8 @@ end
     @test light_from_plain.mode === :discriminant
     @test light_from_plain.B ≈
           light_from_labels.B
-    @test light_from_plain.X_bar ≈ light_from_labels.X_bar
-    @test light_from_plain.Y_bar ≈ light_from_labels.Y_bar
+    @test xmean(light_from_plain) ≈ xmean(light_from_labels)
+    @test ymean(light_from_plain) ≈ ymean(light_from_labels)
 
     Y_vec = Float64[1, 0, 1, 0]
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
@@ -360,8 +360,8 @@ end
 
     @test cat_light.mode === :discriminant
     @test cat_light.B ≈ plain_light.B
-    @test cat_light.X_bar ≈ plain_light.X_bar
-    @test cat_light.Y_bar ≈ plain_light.Y_bar
+    @test xmean(cat_light) ≈ xmean(plain_light)
+    @test ymean(cat_light) ≈ ymean(plain_light)
 end
 
 @testset "process_component! normalizes weights and deflates predictors" begin

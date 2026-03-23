@@ -2,10 +2,18 @@
     B = Array{Float64}(undef, 2, 2, 2)
     B[:, :, 1] = [1.0 0.0; 0.0 2.0]
     B[:, :, 2] = [0.5 -0.2; 0.3 0.1]
+    X_mean = [1.0, 2.0]
+    X_std = [1.0, 1.0]
+    Yprim_mean = [0.25, -0.5]
+    Yprim_std = [1.0, 1.0]
     X_bar = reshape([1.0, 2.0], 1, :)
     Y_bar = reshape([0.25, -0.5], 1, :)
     cppls = CPPLS.CPPLSFitLight(
         B,
+        X_mean,
+        X_std,
+        Yprim_mean,
+        Yprim_std,
         X_bar,
         Y_bar,
         :regression,
@@ -34,10 +42,18 @@ end
 
 @testset "onehot converts summed predictions to labels" begin
     B = ones(Float64, 1, 2, 1)
+    X_mean = [0.0]
+    X_std = [1.0]
+    Yprim_mean = [0.1, -0.2]
+    Yprim_std = [1.0, 1.0]
     X_bar = reshape([0.0], 1, 1)
     Y_bar = reshape([0.1, -0.2], 1, :)
     cppls = CPPLS.CPPLSFitLight(
         B,
+        X_mean,
+        X_std,
+        Yprim_mean,
+        Yprim_std,
         X_bar,
         Y_bar,
         :regression,
@@ -56,7 +72,7 @@ end
     ]
 
     summed = sum(predictions, dims = 3)[:, :, 1]
-    adjusted = summed .- (size(predictions, 3) - 1) .* cppls.Y_bar
+    adjusted = summed .- (size(predictions, 3) - 1) .* cppls.Yprim_mean'
     expected_labels = map(argmax, eachrow(adjusted))
 
     expected_one_hot = zeros(Int, 3, 2)
@@ -72,9 +88,22 @@ end
     B = Array{Float64}(undef, 2, 2, 2)
     B[:, :, 1] = [0.8 0.1; -0.2 0.4]
     B[:, :, 2] = [0.3 -0.6; 0.5 0.2]
+    X_mean = [0.2, -0.1]
+    X_std = [1.0, 1.0]
+    Yprim_mean = [0.05, -0.05]
+    Yprim_std = [1.0, 1.0]
     X_bar = reshape([0.2, -0.1], 1, :)
     Y_bar = reshape([0.05, -0.05], 1, :)
-    cppls = CPPLS.CPPLSFitLight(B, X_bar, Y_bar, :regression)
+    cppls = CPPLS.CPPLSFitLight(
+        B,
+        X_mean,
+        X_std,
+        Yprim_mean,
+        Yprim_std,
+        X_bar,
+        Y_bar,
+        :regression,
+    )
 
     X = [
         0.2 0.0

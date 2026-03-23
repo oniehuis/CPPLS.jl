@@ -183,9 +183,21 @@ julia> Y_pred = reshape([1.0, 3.0], :, 1);
 julia> cb.score_fn(Y_true, Y_pred) ≈ sqrt(0.5)
 true
 
-julia> B, X_bar, Y_bar = reshape([2.0], 1, 1, 1), reshape([0.0], 1, 1), reshape([0.5], 1, 1);
+julia> B = reshape([2.0], 1, 1, 1);
 
-julia> model = CPPLSFitLight(B, X_bar, Y_bar, :regression);
+julia> X_mean = [0.0];
+
+julia> X_std = [1.0];
+
+julia> Yprim_mean = [0.5];
+
+julia> Yprim_std = [1.0];
+
+julia> X_bar = reshape([0.0], 1, 1);
+
+julia> Y_bar = reshape([0.5], 1, 1);
+
+julia> model = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, X_bar, Y_bar, :regression);
 
 julia> X = reshape([1.0, 2.0], :, 1);
 

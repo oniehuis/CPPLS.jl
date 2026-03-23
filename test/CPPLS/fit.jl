@@ -227,11 +227,19 @@ end
     @test light.B ≈ full.B
     @test light.X_bar ≈ full.X_bar
     @test light.Y_bar ≈ full.Y_bar
+    @test light.X_mean ≈ full.X_mean
+    @test light.X_std ≈ full.X_std
+    @test light.Yprim_mean ≈ full.Yprim_mean
+    @test light.Yprim_std ≈ full.Yprim_std
 
     spec = CPPLS.CPPLSModel(ncomponents = 2, gamma = gamma_bounds)
     light_from_spec = CPPLS.fit_cppls_light(spec, X, Y)
     @test light_from_spec isa CPPLS.CPPLSFitLight
     @test light_from_spec.B ≈ full.B
+    @test light_from_spec.X_mean ≈ full.X_mean
+    @test light_from_spec.X_std ≈ full.X_std
+    @test light_from_spec.Yprim_mean ≈ full.Yprim_mean
+    @test light_from_spec.Yprim_std ≈ full.Yprim_std
 end
 
 @testset "fit_cppls categorical and vector wrappers" begin

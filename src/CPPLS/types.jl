@@ -142,7 +142,7 @@ mode(model::CPPLSModel) = model.mode
     AbstractCPPLSFit
 
 Common supertype for fitted CPPLS models that share the fields B, X_bar, Y_bar,
-and mode.
+and mode. 
 """
 abstract type AbstractCPPLSFit end
 
@@ -170,11 +170,39 @@ Return the predictor mean vector for the fitted model.
 xbar(fit::AbstractCPPLSFit) = fit.X_bar
 
 """
+    xmean(mf::AbstractCPPLSFit)
+
+Return the predictor mean vector for the fitted model.
+"""
+xmean(mf::AbstractCPPLSFit) = mf.X_mean
+
+"""
+    xstd(mf::AbstractCPPLSFit)
+
+Return the predictor standard deviation vector for the fitted model.
+"""
+xstd(mf::AbstractCPPLSFit) = mf.X_std
+
+"""
     ybar(fit::AbstractCPPLSFit)
 
 Return the response mean vector for the fitted model.
 """
 ybar(fit::AbstractCPPLSFit) = fit.Y_bar
+
+"""
+    ymean(mf::AbstractCPPLSFit)
+
+Return the response mean vector for the fitted model.
+"""
+ymean(mf::AbstractCPPLSFit) = mf.Yprim_mean
+
+"""
+    ystd(mf::AbstractCPPLSFit)
+
+Return the response standard deviation vector for the fitted model.
+"""
+ystd(mf::AbstractCPPLSFit) = mf.Yprim_std
 
 """
     CPPLSFit{T1, T2}
@@ -452,7 +480,11 @@ type is used mainly for efficient internal prediction during cross-validation.
 Most users will work with `CPPLSFit` instead.
 """
 struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
-    B::Array{T, 3}
+    B::Array{T, 3}   
+    X_mean::Vector{T}
+    X_std::Vector{T}
+    Yprim_mean::Vector{T}
+    Yprim_std::Vector{T}
     X_bar::Matrix{T}
     Y_bar::Matrix{T}
     mode::Symbol

@@ -58,8 +58,12 @@ export sampleclasses
 export samplelabels
 export scoreplot
 export xbar
+export xmean
+export xstd
 export xscores
 export ybar
+export ymean
+export ystd
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
 const SCOREPLOT_DOC = """

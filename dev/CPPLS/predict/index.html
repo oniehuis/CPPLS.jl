@@ -64,95 +64,95 @@ sampleclasses(model, heldout_predictions)</code></pre><pre class="documenter-exa
  &quot;major&quot;</code></pre><p>As we can see, the predicted labels match the classes from which the samples were drawn. In this example, <code>heldout_predictions</code> is a three-dimensional array whose third dimension indexes the number of components used in the prediction.</p><p>Instead of calling <a href="#StatsAPI.predict"><code>predict</code></a> and <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>sampleclasses</code></a> successively, we could have used the convenience wrapper <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><code>sampleclasses</code></a>.</p><p>More generally, the convenience methods <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><code>onehot</code></a> and <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><code>sampleclasses</code></a> take predictor data and internally call <a href="#StatsAPI.predict"><code>predict</code></a>, returning class assignments directly. This is often more convenient in discriminant-analysis workflows than working with the full prediction tensor.</p><pre><code class="language-julia hljs">sampleclasses(model, X_holdout)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">2-element Vector{String}:
  &quot;minor&quot;
  &quot;major&quot;</code></pre><h2 id="API"><a class="docs-heading-anchor" href="#API">API</a><a id="API-1"></a><a class="docs-heading-anchor-permalink" href="#API" title="Permalink"></a></h2><article><details class="docstring" open="true"><summary id="CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><a class="docstring-binding" href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>CPPLS.onehot</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">onehot(
-    model::AbstractCPPLSFit,
+    mf::AbstractCPPLSFit,
     predictions::AbstractArray{&lt;:Real, 3}
 ) -&gt; Matrix{Int}</code></pre><p>Convert a 3D prediction tensor (as returned by <code>predict</code>) into a one-hot encoded matrix. Predictions are summed across components and corrected for repeated mean addition before selecting the highest-scoring class for each sample.</p><p>See also <a href="../types/#CPPLS.AbstractCPPLSFit"><code>AbstractCPPLSFit</code></a>,  <a href="../types/#CPPLS.CPPLSFit"><code>CPPLSFit</code></a>, <a href="#StatsAPI.predict"><code>predict</code></a>,  <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>onehot</code></a>,  <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>sampleclasses</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using CPPLS; using JLD2; using Random;
 
 julia&gt; X, classes = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;), &quot;X&quot;, &quot;classes&quot;);
 
-julia&gt; spec = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia&gt; m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
 
-julia&gt; model = fit(spec, X, classes);
+julia&gt; mf = fit(m, X, classes);
 
 julia&gt; Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia&gt; raw = predict(model, Xnew);
+julia&gt; raw = predict(mf, Xnew);
 
-julia&gt; onehot(model, raw) ≈ [1 0; 0 1]
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/6ebe960ead9d126778be46967c47883bcb879d9e/src/CPPLS/predict.jl#L105-L139">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><a class="docstring-binding" href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><code>CPPLS.onehot</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">onehot(
-    model::AbstractCPPLSFit,
+julia&gt; onehot(mf, raw) ≈ [1 0; 0 1]
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/05cfdd148f39cdda48fcc292ff3ee4033aea0830/src/CPPLS/predict.jl#L105-L139">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><a class="docstring-binding" href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><code>CPPLS.onehot</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">onehot(
+    m::AbstractCPPLSFit,
     X::AbstractMatrix{&lt;:Real},
-    ncomponents::Integer=size(coefall(model), 3)
+    ncomponents::Integer=size(coefall(m), 3)
 ) -&gt; Matrix{Int}</code></pre><p>Generate one-hot encoded class predictions from a fitted CPPLS model and predictors <code>X</code>. This calls <code>predict</code>, sums predictions across components, corrects for repeated mean addition, and assigns each sample to the highest-scoring class.</p><p>See also <a href="../types/#CPPLS.AbstractCPPLSFit"><code>AbstractCPPLSFit</code></a>,  <a href="../types/#CPPLS.CPPLSFit"><code>CPPLSFit</code></a>, <a href="#StatsAPI.predict"><code>predict</code></a>,  <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>onehot</code></a>,  <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>sampleclasses</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using CPPLS; using JLD2; using Random;
 
 julia&gt; X, classes = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;), &quot;X&quot;, &quot;classes&quot;);
 
-julia&gt; spec = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia&gt; m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
 
-julia&gt; model = fit(spec, X, classes);
+julia&gt; mf = fit(m, X, classes);
 
 julia&gt; Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia&gt; onehot(model, Xnew) == [1 0; 0 1]
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/6ebe960ead9d126778be46967c47883bcb879d9e/src/CPPLS/predict.jl#L63-L96">source</a></section></details></article><article><details class="docstring" open="true"><summary id="StatsAPI.predict"><a class="docstring-binding" href="#StatsAPI.predict"><code>StatsAPI.predict</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">predict(
-    model::AbstractCPPLSFit, 
+julia&gt; onehot(mf, Xnew) == [1 0; 0 1]
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/05cfdd148f39cdda48fcc292ff3ee4033aea0830/src/CPPLS/predict.jl#L63-L96">source</a></section></details></article><article><details class="docstring" open="true"><summary id="StatsAPI.predict"><a class="docstring-binding" href="#StatsAPI.predict"><code>StatsAPI.predict</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">predict(
+    mf::AbstractCPPLSFit, 
     X::AbstractMatrix{&lt;:Real},
-    ncomponents::Integer=size(coefall(model), 3)
+    ncomponents::Integer=size(coefall(mf), 3)
 ) -&gt; Array{Float64, 3}</code></pre><p>Predict the response <code>Y</code> for each sample in <code>X</code> using the fitted model. Here,  <code>ncomponents</code> is the number of latent CPPLS components used to form the prediction. The result is a 3-dimensional array of size <code>(n_samples, n_targets, ncomponents)</code>: the first dimension indexes samples, the second indexes response variables, and the third indexes the number of components used. In particular, <code>[:, :, i]</code> contains the prediction matrix obtained using the first <code>i</code> components. A <code>DimensionMismatch</code> is thrown if <code>ncomponents</code> exceeds the number of components stored in the model.</p><p>See also <a href="../types/#CPPLS.AbstractCPPLSFit"><code>AbstractCPPLSFit</code></a>, <a href="../types/#CPPLS.CPPLSFit"><code>CPPLSFit</code></a>, <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>onehot</code></a>,  <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>onehot</code></a>,  <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>sampleclasses</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using CPPLS; using JLD2; using Random;
 
 julia&gt; X, classes = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;), &quot;X&quot;, &quot;classes&quot;);
 
-julia&gt; spec = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia&gt; m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
 
-julia&gt; model = fit(spec, X, classes);
+julia&gt; mf = fit(m, X, classes);
 
 julia&gt; Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia&gt; Ynew = predict(model, Xnew);
+julia&gt; Ynew = predict(mf, Xnew);
 
 julia&gt; size(Ynew)
-(2, 2, 2)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/6ebe960ead9d126778be46967c47883bcb879d9e/src/CPPLS/predict.jl#L1-L40">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.project"><a class="docstring-binding" href="#CPPLS.project"><code>CPPLS.project</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">project(model::CPPLSFit, X::AbstractMatrix{&lt;:Real}) -&gt; AbstractMatrix</code></pre><p>Compute latent component X scores by projecting new predictors <code>X</code> with a CPPLSFit model. The predictors are centered using <code>xbar</code>(@ref CPPLS.xbar) and multiplied by  <code>projectionmatrix</code>(@ref CPPLS.projectionmatrix), returning an  <code>(n_samples, ncomponents)</code> X score matrix.</p><p>See also <a href="../types/#CPPLS.CPPLSFit"><code>CPPLSFit</code></a>, <a href="../types/#CPPLS.projectionmatrix-Tuple{CPPLSFit}"><code>projectionmatrix</code></a>, <a href="../types/#CPPLS.xbar-Tuple{AbstractCPPLSFit}"><code>xbar</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using CPPLS; using JLD2; using Random;
+(2, 2, 2)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/05cfdd148f39cdda48fcc292ff3ee4033aea0830/src/CPPLS/predict.jl#L1-L40">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.project"><a class="docstring-binding" href="#CPPLS.project"><code>CPPLS.project</code></a> — <span class="docstring-category">Function</span></summary><section><div><pre><code class="language-julia hljs">project(mf::CPPLSFit, X::AbstractMatrix{&lt;:Real}) -&gt; AbstractMatrix</code></pre><p>Compute latent component X scores by projecting new predictors <code>X</code> with a CPPLSFit model. The predictors are centered using <code>xbar</code>(@ref CPPLS.xbar) and multiplied by  <code>projectionmatrix</code>(@ref CPPLS.projectionmatrix), returning an  <code>(n_samples, ncomponents)</code> X score matrix.</p><p>See also <a href="../types/#CPPLS.CPPLSFit"><code>CPPLSFit</code></a>, <a href="../types/#CPPLS.projectionmatrix-Tuple{CPPLSFit}"><code>projectionmatrix</code></a>, <a href="../types/#CPPLS.xbar-Tuple{AbstractCPPLSFit}"><code>xbar</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using CPPLS; using JLD2; using Random;
 
 julia&gt; X, classes = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;), &quot;X&quot;, &quot;classes&quot;);
 
-julia&gt; spec = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia&gt; m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
 
-julia&gt; model = fit(spec, X, classes);
+julia&gt; mf = fit(m, X, classes);
 
 julia&gt; Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia&gt; xscores = project(model, Xnew);
+julia&gt; xscores = project(mf, Xnew);
 
 julia&gt; size(xscores)
-(2, 2)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/6ebe960ead9d126778be46967c47883bcb879d9e/src/CPPLS/predict.jl#L251-L281">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><a class="docstring-binding" href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>CPPLS.sampleclasses</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">sampleclasses(
-    model::CPPLSFit,
+(2, 2)</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/05cfdd148f39cdda48fcc292ff3ee4033aea0830/src/CPPLS/predict.jl#L251-L281">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><a class="docstring-binding" href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>CPPLS.sampleclasses</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">sampleclasses(
+    mf::CPPLSFit,
     predictions::AbstractArray{&lt;:Real, 3}
 ) -&gt; AbstractVector</code></pre><p>Convert a 3D prediction tensor (as returned by <code>predict</code>) into class labels using the  stored <code>responselabels</code> ordering.</p><p>See also <a href="../types/#CPPLS.CPPLSFit"><code>CPPLSFit</code></a>, <a href="../types/#CPPLS.mode-Tuple{CPPLSModel}"><code>mode</code></a> <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>sampleclasses</code></a> <a href="#StatsAPI.predict"><code>predict</code></a>,  <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>onehot</code></a>,  <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>onehot</code></a>,  <a href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>sampleclasses</code></a> <a href="../types/#CPPLS.responselabels-Tuple{CPPLSFit}"><code>responselabels</code></a></p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using CPPLS; using JLD2; using Random;
 
 julia&gt; X, classes = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;), &quot;X&quot;, &quot;classes&quot;);
 
-julia&gt; spec = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia&gt; m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
 
-julia&gt; model = fit(spec, X, classes);
+julia&gt; mf = fit(m, X, classes);
 
 julia&gt; Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia&gt; raw = predict(model, Xnew);
+julia&gt; raw = predict(mf, Xnew);
 
-julia&gt; sampleclasses(model, raw) == [&quot;major&quot;, &quot;minor&quot;]
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/6ebe960ead9d126778be46967c47883bcb879d9e/src/CPPLS/predict.jl#L195-L231">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><a class="docstring-binding" href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><code>CPPLS.sampleclasses</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">sampleclasses(
-    model::CPPLSFit,
+julia&gt; sampleclasses(mf, raw) == [&quot;major&quot;, &quot;minor&quot;]
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/05cfdd148f39cdda48fcc292ff3ee4033aea0830/src/CPPLS/predict.jl#L195-L231">source</a></section></details></article><article><details class="docstring" open="true"><summary id="CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><a class="docstring-binding" href="#CPPLS.sampleclasses-Tuple{CPPLSFit, AbstractMatrix{&lt;:Real}, Integer}"><code>CPPLS.sampleclasses</code></a> — <span class="docstring-category">Method</span></summary><section><div><pre><code class="language-julia hljs">sampleclasses(
+    mf::CPPLSFit,
     X::AbstractMatrix{&lt;:Real},
-    ncomponents::Integer=size(coefall(model), 3)
+    ncomponents::Integer=size(coefall(mf), 3)
 ) -&gt; AbstractVector</code></pre><p>Generate predicted class labels from a discriminant CPPLS model and predictors <code>X</code>. The returned vector follows the ordering in <code>responselabels</code>.</p><p>See also <a href="../types/#CPPLS.CPPLSFit"><code>CPPLSFit</code></a>, <a href="#StatsAPI.predict"><code>predict</code></a>,  <a href="#CPPLS.onehot-Tuple{AbstractCPPLSFit, AbstractArray{&lt;:Real, 3}}"><code>onehot</code></a>, <a href="../types/#CPPLS.coefall-Tuple{AbstractCPPLSFit}"><code>coefall</code></a>, </p><p><strong>Examples</strong></p><pre><code class="language-julia-repl hljs">julia&gt; using CPPLS; using JLD2; using Random;
 
 julia&gt; X, classes = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;), &quot;X&quot;, &quot;classes&quot;);
 
-julia&gt; spec = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia&gt; m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
 
-julia&gt; model = fit(spec, X, classes);
+julia&gt; mf = fit(m, X, classes);
 
 julia&gt; Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia&gt; sampleclasses(model, Xnew) == [&quot;major&quot;, &quot;minor&quot;]
-true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/6ebe960ead9d126778be46967c47883bcb879d9e/src/CPPLS/predict.jl#L155-L186">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../fit/">« Fit</a><a class="docs-footer-nextpage" href="../crossvalidation/">Cross Validation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Sunday 22 March 2026 22:11">Sunday 22 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+julia&gt; sampleclasses(mf, Xnew) == [&quot;major&quot;, &quot;minor&quot;]
+true</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/05cfdd148f39cdda48fcc292ff3ee4033aea0830/src/CPPLS/predict.jl#L155-L186">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../fit/">« Fit</a><a class="docs-footer-nextpage" href="../crossvalidation/">Cross Validation »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 23 March 2026 11:15">Monday 23 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

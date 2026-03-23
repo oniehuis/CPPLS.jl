@@ -20,11 +20,11 @@
         2.0 1.0
         3.0 4.0
     ]
-    centered = X .- reshape(X_mean, 1, :)
+    centered = X .- X_mean'
 
     expected = Array{Float64}(undef, size(X, 1), length(Yprim_mean), 2)
     for i = 1:2
-        expected[:, :, i] = centered * B[:, :, i] .+ reshape(Yprim_mean, 1, :)
+        expected[:, :, i] = centered * B[:, :, i] .+ Yprim_mean'
     end
 
     preds_full = CPPLS.predict(cppls, X)

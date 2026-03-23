@@ -144,10 +144,14 @@ samplelabels, X, classes, Y_aux = load(
     "Y_aux"
 )
 
-spec = CPPLSModel(
+m = CPPLSModel(
     ncomponents=2,
-    gamma=0.69,
-    mode=:discriminant
+    gamma=intervalize(0:0.05:1),
+    mode=:discriminant,
+    center_X=true,
+    scale_X=true,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 fit_kwargs = (
@@ -158,7 +162,7 @@ fit_kwargs = (
 scores, best_components = cvda(
     X,
     classes;
-    spec=spec,
+    spec=m,
     fit_kwargs=fit_kwargs,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
@@ -187,7 +191,7 @@ exactly the same settings as `cvda`, here with a total of `1000` permutations.
 permutation_scores = permda(
     X,
     classes;
-    spec=spec,
+    spec=m,
     fit_kwargs=fit_kwargs,
     num_permutations=1000,
     num_outer_folds=5,
@@ -211,7 +215,7 @@ ax = Axis(
     xlabel="Mean outer-fold accuracy",
     ylabel="Count across permutations"
 )
-hist!(ax, permutation_scores, bins=40)
+hist!(ax, permutation_scores, bins=20)
 save("accuracy_hist.svg", f)
 nothing
 ```
@@ -276,7 +280,7 @@ primarily be interested in `rate`. Let us inspect the samples with the largest r
 rounded to three decimal places and sorted in descending order.
 
 ```@example crossvalidation
-suspect_idx = sortperm(outlier_scan.rate, rev=true)[1:10]
+suspect_idx = sortperm(outlier_scan.rate, rev=true)[1:15]
 rate = round.(outlier_scan.rate[suspect_idx]; digits=3)
 for (j, i) in enumerate(suspect_idx)
     println("Sample: ", samplelabels[i], "; error rate: ", rate[j])
@@ -291,7 +295,7 @@ samples whose outlier-scan error rate is `1.00`. In this synthetic example,
 those are the samples that consistently fail across repeated outer-fold predictions.
 
 ```@example crossvalidation
-major_outlier_threshold = 1.0
+major_outlier_threshold = 0.75
 major_outlier_idx = findall(>=(major_outlier_threshold), outlier_scan.rate)
 class_weights = invfreqweights(classes)
 

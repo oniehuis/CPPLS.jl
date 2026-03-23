@@ -27,14 +27,14 @@ end
 function colstd(
     M::AbstractMatrix{<:Real}, 
     ::Nothing, 
-    μ::AbstractVector{<:Real}
+    μ # ::AbstractVector{<:Real} # can be LinearAlgebar.adjoint
 )
     sqrt.(sum((M .- μ).^2, dims=1) / (size(M, 1) - 1))
 end
 function colstd(
     M::AbstractMatrix{<:Real}, 
     obs_weights::AbstractVector{<:Real}, 
-    μ::AbstractVector{<:Real}
+    μ # ::AbstractVector{<:Real} # can be LinearAlgebar.adjoint
 )
     sqrt.(sum(obs_weights .* (M .- μ).^2, dims=1) / sum(obs_weights))
 end

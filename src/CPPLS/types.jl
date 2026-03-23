@@ -471,8 +471,6 @@ struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
     X_std::Vector{T}
     Yprim_mean::Vector{T}
     Yprim_std::Vector{T}
-    X_bar::Matrix{T}
-    Y_bar::Matrix{T}
     mode::Symbol
 end
 

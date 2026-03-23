@@ -193,11 +193,7 @@ julia> Yprim_mean = [0.5];
 
 julia> Yprim_std = [1.0];
 
-julia> X_bar = reshape([0.0], 1, 1);
-
-julia> Y_bar = reshape([0.5], 1, 1);
-
-julia> model = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, X_bar, Y_bar, :regression);
+julia> model = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, :regression);
 
 julia> X = reshape([1.0, 2.0], :, 1);
 

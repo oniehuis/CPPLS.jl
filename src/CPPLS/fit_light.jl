@@ -29,7 +29,7 @@ function fit_cppls_light_core(
             d.zero_mask)
     end
 
-    CPPLSFitLight(d.B, d.X_mean, d.X_std, d.Yprim_mean, d.Yprim_std, d.X_bar, d.Y_bar, m.mode)
+    CPPLSFitLight(d.B, d.X_mean, d.X_std, d.Yprim_mean, d.Yprim_std, m.mode)
 end
 
 

@@ -225,8 +225,6 @@ end
 
     @test light isa CPPLS.CPPLSFitLight
     @test light.B ≈ full.B
-    @test xmean(light) ≈ xmean(full)
-    @test ymean(light) ≈ ymean(full)
     @test light.X_mean ≈ full.X_mean
     @test light.X_std ≈ full.X_std
     @test light.Yprim_mean ≈ full.Yprim_mean

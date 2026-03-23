@@ -110,9 +110,7 @@ end
     X_std = [1.0]
     Yprim_mean = [0.5]
     Yprim_std = [1.0]
-    X_bar = reshape([0.0], 1, 1)
-    Y_bar = reshape([0.5], 1, 1)
-    model = CPPLS.CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, X_bar, Y_bar, :regression)
+    model = CPPLS.CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, :regression)
     X = reshape([1.0, 2.0], :, 1)
     @test cfg.predict_fn(model, X, 1) ≈ reshape([2.5, 4.5], :, 1)
 end

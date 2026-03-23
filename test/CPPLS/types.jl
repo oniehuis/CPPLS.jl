@@ -299,11 +299,9 @@ end
         X_std = fill(T(1), n_predictors)
         Yprim_mean = T.(1:n_responses) .+ T(100)
         Yprim_std = fill(T(1), n_responses)
-        X_bar = reshape(T.(1:n_predictors), 1, n_predictors)
-        Y_bar = reshape(T.(1:n_responses) .+ T(100), 1, n_responses)
 
         light_model =
-            CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, X_bar, Y_bar, :regression)
+            CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, :regression)
 
         @test light_model isa CPPLS.AbstractCPPLSFit
         @test light_model isa CPPLSFitLight{T}
@@ -319,7 +317,7 @@ end
               (n_predictors, n_responses, ncomponents)
         @test size(xmean(light_model)) == (n_predictors,)
         @test size(ymean(light_model)) == (n_responses,)
-        light_da = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, X_bar, Y_bar, :discriminant)
+        light_da = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, :discriminant)
         @test light_da.mode === :discriminant
     end
 end
@@ -439,7 +437,7 @@ end
     X_std_light = fill(1.0, n_predictors)
     Yprim_mean_light = Float64.(1:n_responses)
     Yprim_std_light = fill(1.0, n_responses)
-    light = CPPLS.CPPLSFitLight(B, X_mean_light, X_std_light, Yprim_mean_light, Yprim_std_light, X_bar, Y_bar, :discriminant)
+    light = CPPLS.CPPLSFitLight(B, X_mean_light, X_std_light, Yprim_mean_light, Yprim_std_light, :discriminant)
     light_inline = sprint(show, light)
     light_plain = sprint(io -> show(io, MIME"text/plain"(), light))
     @test occursin("CPPLSFitLight(", light_inline)

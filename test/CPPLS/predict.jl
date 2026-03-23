@@ -6,16 +6,12 @@
     X_std = [1.0, 1.0]
     Yprim_mean = [0.25, -0.5]
     Yprim_std = [1.0, 1.0]
-    X_bar = reshape([1.0, 2.0], 1, :)
-    Y_bar = reshape([0.25, -0.5], 1, :)
     cppls = CPPLS.CPPLSFitLight(
         B,
         X_mean,
         X_std,
         Yprim_mean,
         Yprim_std,
-        X_bar,
-        Y_bar,
         :regression,
     )
 
@@ -24,11 +20,11 @@
         2.0 1.0
         3.0 4.0
     ]
-    centered = X .- X_bar
+    centered = X .- reshape(X_mean, 1, :)
 
-    expected = Array{Float64}(undef, size(X, 1), size(Y_bar, 2), 2)
+    expected = Array{Float64}(undef, size(X, 1), length(Yprim_mean), 2)
     for i = 1:2
-        expected[:, :, i] = centered * B[:, :, i] .+ Y_bar
+        expected[:, :, i] = centered * B[:, :, i] .+ reshape(Yprim_mean, 1, :)
     end
 
     preds_full = CPPLS.predict(cppls, X)
@@ -36,7 +32,7 @@
 
     @test preds_full ≈ expected
     @test preds_one[:, :, 1] ≈ expected[:, :, 1]
-    @test size(preds_full) == (size(X, 1), size(Y_bar, 2), 2)
+    @test size(preds_full) == (size(X, 1), length(Yprim_mean), 2)
     @test_throws DimensionMismatch CPPLS.predict(cppls, X, 3)
 end
 
@@ -46,17 +42,13 @@ end
     X_std = [1.0]
     Yprim_mean = [0.1, -0.2]
     Yprim_std = [1.0, 1.0]
-    X_bar = reshape([0.0], 1, 1)
-    Y_bar = reshape([0.1, -0.2], 1, :)
     cppls = CPPLS.CPPLSFitLight(
         B,
         X_mean,
         X_std,
         Yprim_mean,
         Yprim_std,
-        X_bar,
-        Y_bar,
-        :regression,
+        :regression
     )
 
     predictions = zeros(Float64, 3, 2, 2)
@@ -92,17 +84,13 @@ end
     X_std = [1.0, 1.0]
     Yprim_mean = [0.05, -0.05]
     Yprim_std = [1.0, 1.0]
-    X_bar = reshape([0.2, -0.1], 1, :)
-    Y_bar = reshape([0.05, -0.05], 1, :)
     cppls = CPPLS.CPPLSFitLight(
         B,
         X_mean,
         X_std,
         Yprim_mean,
         Yprim_std,
-        X_bar,
-        Y_bar,
-        :regression,
+        :regression
     )
 
     X = [

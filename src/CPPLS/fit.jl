@@ -227,14 +227,6 @@ function fit_cppls_core(
     X_var = vec(sum(d.P .* d.P, dims = 1)) .* t_norms
     X_var_total = sum(d.X .* d.X)
 
-    # fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, reshape(d.X_mean, 1, :), reshape(d.Yprim_mean, 1, :), Y_hat, F, X_var, 
-    #     X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z, 
-    #     d.X_z, d.X_mean, d.X_std, d.Yprim_z, d.Yprim_mean, d.Yprim_std, d.Yaux_z, 
-    #     d.Yaux_mean, d.Yaux_std; 
-    #     samplelabels=samplelabels,
-    #     predictorlabels=predictorlabels, 
-    #     responselabels=responselabels,
-    #     mode=m.mode, sampleclasses=sampleclasses)
     fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, Y_hat, F, X_var, 
         X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z, 
         d.X_mean, d.X_std, d.Yprim_mean, d.Yprim_std, d.Yaux_mean, d.Yaux_std; 
@@ -243,15 +235,15 @@ function fit_cppls_core(
         responselabels=responselabels,
         mode=m.mode, sampleclasses=sampleclasses)
 
-    if orient_scores && m.mode ≡ :discriminant && !isnothing(sampleclasses) && !isempty(responselabels)
-        ref = isnothing(reference_class) ? sort!(collect(responselabels))[1] : reference_class
-        idx = findall(==(ref), sampleclasses)
-        for lv in axes(fitobj.T, 2)
-            if mean(fitobj.T[idx, lv]) < 0
-                fitobj.T[:, lv] .*= -1
-            end
-        end
-    end
+    # if orient_scores && m.mode ≡ :discriminant && !isnothing(sampleclasses) && !isempty(responselabels)
+    #     ref = isnothing(reference_class) ? sort!(collect(responselabels))[1] : reference_class
+    #     idx = findall(==(ref), sampleclasses)
+    #     for lv in axes(fitobj.T, 2)
+    #         if mean(fitobj.T[idx, lv]) < 0
+    #             fitobj.T[:, lv] .*= -1
+    #         end
+    #     end
+    # end
 
     fitobj
 end

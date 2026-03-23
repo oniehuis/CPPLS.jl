@@ -40,7 +40,9 @@ pca_plt = scoreplot(
 save(&quot;pca.svg&quot;, pca_plt)</code></pre><p><img src="../pca.svg" alt/></p><p>In this synthetic dataset, the first two principal components are not optimized for class discrimination, so a substantial part of the visible structure reflects nuisance variation rather than the class contrast of interest.</p><h3 id="Observation-Weights-and-Auxiliary-Responses"><a class="docs-heading-anchor" href="#Observation-Weights-and-Auxiliary-Responses">Observation Weights and Auxiliary Responses</a><a id="Observation-Weights-and-Auxiliary-Responses-1"></a><a class="docs-heading-anchor-permalink" href="#Observation-Weights-and-Auxiliary-Responses" title="Permalink"></a></h3><p>To illustrate the impact of class imbalance and auxiliary response information on latent  variable extraction, we show how adding each of these factors changes the X scores of the  fitted model. In this demonstration, we use a fixed gamma value of 0.5 so that only the  parameter of interest varies. In a real-world scenario, you would typically decide whether  to include observation weights and auxiliary responses before the main analysis, and then  optimize gamma in a model that already includes these parameters.</p><p>We start with a plain model in which neither observational weights nore  auxiliary response  information is considered.</p><pre><code class="language-julia hljs">spec = CPPLSModel(
     ncomponents=2,
     gamma=0.5,
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 m_plain = fit(
@@ -138,7 +140,9 @@ cppls_weighted_yaux_shaded_plt = scoreplot(
 save(&quot;cppls_weighted_yaux_shaded.svg&quot;, cppls_weighted_yaux_shaded_plt)</code></pre><p><img src="../cppls_weighted_shaded.svg" alt/></p><p><img src="../cppls_weighted_yaux_shaded.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the  grayscale values are not randomly distributed across the score space. Instead, they are  arranged roughly along the first latent dimension. This indicates that auxiliary signal  correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the  grayscale values being more evenly distributed across the plot.</p><h3 id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model"><a class="docs-heading-anchor" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model">Choosing Gamma for the Weighted + Auxiliary Model</a><a id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model" title="Permalink"></a></h3><p>With observation weights and <code>Y_aux</code> in place, we can now choose <code>gamma</code> for the model we actually want to interpret. </p><p>The <code>gamma</code> argument supports three distinct workflows. A fixed scalar such as <code>0.5</code> uses the same value for every latent variable. A grid such as <code>0:0.01:1</code> evaluates a set of fixed candidate values and keeps the one with the largest leading canonical correlation for each latent variable. An interval specification such as <code>[(0.1, 0.3), (0.7, 0.9)]</code> performs one bounded search inside each closed interval, so both endpoints are included in the search, and then keeps the best interval-wise optimum. The package ships with the helper function <a href="../../Utils/statistics/#CPPLS.intervalize"><code>intervalize</code></a>, which converts a grid into a list of adjacent intervals, for example <code>intervalize(0:0.01:1)</code>.</p><p>That distinction matters for diagnostics. The stored values returned by <code>gammas(model, lv)</code> and <code>rhos(model, lv)</code> contain one point per candidate supplied to <code>gamma</code>. For a grid, that gives a sampled view of the objective curve across gamma. For <code>intervalize(...)</code>, it gives one selected optimum per interval, which is useful for comparing intervals but is not itself a dense landscape trace. If the goal is to visualize the shape of the gamma objective, prefer a grid. If the goal is robust optimization over subranges, prefer intervals.</p><p>We first inspect the objective landscape on a dense grid and then use interval-based optimization to obtain a practical two-component fit.</p><pre><code class="language-julia hljs">weighted_yaux_grid_spec = CPPLSModel(
     ncomponents=1,
     gamma=0:0.001:1,
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 weighted_yaux_grid_model = fit(
@@ -174,7 +178,9 @@ save(&quot;gamma_weighted_yaux_grid.svg&quot;, weighted_yaux_gamma_fig)</code></
 Associated rho^2: 0.7722165662543278</code></pre><p><img src="../gamma_weighted_yaux_grid.svg" alt/></p><p>To turn that landscape into an actual optimization step, we next search over adjacent intervals. The grey curve below is the dense landscape just plotted, the red points are the best values retained from each interval, and the dashed line marks the overall winner.</p><pre><code class="language-julia hljs">weighted_yaux_interval_spec = CPPLSModel(
     ncomponents=1,
     gamma=intervalize(0:0.05:1),
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 weighted_yaux_interval_model = fit(
@@ -208,11 +214,13 @@ scatter!(weighted_yaux_interval_ax, weighted_yaux_interval_gammas, weighted_yaux
 vlines!(weighted_yaux_interval_ax, [selected_weighted_yaux_gamma];
     color=:firebrick, linestyle=:dash)
 
-save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.6917448608647435
-Associated rho^2: 0.7722166962883602</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_spec = CPPLSModel(
+save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.6917448608661761
+Associated rho^2: 0.7722166962883604</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
-    mode=:discriminant
+    mode=:discriminant,
+    center_Yaux=true,
+    scale_Yaux=true
 )
 
 m_weighted_yaux_best = fit(
@@ -270,7 +278,9 @@ Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
 reg_spec = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
-    mode=:regression
+    mode=:regression,
+    center_X=true,
+    scale_X=true
 )
 
 m_reg = fit(
@@ -368,4 +378,4 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
-  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/05cfdd148f39cdda48fcc292ff3ee4033aea0830/src/CPPLS/fit.jl#L1-L113">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 23 March 2026 11:15">Monday 23 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/d50134ceb1eb162011c96c6b693deccd76313d94/src/CPPLS/fit.jl#L1-L113">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 23 March 2026 12:51">Monday 23 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

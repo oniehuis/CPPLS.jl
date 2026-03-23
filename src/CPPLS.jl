@@ -57,11 +57,9 @@ export rhos
 export sampleclasses
 export samplelabels
 export scoreplot
-export xbar
 export xmean
 export xstd
 export xscores
-export ybar
 export ymean
 export ystd
 

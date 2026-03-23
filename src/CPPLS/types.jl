@@ -163,13 +163,6 @@ Return the regression coefficients for the fitted model.
 coefall(fit::AbstractCPPLSFit) = fit.B
 
 """
-    xbar(fit::AbstractCPPLSFit)
-
-Return the predictor mean vector for the fitted model.
-"""
-xbar(fit::AbstractCPPLSFit) = fit.X_bar
-
-"""
     xmean(mf::AbstractCPPLSFit)
 
 Return the predictor mean vector for the fitted model.
@@ -182,13 +175,6 @@ xmean(mf::AbstractCPPLSFit) = mf.X_mean
 Return the predictor standard deviation vector for the fitted model.
 """
 xstd(mf::AbstractCPPLSFit) = mf.X_std
-
-"""
-    ybar(fit::AbstractCPPLSFit)
-
-Return the response mean vector for the fitted model.
-"""
-ybar(fit::AbstractCPPLSFit) = fit.Y_bar
 
 """
     ymean(mf::AbstractCPPLSFit)

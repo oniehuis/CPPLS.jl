@@ -252,14 +252,13 @@ end
     project(mf::CPPLSFit, X::AbstractMatrix{<:Real}) -> AbstractMatrix
 
 Compute latent component X scores by projecting new predictors `X` with a CPPLSFit
-model. The predictors are centered using `xbar`(@ref CPPLS.xbar) and multiplied by 
+model. The predictors are centered and then multiplied by 
 `projectionmatrix`(@ref CPPLS.projectionmatrix), returning an 
 `(n_samples, ncomponents)` X score matrix.
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
-[`projectionmatrix`](@ref CPPLS.projectionmatrix),
-[`xbar`](@ref CPPLS.xbar)
+[`projectionmatrix`](@ref CPPLS.projectionmatrix)
 
 # Examples
 ```jldoctest

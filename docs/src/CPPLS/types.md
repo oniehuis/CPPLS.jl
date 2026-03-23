@@ -36,8 +36,6 @@ CPPLS.ncomponents(::CPPLSModel)
 CPPLS.AbstractCPPLSFit
 StatsAPI.coef(::AbstractCPPLSFit) 
 CPPLS.coefall(::AbstractCPPLSFit)
-CPPLS.xbar(::AbstractCPPLSFit)
-CPPLS.ybar(::AbstractCPPLSFit)
 ```
 
 ## CPPLSFit

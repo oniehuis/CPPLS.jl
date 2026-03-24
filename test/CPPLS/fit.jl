@@ -394,7 +394,7 @@ end
         1,
         d.X_def,
         copy(initial_weights),
-        d.Y_prim,
+        d.Yprim,
         d.W_comp,
         d.P,
         d.C,
@@ -405,7 +405,7 @@ end
     normalized_weights = initial_weights / CPPLS.norm(initial_weights)
     expected_scores = X_def_original * normalized_weights
     expected_norm = CPPLS.dot(expected_scores, expected_scores)
-    expected_Y_loadings = (d.Y_prim' * expected_scores) / expected_norm
+    expected_Y_loadings = (d.Yprim' * expected_scores) / expected_norm
     expected_B =
         d.W_comp[:, 1:1] *
         CPPLS.pinv(d.P[:, 1:1]' * d.W_comp[:, 1:1]) *
@@ -459,7 +459,7 @@ end
         1,
         d.X_def,
         copy(initial_weights),
-        d.Y_prim,
+        d.Yprim,
         d.W_comp,
         d.P,
         d.C,

@@ -6,6 +6,7 @@ authors = ["Oliver Niehuis <oliver.niehuis@biologie.uni-freiburg.de> and contrib
 [deps]
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 GLM = "38e38edf-8417-5370-95a0-9cbb8c7f171a"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Optim = "429524aa-4258-5aef-a3af-852621145aeb"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -25,6 +26,7 @@ PlotlyJSExtension = "PlotlyJS"
 [compat]
 CategoricalArrays = "0.10, 1"
 GLM = "1.9.3"
+JLD2 = "0.6.3"
 Makie = "0.24"
 Optim = "1, 2"
 PlotlyJS = "0.18"

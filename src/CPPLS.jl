@@ -7,6 +7,7 @@ import StatsAPI: fit, predict, fitted, coef, residuals
 using Statistics
 using StatsBase
 using CategoricalArrays
+using JLD2
 
 using Reexport: @reexport
 @reexport using CategoricalArrays

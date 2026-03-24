@@ -1104,7 +1104,7 @@ Keyword arguments
     routine evaluates component counts `1:max_components` by replacing `spec.ncomponents`
     on temporary copies of `spec`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
-    sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Y_aux`, and
+    sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Yaux`, and
     `Y_auxiliary`, are subset automatically to the current training split.
 - `obs_weight_fn`: optional callback for fold-local observation weights. It receives
     `X_train` and `Y_train` for the current training split, and may also inspect
@@ -1557,7 +1557,7 @@ Keyword arguments
     routine evaluates component counts `1:max_components` by replacing `spec.ncomponents`
     on temporary copies of `spec`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
-    sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Y_aux`, and
+    sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Yaux`, and
     `Y_auxiliary`, are subset automatically to the current training split. If
     `responselabels` are not supplied, they are inferred from the number of columns in
     `Y`.
@@ -2035,7 +2035,7 @@ function subset_fit_kwargs(
     for (key, value) in Base.pairs(fit_kwargs)
         adjusted = if key in (:obs_weights, :samplelabels, :sampleclasses)
             subset_vector_like(value, train_indices, n_samples, key)
-        elseif key in (:Y_aux, :Y_auxiliary)
+        elseif key in (:Yaux, :Y_auxiliary)
             subset_matrix_like(value, train_indices, n_samples, key)
         else
             value

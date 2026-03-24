@@ -1,19 +1,3 @@
-@testset "center_mean handles weighted and unweighted inputs" begin
-    M = [1.0 2.0; 3.0 4.0; 5.0 6.0]
-    weights = [1.0, 2.0, 1.0]
-
-    centered_weighted, mean_weighted = CPPLS.center_mean(M, weights)
-    centered_unweighted, mean_unweighted = CPPLS.center_mean(M, nothing)
-
-    expected_weighted_mean = (weights' * M) / sum(weights)
-    expected_unweighted_mean = CPPLS.mean(M, dims = 1)
-
-    @test mean_weighted == expected_weighted_mean
-    @test all(isapprox.(centered_weighted, M .- expected_weighted_mean))
-    @test mean_unweighted == expected_unweighted_mean
-    @test all(isapprox.(centered_unweighted, M .- expected_unweighted_mean))
-end
-
 @testset "centerscale applies weighted centering and scaling" begin
     M = [1.0 2.0; 3.0 4.0; 5.0 6.0]
     weights = [1.0, 2.0, 1.0]
@@ -48,26 +32,6 @@ end
     @test converted_vec == float.(int_vec)
 end
 
-@testset "convert_auxiliary_to_float64 converts matrices and vectors" begin
-    aux_matrix = [1 2; 3 4]
-    converted_matrix = CPPLS.convert_auxiliary_to_float64(aux_matrix)
-    @test converted_matrix isa Matrix{Float64}
-    @test converted_matrix == float.(aux_matrix)
-
-    aux_vector = [1, 3, 5]
-    converted_vector = CPPLS.convert_auxiliary_to_float64(aux_vector)
-    @test converted_vector isa Vector{Float64}
-    @test converted_vector == float.(aux_vector)
-
-    float_matrix = rand(2, 2)
-    @test CPPLS.convert_auxiliary_to_float64(float_matrix) === float_matrix
-
-    float_vector = rand(4)
-    @test CPPLS.convert_auxiliary_to_float64(float_vector) === float_vector
-
-    @test_throws ArgumentError CPPLS.convert_auxiliary_to_float64(1.0)
-end
-
 @testset "cppls_prepare_data validates shapes and returns deflated matrices" begin
     X = Float32[1 2; 3 4; 5 6; 7 8]
     Y_prim = Float32[1 0; 0 1; 1 0; 0 1]
@@ -79,7 +43,7 @@ end
     d = CPPLS.cppls_prepare_data(model, X, Y_prim, Y_aux, weights)
 
     X_prep      = d.X
-    Y_prim_prep = d.Y_prim
+    Y_prim_prep = d.Yprim
     X_mean      = d.X_mean
     Y_mean      = d.Yprim_mean
     Y_all       = d.Y

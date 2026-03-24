@@ -10,7 +10,7 @@ Model fitting in `CPPLS` is performed using [`StatsAPI.fit`](@ref) together with
     Whenever Y has different values, one should make sure that they are scaled so that their
     individual impact is controlled for.
 
-You can optionally provide observation weights (keyword argument `obs_weights`) and auxiliary response information (keyword argument `Y_aux`) to [`StatsAPI.fit`](@ref). Observation weights control the influence of each sample on the model, while auxiliary responses guide the supervised projection without changing the primary prediction target. In discriminant analysis, observation weights are especially useful for addressing class imbalance. Together with the `gamma` parameter—which balances predictor and response variances and their correlation—these options allow you to tailor a CPPLS model to your dataset. Other choices, such as the number of components, may also be important depending on your analysis.
+You can optionally provide observation weights (keyword argument `obs_weights`) and auxiliary response information (keyword argument `Yaux`) to [`StatsAPI.fit`](@ref). Observation weights control the influence of each sample on the model, while auxiliary responses guide the supervised projection without changing the primary prediction target. In discriminant analysis, observation weights are especially useful for addressing class imbalance. Together with the `gamma` parameter—which balances predictor and response variances and their correlation—these options allow you to tailor a CPPLS model to your dataset. Other choices, such as the number of components, may also be important depending on your analysis.
 
 If you plan to use observation weights or auxiliary responses, specify them before selecting the `gamma` parameter, as both can affect the supervised objective and, consequently, the most appropriate gamma values.
 
@@ -196,7 +196,7 @@ separation.
 
 If such auxiliary information is available, we can provide it to the model so that it can 
 account for this confounding structure. This is done using the optional keyword argument 
-`Y_aux` in the [`fit`](@ref) function. Supplying auxiliary response information changes 
+`Yaux` in the [`fit`](@ref) function. Supplying auxiliary response information changes 
 how the latent variables are estimated: instead of forcing all supervised structure into 
 the class contrast, the model can also explicitly model variation associated with the 
 auxiliary responses. This helps ensure that the separation between the classes is not 
@@ -208,7 +208,7 @@ m_weighted_yaux = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Y_aux=Y_aux,                 # <- added parameter
+    Yaux=Y_aux,                  # <- added parameter
     samplelabels=sample_labels
 )
 
@@ -238,7 +238,7 @@ score sets again, now shading each point by its auxiliary response value.
 # Convert auxialliary matrix to a vector
 aux = vec(Y_aux[:, 1])
 
-# Generate colors for each Y_aux value within range Gray(0.1) and Gray(0.8)
+# Generate colors for each Yaux value within range Gray(0.1) and Gray(0.8)
 aux_min, aux_max = extrema(aux)
 point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
 
@@ -287,7 +287,7 @@ grayscale values being more evenly distributed across the plot.
 
 ### Choosing Gamma for the Weighted + Auxiliary Model
 
-With observation weights and `Y_aux` in place, we can now choose `gamma` for the model we
+With observation weights and `Yaux` in place, we can now choose `gamma` for the model we
 actually want to interpret. 
 
 The `gamma` argument supports three distinct workflows. A fixed scalar such as `0.5`
@@ -327,14 +327,14 @@ weighted_yaux_grid_model = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Y_aux=Y_aux
+    Yaux=Y_aux
 )
 
 weighted_yaux_grid_gammas = gammas(weighted_yaux_grid_model, 1)
 weighted_yaux_grid_rhos = rhos(weighted_yaux_grid_model, 1)
 selected_weighted_yaux_grid_gamma = gamma(weighted_yaux_grid_model)[1]
 
-println("Best gamma with obs_weights and Y_aux: ", selected_weighted_yaux_grid_gamma)
+println("Best gamma with obs_weights and Yaux: ", selected_weighted_yaux_grid_gamma)
 i = findfirst(==(selected_weighted_yaux_grid_gamma), weighted_yaux_grid_gammas)
 println("Associated rho^2: ", weighted_yaux_grid_rhos[i])
 
@@ -378,14 +378,14 @@ weighted_yaux_interval_mf = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Y_aux=Y_aux
+    Yaux=Y_aux
 )
 
 weighted_yaux_interval_gammas = gammas(weighted_yaux_interval_mf, 1)
 weighted_yaux_interval_rhos = rhos(weighted_yaux_interval_mf, 1)
 selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_mf)[1]
 
-println("Interval-optimized gamma with obs_weights and Y_aux: ", selected_weighted_yaux_gamma)
+println("Interval-optimized gamma with obs_weights and Yaux: ", selected_weighted_yaux_gamma)
 i = findfirst(==(selected_weighted_yaux_gamma), weighted_yaux_interval_gammas)
 println("Associated rho^2: ", weighted_yaux_interval_rhos[i])
 
@@ -420,7 +420,7 @@ coarse or dense interval partition is appropriate for downstream analyses such a
 validation and permutation testing.
 
 Finally, we fit the two-component discriminant model with interval-optimized `gamma`
-while keeping both inverse-frequency weights and `Y_aux`. This is the most favorable DA
+while keeping both inverse-frequency weights and `Yaux`. This is the most favorable DA
 setup examined in this example because weighting, auxiliary supervision, and gamma
 selection are all aligned with the same objective.
 
@@ -440,7 +440,7 @@ weighted_yaux_best_mf = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Y_aux=Y_aux,
+    Yaux=Y_aux,
     samplelabels=sample_labels
 )
 
@@ -462,7 +462,7 @@ cppls_weighted_yaux_best_plt = scoreplot(
     xscores(weighted_yaux_best_mf, 1:2);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
-    title="CPPLS-DA scores with weights, Y_aux, and optimized gamma",
+    title="CPPLS-DA scores with weights, Yaux, and optimized gamma",
     group_order=["minor", "major"],
     group_marker=Dict("minor" => (; color=orange), "major" => (; color=blue)),
     default_marker=(; markersize=14)
@@ -519,7 +519,7 @@ m = CPPLSModel(
 )
 
 mf = fit(m, X, Y_main;
-    Y_aux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
+    Yaux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
     samplelabels=sample_labels
 )
 
@@ -535,9 +535,9 @@ Y_fit = predict(lm)
 
 fig = Figure(size=(900, 450))
 ax = Axis(fig[1, 1],
-    xlabel="True Y_aux (first response)",
-    ylabel="Predicted Y_aux (first response, first component)",
-    title="Regression: Predicted vs. True Y_aux (first response)"
+    xlabel="True Yaux (first response)",
+    ylabel="Predicted Yaux (first response, first component)",
+    title="Regression: Predicted vs. True Yaux (first response)"
 )
 scatter!(ax, Y_true, Y_pred, color=:dodgerblue, markersize=10, label="Samples")
 lines!(ax, Y_true, Y_fit, color=:firebrick, linewidth=3, label="Regression line")
@@ -550,8 +550,8 @@ LV1 = xscores(mf, 1)[:, 1]  # first latent variable (component 1)
 fig_lv1 = Figure(size=(900, 450))
 ax_lv1 = Axis(fig_lv1[1, 1],
     xlabel="LV1 (first component)",
-    ylabel="True Y_aux (first response)",
-    title="LV1 vs. True Y_aux (first response)"
+    ylabel="True Yaux (first response)",
+    title="LV1 vs. True Yaux (first response)"
 )
 scatter!(ax_lv1, LV1, Y_true, color=:seagreen, markersize=10, label="Samples")
 axislegend(ax_lv1)

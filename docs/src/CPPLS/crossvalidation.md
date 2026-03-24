@@ -155,7 +155,7 @@ m = CPPLSModel(
 )
 
 fit_kwargs = (
-    Y_aux=Y_aux,
+    Yaux=Y_aux,
     samplelabels=samplelabels
 )
 
@@ -262,7 +262,7 @@ outlier_scan = outlierscan(
     X,
     classes;
     spec=m,
-    fit_kwargs=(; Y_aux=Y_aux, samplelabels=samplelabels),
+    fit_kwargs=(; Yaux=Y_aux, samplelabels=samplelabels),
     num_outer_folds=5,
     num_outer_folds_repeats=100,
     num_inner_folds=4,
@@ -304,7 +304,7 @@ outlier_view_model = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Y_aux=Y_aux,
+    Yaux=Y_aux,
     samplelabels=samplelabels
 )
 

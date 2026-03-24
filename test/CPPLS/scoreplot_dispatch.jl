@@ -71,8 +71,6 @@ end
             n_responses, ncomponents)
         W0 = reshape(collect(7.0:(6+n_predictors*n_responses*ncomponents)),
             n_predictors, n_responses, ncomponents)
-        Z = reshape(collect(9.0:(8+n_samples*n_responses*ncomponents)),
-            n_samples, n_responses, ncomponents)
 
         samplelabels = [SubString("a", 1:1), SubString("b", 1:1)]
         predictorlabels = ["x1", "x2"]
@@ -109,7 +107,6 @@ end
             a,
             b,
             W0,
-            Z,
             X_mean,
             X_std,
             Yprim_mean,
@@ -150,7 +147,6 @@ end
             a,
             b,
             W0,
-            Z,
             X_mean,
             X_std,
             Yprim_mean,

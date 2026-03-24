@@ -74,12 +74,6 @@
             n_responses,
             ncomponents,
         )
-        Z = reshape(
-            T_el.(901:(900+n_samples*n_responses*ncomponents)),
-            n_samples,
-            n_responses,
-            ncomponents,
-        )
         samplelabels = ["sample_$i" for i = 1:n_samples]
         predictorlabels = collect(1:n_predictors)
         responselabels = [Symbol("resp_$i") for i = 1:n_responses]
@@ -115,7 +109,6 @@
             a,
             b,
             W0,
-            Z,
             X_mean,
             X_std,
             Yprim_mean,
@@ -150,7 +143,6 @@
             a,
             b,
             W0,
-            Z,
             X_mean,
             X_std,
             Yprim_mean,
@@ -177,7 +169,6 @@
         @test size(cppls.U) == (n_samples, ncomponents)
         @test size(xmean(cppls)) == (n_predictors,)
         @test size(ymean(cppls)) == (n_responses,)
-        @test size(cppls.Z) == (n_samples, n_responses, ncomponents)
 
         cppls_default = CPPLS.CPPLSFit(
             B,
@@ -199,7 +190,6 @@
             a,
             b,
             W0,
-            Z,
             X_mean,
             X_std,
             Yprim_mean,
@@ -238,7 +228,6 @@
             a,
             b,
             W0,
-            Z,
             X_mean,
             X_std,
             Yprim_mean,
@@ -360,7 +349,6 @@ end
     a = reshape(Float64.(91:94), 2, 2)
     b = reshape(Float64.(101:104), 2, 2)
     W0 = reshape(Float64.(111:118), 2, 2, 2)
-    Z = reshape(Float64.(121:132), 3, 2, 2)
     samplelabels = String[]
     predictorlabels = String[]
     responselabels = String[]
@@ -381,7 +369,7 @@ end
     Yaux_std = nothing
     model = CPPLS.CPPLSFit(
         B, T_scores, P, W_comp, U, C, R, Y_hat, F, X_var, X_var_total,
-        gamma, rho, gammas, rhos, zero_mask, a, b, W0, Z,
+        gamma, rho, gammas, rhos, zero_mask, a, b, W0,
         X_mean,
         X_std,
         Yprim_mean,

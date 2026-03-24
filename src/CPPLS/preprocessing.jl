@@ -50,53 +50,34 @@ end
 Center and/or scale the columns of M. Returns (M_trans, means, stds).
 If obs_weights is provided, use weighted mean and std.
 """
-function center_and_scale(
-    M::AbstractMatrix{<:Real}, 
-    center::Bool, 
-    scale::Bool, 
-    obs_weights::Union{AbstractVector{<:Real}, Nothing}
-)
-    if center
-        μ = colmean(M, obs_weights)
-        M_centered = M .- μ
-    else
-        μ = zeros(1, size(M,2))
-        M_centered = M
-    end
-
-    if scale && center
-        σ = colstd(M_centered, obs_weights, μ)
-        # Safeguard: set zero stds to 1.0 to avoid division by zero
-        σ = map(x -> x == 0.0 ? 1.0 : x, σ)
-        M_scaled = M_centered ./ σ
-    elseif scale && !center
-        σ = colstd(M, obs_weights)
-        σ = map(x -> x == 0.0 ? 1.0 : x, σ)
-        M_scaled = M ./ σ
-    else
-        σ = ones(1, size(M,2))
-        M_scaled = M_centered
-    end
-
+function centerscale(M::AbstractMatrix{<:Real}, ::Val{true}, ::Val{true}, obs_weights)
+    μ = colmean(M, obs_weights)
+    M_centered = M .- μ
+    σ = colstd(M_centered, obs_weights, μ)
+    σ = map(x -> x == 0.0 ? 1.0 : x, σ)
+    M_scaled = M_centered ./ σ
     M_scaled, vec(μ), vec(σ)
 end
 
-"""
-    center_mean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
-    center_mean(M::AbstractMatrix{<:Real}, ::Nothing)
-
-Center the columns of `M` and return the centered matrix together with the column means.
-When weights are provided, the mean is computed as a weighted mean using the observation
-weights, otherwise it is the ordinary column mean.
-"""
-function center_mean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
-    M̄ = Matrix((obs_weights' * M) / sum(obs_weights))
-    M .- M̄, M̄
+function centerscale(M::AbstractMatrix{<:Real}, ::Val{true}, ::Val{false}, obs_weights)
+    μ = colmean(M, obs_weights)
+    M_centered = M .- μ
+    σ = ones(1, size(M,2))
+    M_centered, vec(μ), vec(σ)
 end
 
-function center_mean(M::AbstractMatrix{<:Real}, ::Nothing)
-    M̄ = mean(M, dims=1)
-    M .- M̄, M̄
+function centerscale(M::AbstractMatrix{<:Real}, ::Val{false}, ::Val{true}, obs_weights)
+    μ = zeros(1, size(M,2))
+    σ = colstd(M, obs_weights)
+    σ = map(x -> x == 0.0 ? 1.0 : x, σ)
+    M_scaled = M ./ σ
+    M_scaled, vec(μ), vec(σ)
+end
+
+function centerscale(M::AbstractMatrix{<:Real}, ::Val{false}, ::Val{false}, obs_weights)
+    μ = zeros(1, size(M,2))
+    σ = ones(1, size(M,2))
+    M, vec(μ), vec(σ)
 end
 
 """
@@ -126,29 +107,6 @@ convert_to_float64(v::AbstractVector{T}) where {T<:Real} =
     (T ≠ Float64 ? convert(Vector{Float64}, v) : v)
 
 """
-    convert_auxiliary_to_float64(Y::LinearAlgebra.AbstractVecOrMat)
-
-Convert auxiliary response data to `Float64`, returning either a `Matrix{Float64}` or
-`Vector{Float64}` depending on the input shape.
-"""
-function convert_auxiliary_to_float64(Y::LinearAlgebra.AbstractVecOrMat)
-    if Y isa AbstractMatrix
-        return Y isa Matrix{Float64} ? Y : Matrix{Float64}(Y)
-    else
-        return Y isa Vector{Float64} ? Y : Vector{Float64}(Y)
-    end
-end
-
-"""
-    convert_auxiliary_to_float64(Y)
-
-Raise an error when auxiliary responses are not provided as a vector or matrix.
-"""
-function convert_auxiliary_to_float64(Y)
-    throw(ArgumentError("Y_aux must be a vector or matrix"))
-end
-
-"""
     cppls_prepare_data(
         m::CPPLSModel,
         X::AbstractMatrix{<:Real}, 
@@ -160,6 +118,8 @@ end
 Prepare input data for CPPLS by converting to `Float64`, validating dimensions, applying
 optional centering and scaling, constructing the combined response matrix, and
 allocating working arrays needed by the fit routine.
+
+Type stablity tested: 03/24/2026
 """
 function cppls_prepare_data(
     m::CPPLSModel,
@@ -170,6 +130,7 @@ function cppls_prepare_data(
 )
     n_samples_X, n_features_X = size(X)
     n_samples_Y, n_targets_Y = size(Yprim)
+
     n_samples_X ≠ n_samples_Y && throw(DimensionMismatch(
         "Number of rows in X and Yprim must be equal"))
     !isnothing(obs_weights) && length(obs_weights) ≠ n_samples_X && throw(
@@ -177,32 +138,57 @@ function cppls_prepare_data(
             "Length of observation_weights must match the number of rows in X and Yprim"))
 
     X = convert_to_float64(X)
-    X_z, X_mean, X_std = center_and_scale(X, m.center_X, m.scale_X, obs_weights)
+    X_z, X_mean, X_std = 
+        centerscale(X, Val(m.center_X), Val(m.scale_X), obs_weights)
 
     Yprim = convert_to_float64(Yprim)
-    Yprim_z, Yprim_mean, Yprim_std = center_and_scale(Yprim, m.center_Y, m.scale_Y, obs_weights)
+    Yprim_z, Yprim_mean, Yprim_std = 
+        centerscale(Yprim, Val(m.center_Y), Val(m.scale_Y), obs_weights)
 
     if isnothing(Yaux)
         Yaux_z, Yaux_mean, Yaux_std = nothing, nothing, nothing
         Y_z = Yprim_z
     else
-        Yaux = convert_auxiliary_to_float64(Yaux)
-        Yaux_z, Yaux_mean, Yaux_std = center_and_scale(Yaux, m.center_Yaux, m.scale_Yaux, obs_weights)
+        Yaux = convert_to_float64(Yaux)
+        Yaux_z, Yaux_mean, Yaux_std = 
+            centerscale(Yaux, Val(m.center_Yaux), Val(m.scale_Yaux), obs_weights)
         Y_z = hcat(Yprim_z, Yaux_z)
     end
 
-    X_def = copy(X_z)
-    W_comp = Matrix{Float64}(undef, n_features_X, ncomponents(m))
-    P = Matrix{Float64}(undef, n_features_X, ncomponents(m))
-    C = Matrix{Float64}(undef, n_targets_Y, ncomponents(m))
+    X_def     = copy(X_z)
+    B         = Array{Float64}(undef, (n_features_X, n_targets_Y, ncomponents(m)))
+    C         = Matrix{Float64}(undef, n_targets_Y, ncomponents(m))
+    P         = Matrix{Float64}(undef, n_features_X, ncomponents(m))
+    W_comp    = Matrix{Float64}(undef, n_features_X, ncomponents(m))
     zero_mask = Matrix{Bool}(undef, (ncomponents(m), n_features_X))
-    B = Array{Float64}(undef, (n_features_X, n_targets_Y, ncomponents(m)))
     
-    (X=X_z, Y_prim=Yprim_z, Y=Y_z, X_def=X_def, W_comp=W_comp, P=P, C=C, zero_mask=zero_mask, B=B, n_samples_X=n_samples_X, 
-    n_targets_Y=n_targets_Y, X_z=X_z, X_mean=X_mean, X_std=X_std, Yprim_z=Yprim_z, 
-    Yprim_mean=Yprim_mean, Yprim_std=Yprim_std, Yaux_z=Yaux_z, Yaux_mean=Yaux_mean, 
-    Yaux_std=Yaux_std)
-end
+    (   # Preprocessed predictors
+        X=X_z,
+        X_mean=X_mean, 
+        X_std=X_std, 
+      
+        # Preprocessed combined (Yprim and Yaux) responses
+        Y=Y_z, 
+      
+        # Preprocessed primary responses
+        Yprim=Yprim_z,
+        Yprim_mean=Yprim_mean, 
+        Yprim_std=Yprim_std, 
 
-# X_z is redundnantly returned
-# Yprim_z is redundantly returned
+        # Preprocessed auxiliary responses
+        Yaux_mean=Yaux_mean, 
+        Yaux_std=Yaux_std,
+
+        # Dimensions
+        n_samples_X=n_samples_X, 
+        n_targets_Y=n_targets_Y, 
+      
+        # Working arrays for fit routine
+        X_def=X_def, 
+        B=B, 
+        C=C,
+        P=P, 
+        W_comp=W_comp, 
+        zero_mask=zero_mask
+    )
+end

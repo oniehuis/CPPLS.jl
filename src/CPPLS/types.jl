@@ -230,7 +230,6 @@ struct CPPLSFit{
     a::Matrix{T1}
     b::Matrix{T1}
     W0::Array{T1,3}
-    Z::Array{T1,3}
     X_mean::Vector{T1}
     X_std::Vector{T1}
     Yprim_mean::Vector{T1}
@@ -264,7 +263,6 @@ function CPPLSFit(
     a::Matrix{T1},
     b::Matrix{T1},
     W0::Array{T1,3},
-    Z::Array{T1,3},
     X_mean::Vector{T1},
     X_std::Vector{T1},
     Yprim_mean::Vector{T1},
@@ -293,7 +291,7 @@ function CPPLSFit(
         "sampleclasses are only stored for discriminant analysis models"))
 
     CPPLSFit{T1, T2, T3, T4, T5, T6, T7}(B, T, P, W_comp, U, C, R, Y_hat, 
-        F, X_var, X_var_total, gamma, rho, gammas, rhos, zero_mask, a, b, W0, Z, 
+        F, X_var, X_var_total, gamma, rho, gammas, rhos, zero_mask, a, b, W0, 
         X_mean, X_std, Yprim_mean, Yprim_std, Yaux_mean, Yaux_std,
         samplelabels, predictorlabels, responselabels, mode, sampleclasses)
 end

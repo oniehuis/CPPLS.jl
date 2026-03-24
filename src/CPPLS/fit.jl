@@ -1,7 +1,9 @@
+using JLD2
+
 """
     fit(m::CPPLSModel,
         X::AbstractMatrix{<:Real},
-        Y_prim::AbstractMatrix{<:Real};
+        Yprim::AbstractMatrix{<:Real};
         kwargs...
     )
     fit(m::CPPLSModel,
@@ -20,7 +22,7 @@ specification supplies the number of components, the gamma configuration, center
 analysis mode, and all numerical tolerances, while the call to `fit` supplies data,
 optional weights, auxiliary responses, and label metadata.
 
-When `Y_prim` is provided, it is treated as the primary response block. When
+When `Yprim` is provided, it is treated as the primary response block. When
 `sampleclasses` is provided, the labels are converted to a one-hot response matrix,
 class names are inferred as response labels, and the fit is forced to discriminant
 analysis; `m.mode` must be `:discriminant` or an ArgumentError is thrown.
@@ -39,9 +41,9 @@ are treated as closed intervals: both endpoints are evaluated explicitly, and th
 choice is the best among the two endpoints and the interior Brent minimizer.
 
 Keyword arguments accepted by `fit` include `obs_weights` for per-sample weighting,
-`Y_aux` for auxiliary response columns, and optional `samplelabels`, `predictorlabels`,
-`responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Y_aux`
-must have the same number of rows as `X` and is concatenated to `Y_prim` internally to
+`Yaux` for auxiliary response columns, and optional `samplelabels`, `predictorlabels`,
+`responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Yaux`
+must have the same number of rows as `X` and is concatenated to `Yprim` internally to
 build the supervised projection, while prediction targets always remain the primary
 responses.
 
@@ -68,7 +70,7 @@ See also
 ```jldoctest
 julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
-julia> labels, X, classes, Y_aux = load(file, "sample_labels", "X", "classes", "Y_aux");
+julia> labels, X, classes, Yaux = load(file, "sample_labels", "X", "classes", "Y_aux");
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
 CPPLSModel
@@ -99,7 +101,7 @@ CPPLSModel
   scale_Yaux: false
   mode: discriminant
 
-julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Y_aux=Y_aux)
+julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Yaux=Yaux)
 CPPLSFit
   mode: discriminant
   samples: 100
@@ -112,10 +114,10 @@ CPPLSFit
 function fit(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real};
+    Yprim::AbstractMatrix{<:Real};
     kwargs...
 )
-    fit_cppls(m, X, Y_prim; kwargs...)
+    fit_cppls(m, X, Yprim; kwargs...)
 end
 
 function fit(
@@ -141,7 +143,7 @@ end
     fit_cppls_core(
         m::CPPLSModel,
         X::AbstractMatrix{<:Real},
-        Y_prim::AbstractMatrix{<:Real};
+        Yprim::AbstractMatrix{<:Real};
         kwargs...
     )
 
@@ -151,9 +153,9 @@ public entry point and full parameter documentation.
 function fit_cppls_core(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real};
+    Yprim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
+    Yaux::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
@@ -166,23 +168,34 @@ function fit_cppls_core(
     T5<:AbstractVector,
     T6<:Union{AbstractVector, Nothing}
 }
-    m.mode ≡ :discriminant || sampleclasses ≡ nothing || throw(ArgumentError(
+    # Validate that sampleclasses are only provided for discriminant analysis.
+    m.mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
         "sampleclasses can only be provided for discriminant analysis"))
 
+    # Get predictor count.
     n_predictors = size(X, 2)
 
-    d = cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
+    # Preprocess data: center/scale, optionally with weights, and concatenate Yaux.
+    d = cppls_prepare_data(m, X, Yprim, Yaux, obs_weights)
 
-    samplelabels = default_sample_labels(validate_label_length(samplelabels, d.n_samples_X,
-        "samplelabels"), d.n_samples_X)
-    predictorlabels = validate_label_length(predictorlabels, n_predictors, 
-        "predictorlabels")
-    responselabels = validate_response_labels(responselabels, d.n_targets_Y)
+    # Validate label lengths and generate default sample labels if needed.
+    samplelabels = validate_label_length(samplelabels, d.n_samples_X, "samplelabels")
+    samplelabels = default_sample_labels(samplelabels, d.n_samples_X)
+    
+    # Validate predictor label length (none or exact X column count).
+    predictorlabels = 
+        validate_label_length(predictorlabels, n_predictors, "predictorlabels")
+    
+    # Validate response label length (none or exact Yprim column count).
+    responselabels = validate_label_length(responselabels, d.n_targets_Y, "responselabels")
+
+    # For discriminant analysis, responselabels must be provided to name the classes.
     if m.mode ≡ :discriminant && isempty(responselabels)
         throw(ArgumentError(
             "responselabels must list class names for discriminant analysis"))
     end
 
+    # Preallocate arrays for scores, loadings, regression coefficients, and diagnostics.
     T = Matrix{Float64}(undef, d.n_samples_X, m.ncomponents)
     a = Matrix{Float64}(undef, size(d.Y, 2), m.ncomponents)
     b = Matrix{Float64}(undef, d.n_targets_Y, m.ncomponents)
@@ -198,19 +211,21 @@ function fit_cppls_core(
     W0 = Array{Float64}(undef, n_predictors, size(d.Y, 2), m.ncomponents)
     Z = Array{Float64}(undef, d.n_samples_X, size(d.Y, 2), m.ncomponents)
 
+    # Main loop over components: compute weights, scores, loadings, deflate, and 
+    # store results.
     for i = 1:m.ncomponents
         wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gammas[:, i],
-        rhos[:, i] = compute_cppls_weights(m, d.X_def, d.Y, d.Y_prim, obs_weights, m.gamma)
+        rhos[:, i] = compute_cppls_weights(m, d.X_def, d.Y, d.Yprim, obs_weights, m.gamma)
         
         W0[:, :, i] = W0ᵢ
         Z[:, :, i] = d.X_def * W0ᵢ
 
-        tᵢ, tᵢ_squared_norm, cᵢ = process_component!(m, i, d.X_def, wᵢ, d.Y_prim, d.W_comp, 
+        tᵢ, tᵢ_squared_norm, cᵢ = process_component!(m, i, d.X_def, wᵢ, d.Yprim, d.W_comp, 
             d.P, d.C, d.B, d.zero_mask)
 
         T[:, i] = tᵢ
         t_norms[i] = tᵢ_squared_norm
-        U[:, i] = d.Y_prim * cᵢ / (cᵢ' * cᵢ)
+        U[:, i] = d.Yprim * cᵢ / (cᵢ' * cᵢ)
 
         if i > 1
             U[:, i] -= T * (T' * U[:, i] ./ t_norms)
@@ -218,29 +233,30 @@ function fit_cppls_core(
         Y_hat[:, :, i] = d.X * d.B[:, :, i]
     end
 
-    Y_hat .+= reshape(repeat(reshape(d.Yprim_mean, 1, :), d.n_samples_X), d.n_samples_X, length(reshape(d.Yprim_mean, 1, :)), 1)
-    F = d.Y_prim .- Y_hat
+    Y_hat .+= reshape(repeat(reshape(d.Yprim_mean, 1, :), d.n_samples_X), d.n_samples_X, 
+        length(reshape(d.Yprim_mean, 1, :)), 1)
+    F = d.Yprim .- Y_hat
     R = d.W_comp * pinv(d.P' * d.W_comp)
     X_var = vec(sum(d.P .* d.P, dims = 1)) .* t_norms
     X_var_total = sum(d.X .* d.X)
 
-    fitobj = CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, Y_hat, F, X_var, 
-        X_var_total, gamma_vals, rho, gammas, rhos, d.zero_mask, a, b, W0, Z, 
-        d.X_mean, d.X_std, d.Yprim_mean, d.Yprim_std, d.Yaux_mean, d.Yaux_std; 
+    CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, Y_hat, F, X_var, X_var_total, gamma_vals, 
+        rho, gammas, rhos, d.zero_mask, a, b, W0, d.X_mean, d.X_std, d.Yprim_mean, 
+        d.Yprim_std, d.Yaux_mean, d.Yaux_std; 
         samplelabels=samplelabels,
         predictorlabels=predictorlabels, 
         responselabels=responselabels,
-        mode=m.mode, sampleclasses=sampleclasses)
-
-    fitobj
+        sampleclasses=sampleclasses,
+        mode=m.mode
+    )
 end
 
 function fit_cppls(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real};
+    Yprim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
+    Yaux::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
@@ -253,9 +269,9 @@ function fit_cppls(
     T5<:AbstractVector,
     T6<:Union{AbstractVector, Nothing}  
 }
-    fit_cppls_core(m, X, Y_prim;
+    fit_cppls_core(m, X, Yprim;
         obs_weights=obs_weights, 
-        Y_aux=Y_aux, 
+        Yaux=Yaux, 
         samplelabels=samplelabels,
         predictorlabels=predictorlabels, 
         responselabels=responselabels,
@@ -265,9 +281,9 @@ end
 function fit_cppls(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    Y_prim::AbstractVector{<:Real};
+    Yprim::AbstractVector{<:Real};
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
+    Yaux::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
@@ -278,16 +294,16 @@ function fit_cppls(
     T4<:AbstractVector,
     T5<:AbstractVector
 }
-    Y_matrix = reshape(Y_prim, :, 1)
+    Yprim_matrix = reshape(Yprim, :, 1)
 
     # Hier wurde mode = :regression an fit_cppls_core übergeben. Relevant?
 
     fit_cppls_core(
         m, 
         X, 
-        Y_matrix; 
+        Yprim_matrix; 
         obs_weights=obs_weights, 
-        Y_aux=Y_aux,
+        Yaux=Yaux,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
         responselabels=responselabels
@@ -337,7 +353,7 @@ function fit_cppls_from_sample_classes(
     X::AbstractMatrix{<:Real},
     sampleclasses;
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
+    Yaux::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[]
@@ -351,11 +367,11 @@ function fit_cppls_from_sample_classes(
     isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
         " when passing sample classes; response labels are inferred automatically."))
 
-    Y_prim, classes = onehot(sampleclasses)
+    Yprim, classes = onehot(sampleclasses)
 
-    fit_cppls_core(m, X, Y_prim; 
+    fit_cppls_core(m, X, Yprim; 
         obs_weights=obs_weights, 
-        Y_aux=Y_aux,
+        Yaux=Yaux,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
         responselabels=classes,
@@ -387,26 +403,15 @@ function validate_label_length(
 end
 
 """
-    default_sample_labels(labels::AbstractVector, n_samples::Integer)
+    default_sample_labels(labels::AbstractVector, n_samples::Integer) -> Vector{String}
 
 Return `labels` when provided, otherwise generate default row-index labels `"1"` through
 `string(n_samples)`.
+
+Type stablity tested: 03/24/2026
 """
 function default_sample_labels(labels::AbstractVector, n_samples::Integer)
-    isempty(labels) || return labels
-    string.(1:n_samples)
-end
-
-"""
-    validate_response_labels(labels::AbstractVector, n_targets::Integer)
-
-Return `labels` after verifying that it is empty or has length `n_targets`. This is used
-to ensure the provided response names align with the response matrix.
-"""
-function validate_response_labels(labels::AbstractVector, n_targets::Integer)
-    isempty(labels) || length(labels) == n_targets || throw(ArgumentError(
-        "`responselabels` must have length $n_targets, got $(length(labels))"))
-    labels
+    isempty(labels) ? string.(1:n_samples) : String[labels...]
 end
 
 """
@@ -415,7 +420,7 @@ end
         i::Int,
         X_def::AbstractMatrix{<:Real},
         wᵢ::AbstractVector{<:Real},
-        Y_prim::AbstractMatrix{<:Real},
+        Yprim::AbstractMatrix{<:Real},
         W_comp::AbstractMatrix{<:Real},
         P::AbstractMatrix{<:Real},
         C::AbstractMatrix{<:Real},
@@ -429,13 +434,15 @@ X_def * wᵢ, and the X and Y loadings are computed by regressing the predictors
 responses on t. The predictor block is then deflated along the component, the zero mask
 and regression coefficients are updated, and the function returns the score, its squared
 norm, and the Y loading vector.
+
+Type stablity tested: 03/24/2026
 """
 function process_component!(
     m::CPPLSModel,
     i::Int,
     X_def::AbstractMatrix{<:Real},
     wᵢ::AbstractVector{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
+    Yprim::AbstractMatrix{<:Real},
     W_comp::AbstractMatrix{<:Real},
     P::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
@@ -453,7 +460,7 @@ function process_component!(
     end
 
     pᵢ = (X_def' * tᵢ) / tᵢ_squared_norm
-    cᵢ = (Y_prim' * tᵢ) / tᵢ_squared_norm
+    cᵢ = (Yprim' * tᵢ) / tᵢ_squared_norm
 
     X_def .-= tᵢ * pᵢ'
 

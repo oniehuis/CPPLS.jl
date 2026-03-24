@@ -81,7 +81,7 @@ basic_model = fit(
 	X,
 	classes;
 	obs_weights=invfreqweights(classes),
-	Y_aux=Y_aux,
+	Yaux=Y_aux,
 	samplelabels=samplelabels
 )
 
@@ -109,7 +109,7 @@ advanced_model = fit(
 	X_train,
 	classes_train;
 	obs_weights=invfreqweights(classes_train),
-	Y_aux=Y_aux_train,
+	Yaux=Y_aux_train,
 	samplelabels=labels_train
 )
 

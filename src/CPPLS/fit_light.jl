@@ -3,7 +3,7 @@
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real};
         obs_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
-        Y_aux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing
+        Yaux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing
     )
 
 Low-level CPPLS fitting routine used by internal cross-validation helpers that returns
@@ -15,21 +15,21 @@ function fit_cppls_light_core(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing
+    Yaux::T2=nothing
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
 
-    d = cppls_prepare_data(m, X, Y_prim, Y_aux, obs_weights)
+    d = cppls_prepare_data(m, X, Y_prim, Yaux, obs_weights)
 
     for i = 1:m.ncomponents
-        wᵢ = compute_cppls_weights(m, d.X_def, d.Y, d.Y_prim, obs_weights, m.gamma)[1]
-        process_component!(m, i, d.X_def, wᵢ, d.Y_prim, d.W_comp, d.P, d.C, d.B, 
+        wᵢ = compute_cppls_weights(m, d.X_def, d.Y, d.Yprim, obs_weights, m.gamma)[1]
+        process_component!(m, i, d.X_def, wᵢ, d.Yprim, d.W_comp, d.P, d.C, d.B, 
             d.zero_mask)
     end
 
-    CPPLSFitLight(d.B, d.X_mean, d.X_std, d.Yprim_mean, d.Yprim_std, m.mode)
+    CPPLSFitLight(d.B, vec(d.X_mean), vec(d.X_std), vec(d.Yprim_mean), vec(d.Yprim_std), m.mode)
 end
 
 
@@ -38,12 +38,12 @@ function fit_cppls_light(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
+    Yaux::T2=nothing,
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing}, 
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
-    fit_cppls_light_core(m, X, Y_prim; obs_weights=obs_weights, Y_aux=Y_aux)
+    fit_cppls_light_core(m, X, Y_prim; obs_weights=obs_weights, Yaux=Yaux)
 end
 
 function fit_cppls_light(
@@ -51,13 +51,13 @@ function fit_cppls_light(
     X::AbstractMatrix{<:Real},
     Y_prim::AbstractVector{<:Real};
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing,
+    Yaux::T2=nothing,
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing}, 
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
     Y_matrix = reshape(Y_prim, :, 1)
-    fit_cppls_light_core(m, X, Y_matrix; obs_weights=obs_weights, Y_aux=Y_aux)
+    fit_cppls_light_core(m, X, Y_matrix; obs_weights=obs_weights, Yaux=Yaux)
 end
 
 function fit_cppls_light(
@@ -90,11 +90,11 @@ function fit_cppls_light_from_sample_classes(
     X::AbstractMatrix{<:Real},
     sampleclasses;
     obs_weights::T1=nothing,
-    Y_aux::T2=nothing
+    Yaux::T2=nothing
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
     Y_prim, _ = onehot(sampleclasses)
-    fit_cppls_light_core(m, X, Y_prim; obs_weights=obs_weights, Y_aux=Y_aux)
+    fit_cppls_light_core(m, X, Y_prim; obs_weights=obs_weights, Yaux=Yaux)
 end

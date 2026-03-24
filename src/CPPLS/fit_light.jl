@@ -21,7 +21,7 @@ function fit_cppls_light_core(
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
 
-    d = cppls_prepare_data(m, X, Y_prim, Yaux, obs_weights)
+    d = preprocess(m, X, Y_prim, Yaux, obs_weights)
 
     for i = 1:m.ncomponents
         wᵢ = compute_cppls_weights(m, d.X_def, d.Y, d.Yprim, obs_weights, m.gamma)[1]

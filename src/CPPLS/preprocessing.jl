@@ -1,113 +1,5 @@
 """
-    colmean(M::AbstractMatrix{<:Real}, ::Nothing)
-    colmean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
-
-Compute the (optionally weighted) column means of M.
-"""
-colmean(M::AbstractMatrix{<:Real}, ::Nothing) = mean(M, dims=1)
-colmean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) = 
-    (obs_weights' * M) / sum(obs_weights)
-
-"""
-    colstd(M::AbstractMatrix{<:Real}, ::Nothing)
-    colstd(M::AbstractMatrix{<:Real}, ::Nothing, μ::AbstractVector{<:Real})
-    colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
-    colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}, μ::AbstractVector{<:Real})
-
-Compute the (optionally weighted) column standard deviations of `M`.
-"""
-function colstd(M::AbstractMatrix{<:Real}, ::Nothing)
-    μ = colmean(M, nothing)
-    sqrt.(sum((M .- μ).^2, dims=1) / (size(M, 1) - 1))
-end
-function colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
-    μ = colmean(M, obs_weights)
-    sqrt.(sum(obs_weights .* (M .- μ).^2, dims=1) / sum(obs_weights))
-end
-function colstd(
-    M::AbstractMatrix{<:Real}, 
-    ::Nothing, 
-    μ # ::AbstractVector{<:Real} # can be LinearAlgebar.adjoint
-)
-    sqrt.(sum((M .- μ).^2, dims=1) / (size(M, 1) - 1))
-end
-function colstd(
-    M::AbstractMatrix{<:Real}, 
-    obs_weights::AbstractVector{<:Real}, 
-    μ # ::AbstractVector{<:Real} # can be LinearAlgebar.adjoint
-)
-    sqrt.(sum(obs_weights .* (M .- μ).^2, dims=1) / sum(obs_weights))
-end
-
-"""
-    center_and_scale(
-        M::AbstractMatrix{<:Real},
-        center::Bool, 
-        scale::Bool, 
-        obs_weights::Union{AbstractVector{<:Real}, Nothing}
-)
-
-Center and/or scale the columns of M. Returns (M_trans, means, stds).
-If obs_weights is provided, use weighted mean and std.
-"""
-function centerscale(M::AbstractMatrix{<:Real}, ::Val{true}, ::Val{true}, obs_weights)
-    μ = colmean(M, obs_weights)
-    M_centered = M .- μ
-    σ = colstd(M_centered, obs_weights, μ)
-    σ = map(x -> x == 0.0 ? 1.0 : x, σ)
-    M_scaled = M_centered ./ σ
-    M_scaled, vec(μ), vec(σ)
-end
-
-function centerscale(M::AbstractMatrix{<:Real}, ::Val{true}, ::Val{false}, obs_weights)
-    μ = colmean(M, obs_weights)
-    M_centered = M .- μ
-    σ = ones(1, size(M,2))
-    M_centered, vec(μ), vec(σ)
-end
-
-function centerscale(M::AbstractMatrix{<:Real}, ::Val{false}, ::Val{true}, obs_weights)
-    μ = zeros(1, size(M,2))
-    σ = colstd(M, obs_weights)
-    σ = map(x -> x == 0.0 ? 1.0 : x, σ)
-    M_scaled = M ./ σ
-    M_scaled, vec(μ), vec(σ)
-end
-
-function centerscale(M::AbstractMatrix{<:Real}, ::Val{false}, ::Val{false}, obs_weights)
-    μ = zeros(1, size(M,2))
-    σ = ones(1, size(M,2))
-    M, vec(μ), vec(σ)
-end
-
-"""
-    centerscale(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
-    centerscale(M::AbstractMatrix{<:Real}, ::Nothing)
-
-Center `M` and apply observation weights in a single step. With weights, each row is
-centered by the weighted mean and then scaled by the weights. Without weights, only
-centering is performed.
-"""
-centerscale(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) =
-    (M .- (obs_weights' * M) / sum(obs_weights)) .* obs_weights
-
-centerscale(M::AbstractMatrix{<:Real}, ::Nothing) = M .- mean(M, dims=1)
-
-"""
-    convert_to_float64(M::AbstractMatrix{T}) where {T<:Real}
-    convert_to_float64(v::AbstractVector{T}) where {T<:Real}
-
-Convert numeric matrices and vectors to `Float64` storage when needed, returning the
-input unchanged if it is already `Float64`.
-"""
-convert_to_float64(M::AbstractMatrix{T}) where {T<:Real} =
-    (T ≠ Float64 ? convert(Matrix{Float64}, M) : M)
-
-convert_to_float64(v::AbstractVector{T}) where {T<:Real} =
-    (T ≠ Float64 ? convert(Vector{Float64}, v) : v)
-
-"""
-    cppls_prepare_data(
+    preprocess(
         m::CPPLSModel,
         X::AbstractMatrix{<:Real}, 
         Yprim::AbstractMatrix{<:Real}, 
@@ -121,7 +13,7 @@ allocating working arrays needed by the fit routine.
 
 Type stablity tested: 03/24/2026
 """
-function cppls_prepare_data(
+function preprocess(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Yprim::AbstractMatrix{<:Real},
@@ -137,25 +29,22 @@ function cppls_prepare_data(
         DimensionMismatch(
             "Length of observation_weights must match the number of rows in X and Yprim"))
 
-    X = convert_to_float64(X)
-    X_z, X_mean, X_std = 
-        centerscale(X, Val(m.center_X), Val(m.scale_X), obs_weights)
+    X = float64(X)
+    X_z, X_mean, X_std = centerscale(X, m.center_X, m.scale_X, obs_weights)
 
-    Yprim = convert_to_float64(Yprim)
-    Yprim_z, Yprim_mean, Yprim_std = 
-        centerscale(Yprim, Val(m.center_Y), Val(m.scale_Y), obs_weights)
+    Yprim = float64(Yprim)
+    Yprim_z, Yprim_mean, Yprim_std = centerscale(Yprim, m.center_Y, m.scale_Y, obs_weights)
 
     if isnothing(Yaux)
         Yaux_z, Yaux_mean, Yaux_std = nothing, nothing, nothing
         Y_z = Yprim_z
     else
-        Yaux = convert_to_float64(Yaux)
-        Yaux_z, Yaux_mean, Yaux_std = 
-            centerscale(Yaux, Val(m.center_Yaux), Val(m.scale_Yaux), obs_weights)
+        Yaux = float64(Yaux)
+        Yaux_z, Yaux_mean, Yaux_std = centerscale(Yaux, m.center_Yaux, m.scale_Yaux, obs_weights)
         Y_z = hcat(Yprim_z, Yaux_z)
     end
 
-    X_def     = copy(X_z)
+    Xdef      = copy(X_z)
     B         = Array{Float64}(undef, (n_features_X, n_targets_Y, ncomponents(m)))
     C         = Matrix{Float64}(undef, n_targets_Y, ncomponents(m))
     P         = Matrix{Float64}(undef, n_features_X, ncomponents(m))
@@ -184,7 +73,7 @@ function cppls_prepare_data(
         n_targets_Y=n_targets_Y, 
       
         # Working arrays for fit routine
-        X_def=X_def, 
+        X_def=Xdef, 
         B=B, 
         C=C,
         P=P, 
@@ -192,3 +81,100 @@ function cppls_prepare_data(
         zero_mask=zero_mask
     )
 end
+
+# Helper functions
+
+"""
+    centerscale(
+        M::AbstractMatrix{<:Real},
+        center::Bool, 
+        scale::Bool, 
+        obs_weights::Union{AbstractVector{<:Real}, Nothing}
+)
+
+Center and/or scale the columns of M. Returns (M_trans, means, stds).
+If obs_weights is provided, use weighted mean and std.
+"""
+function centerscale(
+    M::AbstractMatrix{<:Real}, 
+    center::Bool, 
+    scale::Bool, 
+    obs_weights::Union{AbstractVector{<:Real}, Nothing}
+)
+    M_working = M
+
+    if center
+        μ = colmean(M, obs_weights)
+        M_working = M .- μ
+    else
+        μ = zeros(1, size(M,2))
+    end
+
+    if scale
+        σ = scale && center ? colstd(M_working, obs_weights, μ) : colstd(M, obs_weights)
+        σ = map(x -> x == 0.0 ? 1.0 : x, σ)
+        M_working = M_working ./ σ
+    else
+        σ = ones(1, size(M,2))
+    end
+
+    M_working, vec(μ), vec(σ)
+end
+
+"""
+    colmean(M::AbstractMatrix{<:Real}, ::Nothing)
+    colmean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
+
+Compute the (optionally weighted) column means of M.
+"""
+colmean(M::AbstractMatrix{<:Real}, ::Nothing) = mean(M, dims=1)
+
+colmean(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) = 
+    (obs_weights' * M) / sum(obs_weights)
+
+"""
+    colstd(M::AbstractMatrix{<:Real}, ::Nothing)
+    colstd(M::AbstractMatrix{<:Real}, ::Nothing, μ::AbstractVector{<:Real})
+    colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
+    colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}, μ::AbstractVector{<:Real})
+
+Compute the (optionally weighted) column standard deviations of `M`.
+"""
+function colstd(M::AbstractMatrix{<:Real}, ::Nothing)
+    μ = colmean(M, nothing)
+    sqrt.(sum((M .- μ).^2, dims=1) / (size(M, 1) - 1))
+end
+
+function colstd(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
+    μ = colmean(M, obs_weights)
+    sqrt.(sum(obs_weights .* (M .- μ).^2, dims=1) / sum(obs_weights))
+end
+
+function colstd(
+    M::AbstractMatrix{<:Real}, 
+    ::Nothing, 
+    μ # ::AbstractVector{<:Real} # can be LinearAlgebar.adjoint
+)
+    sqrt.(sum((M .- μ).^2, dims=1) / (size(M, 1) - 1))
+end
+
+function colstd(
+    M::AbstractMatrix{<:Real}, 
+    obs_weights::AbstractVector{<:Real}, 
+    μ # ::AbstractVector{<:Real} # can be LinearAlgebar.adjoint
+)
+    sqrt.(sum(obs_weights .* (M .- μ).^2, dims=1) / sum(obs_weights))
+end
+
+"""
+    float64(M::AbstractMatrix{T}) where {T<:Real}
+    float64(v::AbstractVector{T}) where {T<:Real}
+
+Convert numeric matrices and vectors to `Float64` storage when needed, returning the
+input unchanged if it is already `Float64`.
+"""
+float64(M::AbstractMatrix{T}) where {T<:Real} =
+    (T ≠ Float64 ? convert(Matrix{Float64}, M) : M)
+
+float64(v::AbstractVector{T}) where {T<:Real} = 
+    (T ≠ Float64 ? convert(Vector{Float64}, v) : v)

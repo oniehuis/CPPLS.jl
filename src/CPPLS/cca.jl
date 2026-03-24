@@ -325,6 +325,19 @@ function evaluate_canonical_correlation(
 end
 
 """
+    centerweight(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real})
+    centerweight(M::AbstractMatrix{<:Real}, ::Nothing)
+
+Center `M` and apply observation weights in a single step. With weights, each row is
+centered by the weighted mean and then scaled by the weights. Without weights, only
+centering is performed.
+"""
+centerweight(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) =
+    (M .- (obs_weights' * M) / sum(obs_weights)) .* obs_weights
+
+centerweight(M::AbstractMatrix{<:Real}, ::Nothing) = M .- mean(M, dims=1)
+
+"""
     correlation(
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}
@@ -345,7 +358,7 @@ sample-weighting logic used throughout CPPLS.
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
 )
 
-    correlation(centerscale(X_def, obs_weights), centerscale(Y, obs_weights))
+    correlation(centerweight(X_def, obs_weights), centerweight(Y, obs_weights))
 end
 
 function correlation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})

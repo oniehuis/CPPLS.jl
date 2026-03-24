@@ -378,7 +378,7 @@ end
     m = CPPLS.CPPLSModel(ncomponents=ncomponents, gamma=0.5, center_X=true, center_Y=true, X_tolerance=1e-12, 
     X_loading_weight_tolerance=1e-12, t_squared_norm_tolerance=1e-10)
     
-    d = CPPLS.cppls_prepare_data(
+    d = CPPLS.preprocess(
         m,
         X,
         Y,
@@ -446,7 +446,7 @@ end
     # B,
     # _,
     # _ 
-    d = CPPLS.cppls_prepare_data(m, X, Y, nothing, nothing)
+    d = CPPLS.preprocess(m, X, Y, nothing, nothing)
 
     d.X_def .= 0  # force zero scores regardless of weights
     initial_weights = [1.0, 2.0]

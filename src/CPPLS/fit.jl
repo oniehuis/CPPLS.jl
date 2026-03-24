@@ -176,7 +176,7 @@ function fit_cppls_core(
     n_predictors = size(X, 2)
 
     # Preprocess data: center/scale, optionally with weights, and concatenate Yaux.
-    d = cppls_prepare_data(m, X, Yprim, Yaux, obs_weights)
+    d = preprocess(m, X, Yprim, Yaux, obs_weights)
 
     # Validate label lengths and generate default sample labels if needed.
     samplelabels = validate_label_length(samplelabels, d.n_samples_X, "samplelabels")

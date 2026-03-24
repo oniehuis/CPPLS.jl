@@ -37,7 +37,7 @@ pca_plt = scoreplot(
     group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
     default_marker=(; markersize=14)
 )
-save(&quot;pca.svg&quot;, pca_plt)</code></pre><p><img src="../pca.svg" alt/></p><p>In this synthetic dataset, the first two principal components are not optimized for class discrimination, so a substantial part of the visible structure reflects nuisance variation rather than the class contrast of interest.</p><h3 id="Observation-Weights-and-Auxiliary-Responses"><a class="docs-heading-anchor" href="#Observation-Weights-and-Auxiliary-Responses">Observation Weights and Auxiliary Responses</a><a id="Observation-Weights-and-Auxiliary-Responses-1"></a><a class="docs-heading-anchor-permalink" href="#Observation-Weights-and-Auxiliary-Responses" title="Permalink"></a></h3><p>To illustrate the impact of class imbalance and auxiliary response information on latent  variable extraction, we show how adding each of these factors changes the X scores of the  fitted model. In this demonstration, we use a fixed gamma value of 0.5 so that only the  parameter of interest varies. In a real-world scenario, you would typically decide whether  to include observation weights and auxiliary responses before the main analysis, and then  optimize gamma in a model that already includes these parameters.</p><p>We start with a plain model in which neither observational weights nore  auxiliary response  information is considered.</p><pre><code class="language-julia hljs">spec = CPPLSModel(
+save(&quot;pca.svg&quot;, pca_plt)</code></pre><p><img src="../pca.svg" alt/></p><p>In this synthetic dataset, the first two principal components are not optimized for class discrimination, so a substantial part of the visible structure reflects nuisance variation rather than the class contrast of interest.</p><h3 id="Observation-Weights-and-Auxiliary-Responses"><a class="docs-heading-anchor" href="#Observation-Weights-and-Auxiliary-Responses">Observation Weights and Auxiliary Responses</a><a id="Observation-Weights-and-Auxiliary-Responses-1"></a><a class="docs-heading-anchor-permalink" href="#Observation-Weights-and-Auxiliary-Responses" title="Permalink"></a></h3><p>To illustrate the impact of class imbalance and auxiliary response information on latent  variable extraction, we show how adding each of these factors changes the X scores of the  fitted model. In this demonstration, we use a fixed gamma value of 0.5 so that only the  parameter of interest varies. In a real-world scenario, you would typically decide whether  to include observation weights and auxiliary responses before the main analysis, and then  optimize gamma in a model that already includes these parameters.</p><p>We start with a plain model in which neither observational weights nore  auxiliary response  information is considered.</p><pre><code class="language-julia hljs">m = CPPLSModel(
     ncomponents=2,
     gamma=0.5,
     mode=:discriminant,
@@ -48,7 +48,7 @@ save(&quot;pca.svg&quot;, pca_plt)</code></pre><p><img src="../pca.svg" alt/></p
 )
 
 m_plain = fit(
-    spec,
+    m,
     X,
     classes;
     samplelabels=sample_labels
@@ -68,7 +68,7 @@ cppls_plain_plt = scoreplot(
 save(&quot;cppls_plain.svg&quot;, cppls_plain_plt)</code></pre><p><img src="../cppls_plain.svg" alt/></p><p>Even in this comparatively simple model, the samples belonging to the two classes are  noticeably better separated from each other than in the PCA score plot.</p><p>Next, we add inverse-frequency observation weights by specifying the <code>obs_weights</code> keyword  argument in the <a href="#StatsAPI.fit"><code>fit</code></a> function. To calculate the inverse-frequency weights for  samples in each class, we use the function <a href="../../Utils/statistics/#CPPLS.invfreqweights"><code>invfreqweights</code></a>. This adjustment gives  the two classes equal total influence on the fitted model and thus removes the class size  imbalance.</p><pre><code class="language-julia hljs">class_weights = invfreqweights(classes)
 
 m_weighted = fit(
-    spec,
+    m,
     X,
     classes;
     obs_weights=class_weights,   # &lt;- added parameter
@@ -87,7 +87,7 @@ cppls_weighted_plt = scoreplot(
     default_marker=(; markersize=14)
 )
 save(&quot;cppls_weighted.svg&quot;, cppls_weighted_plt)</code></pre><p><img src="../cppls_weighted.svg" alt/></p><p>Applying inverse-frequency weights makes the discriminant structure more symmetric. In this example, the main effect is not a larger distance between the groups, but rather a recentering and slight rotation of the latent space so that the class contrast is less biased by class prevalence.</p><p>At this point, the class separation already looks convincing. In this dataset, however, it  is driven not only by class-related variation but also by variation associated with  auxiliary responses. For example, suppose the samples in the two groups were analyzed using  two different instruments, and the choice of instrument is correlated with group  membership. If most majority-class samples were measured with instrument A and most  minority-class samples with instrument B, then instrument effects could confound the class  separation.</p><p>If such auxiliary information is available, we can provide it to the model so that it can  account for this confounding structure. This is done using the optional keyword argument  <code>Y_aux</code> in the <a href="#StatsAPI.fit"><code>fit</code></a> function. Supplying auxiliary response information changes  how the latent variables are estimated: instead of forcing all supervised structure into  the class contrast, the model can also explicitly model variation associated with the  auxiliary responses. This helps ensure that the separation between the classes is not  driven by confounding factors, but rather by the traits of true interest.</p><pre><code class="language-julia hljs">m_weighted_yaux = fit(
-    spec,
+    m,
     X,
     classes;
     obs_weights=class_weights,
@@ -139,9 +139,9 @@ cppls_weighted_yaux_shaded_plt = scoreplot(
     default_scatter=(; color=point_colors),
     default_marker=(; markersize=14)
 )
-save(&quot;cppls_weighted_yaux_shaded.svg&quot;, cppls_weighted_yaux_shaded_plt)</code></pre><p><img src="../cppls_weighted_shaded.svg" alt/></p><p><img src="../cppls_weighted_yaux_shaded.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the  grayscale values are not randomly distributed across the score space. Instead, they are  arranged roughly along the first latent dimension. This indicates that auxiliary signal  correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the  grayscale values being more evenly distributed across the plot.</p><h3 id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model"><a class="docs-heading-anchor" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model">Choosing Gamma for the Weighted + Auxiliary Model</a><a id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model" title="Permalink"></a></h3><p>With observation weights and <code>Y_aux</code> in place, we can now choose <code>gamma</code> for the model we actually want to interpret. </p><p>The <code>gamma</code> argument supports three distinct workflows. A fixed scalar such as <code>0.5</code> uses the same value for every latent variable. A grid such as <code>0:0.01:1</code> evaluates a set of fixed candidate values and keeps the one with the largest leading canonical correlation for each latent variable. An interval specification such as <code>[(0.1, 0.3), (0.7, 0.9)]</code> performs one bounded search inside each closed interval, so both endpoints are included in the search, and then keeps the best interval-wise optimum. The package ships with the helper function <a href="../../Utils/statistics/#CPPLS.intervalize"><code>intervalize</code></a>, which converts a grid into a list of adjacent intervals, for example <code>intervalize(0:0.01:1)</code>.</p><p>That distinction matters for diagnostics. The stored values returned by <code>gammas(model, lv)</code> and <code>rhos(model, lv)</code> contain one point per candidate supplied to <code>gamma</code>. For a grid, that gives a sampled view of the objective curve across gamma. For <code>intervalize(...)</code>, it gives one selected optimum per interval, which is useful for comparing intervals but is not itself a dense landscape trace. If the goal is to visualize the shape of the gamma objective, prefer a grid. If the goal is robust optimization over subranges, prefer intervals.</p><p>We first inspect the objective landscape on a dense grid and then use interval-based optimization to obtain a practical two-component fit.</p><pre><code class="language-julia hljs">weighted_yaux_grid_spec = CPPLSModel(
+save(&quot;cppls_weighted_yaux_shaded.svg&quot;, cppls_weighted_yaux_shaded_plt)</code></pre><p><img src="../cppls_weighted_shaded.svg" alt/></p><p><img src="../cppls_weighted_yaux_shaded.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the  grayscale values are not randomly distributed across the score space. Instead, they are  arranged roughly along the first latent dimension. This indicates that auxiliary signal  correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the  grayscale values being more evenly distributed across the plot.</p><h3 id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model"><a class="docs-heading-anchor" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model">Choosing Gamma for the Weighted + Auxiliary Model</a><a id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model" title="Permalink"></a></h3><p>With observation weights and <code>Y_aux</code> in place, we can now choose <code>gamma</code> for the model we actually want to interpret. </p><p>The <code>gamma</code> argument supports three distinct workflows. A fixed scalar such as <code>0.5</code> uses the same value for every latent variable. A grid such as <code>0:0.01:1</code> evaluates a set of fixed candidate values and keeps the one with the largest leading canonical correlation for each latent variable. An interval specification such as <code>[(0.1, 0.3), (0.7, 0.9)]</code> performs one bounded search inside each closed interval, so both endpoints are included in the search, and then keeps the best interval-wise optimum. The package ships with the helper function <a href="../../Utils/statistics/#CPPLS.intervalize"><code>intervalize</code></a>, which converts a grid into a list of adjacent intervals, for example <code>intervalize(0:0.01:1)</code>.</p><p>That distinction matters for diagnostics. The stored values returned by <code>gammas(model, lv)</code> and <code>rhos(model, lv)</code> contain one point per candidate supplied to <code>gamma</code>. For a grid, that gives a sampled view of the objective curve across gamma. For <code>intervalize(...)</code>, it gives one selected optimum per interval, which is useful for comparing intervals but is not itself a dense landscape trace. If the goal is to visualize the shape of the gamma objective, prefer a grid. If the goal is robust optimization over subranges, prefer intervals.</p><p>We first inspect the objective landscape on a dense grid and then use interval-based optimization to obtain a practical two-component fit.</p><pre><code class="language-julia hljs">weighted_yaux_grid_m = CPPLSModel(
     ncomponents=1,
-    gamma=0:0.001:1,
+    gamma=0:0.01:1,
     mode=:discriminant,
     center_X=true,
     scale_X=true,
@@ -150,7 +150,7 @@ save(&quot;cppls_weighted_yaux_shaded.svg&quot;, cppls_weighted_yaux_shaded_plt)
 )
 
 weighted_yaux_grid_model = fit(
-    weighted_yaux_grid_spec,
+    weighted_yaux_grid_m,
     X,
     classes;
     obs_weights=class_weights,
@@ -178,10 +178,10 @@ lines!(weighted_yaux_gamma_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rho
 vlines!(weighted_yaux_gamma_ax, [selected_weighted_yaux_grid_gamma];
     color=:black, linestyle=:dash)
 
-save(&quot;gamma_weighted_yaux_grid.svg&quot;, weighted_yaux_gamma_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Best gamma with obs_weights and Y_aux: 0.548
-Associated rho^2: 0.7645878681713535</code></pre><p><img src="../gamma_weighted_yaux_grid.svg" alt/></p><p>To turn that landscape into an actual optimization step, we next search over adjacent intervals. The grey curve below is the dense landscape just plotted, the red points are the best values retained from each interval, and the dashed line marks the overall winner.</p><pre><code class="language-julia hljs">weighted_yaux_interval_spec = CPPLSModel(
+save(&quot;gamma_weighted_yaux_grid.svg&quot;, weighted_yaux_gamma_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Best gamma with obs_weights and Y_aux: 0.55
+Associated rho^2: 0.7645843154856455</code></pre><p><img src="../gamma_weighted_yaux_grid.svg" alt/></p><p>To turn that landscape into an actual optimization step, we next search over adjacent intervals. The grey curve below is the dense landscape just plotted, the red points are the best values retained from each interval, and the dashed line marks the overall winner.</p><pre><code class="language-julia hljs">weighted_yaux_interval_m = CPPLSModel(
     ncomponents=1,
-    gamma=intervalize(0:0.05:1),
+    gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
     scale_X=true,
@@ -189,17 +189,17 @@ Associated rho^2: 0.7645878681713535</code></pre><p><img src="../gamma_weighted_
     scale_Yaux=true
 )
 
-weighted_yaux_interval_model = fit(
-    weighted_yaux_interval_spec,
+weighted_yaux_interval_mf = fit(
+    weighted_yaux_interval_m,
     X,
     classes;
     obs_weights=class_weights,
     Y_aux=Y_aux
 )
 
-weighted_yaux_interval_gammas = gammas(weighted_yaux_interval_model, 1)
-weighted_yaux_interval_rhos = rhos(weighted_yaux_interval_model, 1)
-selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_model)[1]
+weighted_yaux_interval_gammas = gammas(weighted_yaux_interval_mf, 1)
+weighted_yaux_interval_rhos = rhos(weighted_yaux_interval_mf, 1)
+selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_mf)[1]
 
 println(&quot;Interval-optimized gamma with obs_weights and Y_aux: &quot;, selected_weighted_yaux_gamma)
 i = findfirst(==(selected_weighted_yaux_gamma), weighted_yaux_interval_gammas)
@@ -220,10 +220,10 @@ scatter!(weighted_yaux_interval_ax, weighted_yaux_interval_gammas, weighted_yaux
 vlines!(weighted_yaux_interval_ax, [selected_weighted_yaux_gamma];
     color=:firebrick, linestyle=:dash)
 
-save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.5481543181506173
-Associated rho^2: 0.7645878935283701</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_spec = CPPLSModel(
+save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Y_aux: 0.5481544252861594
+Associated rho^2: 0.7645878935283689</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Y_aux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_m = CPPLSModel(
     ncomponents=2,
-    gamma=intervalize(0:0.05:1),
+    gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
     scale_X=true,
@@ -231,8 +231,8 @@ Associated rho^2: 0.7645878935283701</code></pre><p><img src="../gamma_weighted_
     scale_Yaux=true
 )
 
-m_weighted_yaux_best = fit(
-    weighted_yaux_best_spec,
+weighted_yaux_best_mf = fit(
+    weighted_yaux_best_m,
     X,
     classes;
     obs_weights=class_weights,
@@ -241,21 +241,21 @@ m_weighted_yaux_best = fit(
 )
 
 selected_weighted_yaux_rhos = [
-    rhos(m_weighted_yaux_best, lv)[findfirst(
-        ==(gamma(m_weighted_yaux_best)[lv]),
-        gammas(m_weighted_yaux_best, lv),
+    rhos(weighted_yaux_best_mf, lv)[findfirst(
+        ==(gamma(weighted_yaux_best_mf)[lv]),
+        gammas(weighted_yaux_best_mf, lv),
     )]
     for lv in 1:2
 ]
 
 println(&quot;Selected gammas for the two latent variables: &quot;,
-    round.(gamma(m_weighted_yaux_best), digits=3))
+    round.(gamma(weighted_yaux_best_mf), digits=3))
 println(&quot;Associated rho^2: &quot;, round.(selected_weighted_yaux_rhos, digits=6))
 
 cppls_weighted_yaux_best_plt = scoreplot(
     sample_labels,
     classes,
-    xscores(m_weighted_yaux_best, 1:2);
+    xscores(weighted_yaux_best_mf, 1:2);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
     title=&quot;CPPLS-DA scores with weights, Y_aux, and optimized gamma&quot;,
@@ -282,26 +282,23 @@ classes  = data[&quot;classes&quot;]
 Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
 
 
-# Set up regression spec: predict Y_main from X, use Y_aux_mat as auxiliary
-reg_spec = CPPLSModel(
+# Set up regression model: predict Y_main from X, use Y_aux_mat as auxiliary
+m = CPPLSModel(
     ncomponents=2,
-    gamma=intervalize(0:0.05:1),
+    gamma=intervalize(0:0.25:1),
     mode=:regression,
     center_X=true,
     scale_X=true
 )
 
-m_reg = fit(
-    reg_spec,
-    X,
-    Y_main;
+mf = fit(m, X, Y_main;
     Y_aux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
     samplelabels=sample_labels
 )
 
 # For regression, visualize predicted Y vs. true Y, with regression line
 # Ensure both are 1D vectors for the first response column
-Y_pred = predict(m_reg, X, 1)[:, 1, 1]  # predicted values (vector)
+Y_pred = predict(mf, X, 1)[:, 1, 1]  # predicted values (vector)
 Y_true = Y_main[:, 1]  # true values (vector, first response column)
 
 # Fit regression line using GLM
@@ -320,7 +317,7 @@ lines!(ax, Y_true, Y_fit, color=:firebrick, linewidth=3, label=&quot;Regression 
 axislegend(ax)
 save(&quot;regression_scoreplot.svg&quot;, fig)
 #+# Additional plot: LV1 vs. Y_true
-LV1 = xscores(m_reg, 1)[:, 1]  # first latent variable (component 1)
+LV1 = xscores(mf, 1)[:, 1]  # first latent variable (component 1)
 
 fig_lv1 = Figure(size=(900, 450))
 ax_lv1 = Axis(fig_lv1[1, 1],
@@ -384,4 +381,4 @@ CPPLSFit
   predictors: 14
   responses: 2
   components: 2
-  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/796735af728789f0821ed6ac1f6f898444d1b777/src/CPPLS/fit.jl#L1-L111">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Monday 23 March 2026 21:21">Monday 23 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+  gamma: [0.75, 0.75]</code></pre></div><a class="docs-sourcelink" target="_blank" href="https://github.com/oniehuis/CPPLS.jl/blob/705607513b792dc35b69b6ad002db6e3ce006b88/src/CPPLS/fit.jl#L1-L111">source</a></section></details></article></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../types/">« Types</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Tuesday 24 March 2026 08:53">Tuesday 24 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

@@ -78,7 +78,7 @@ m = CPPLSModel(
     center_X=true,
     scale_X=true,
     center_Yaux=true,
-    scale_Yaux=true
+    scale_Yaux=true,
     mode=:discriminant
 )
 

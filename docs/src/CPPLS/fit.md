@@ -110,7 +110,7 @@ We start with a plain model in which neither observational weights nore  auxilia
 information is considered.
 
 ```@example fit_da
-spec = CPPLSModel(
+m = CPPLSModel(
     ncomponents=2,
     gamma=0.5,
     mode=:discriminant,
@@ -121,7 +121,7 @@ spec = CPPLSModel(
 )
 
 m_plain = fit(
-    spec,
+    m,
     X,
     classes;
     samplelabels=sample_labels
@@ -157,7 +157,7 @@ imbalance.
 class_weights = invfreqweights(classes)
 
 m_weighted = fit(
-    spec,
+    m,
     X,
     classes;
     obs_weights=class_weights,   # <- added parameter
@@ -204,7 +204,7 @@ driven by confounding factors, but rather by the traits of true interest.
 
 ```@example fit_da
 m_weighted_yaux = fit(
-    spec,
+    m,
     X,
     classes;
     obs_weights=class_weights,
@@ -312,7 +312,7 @@ We first inspect the objective landscape on a dense grid and
 then use interval-based optimization to obtain a practical two-component fit.
 
 ```@example fit_da
-weighted_yaux_grid_spec = CPPLSModel(
+weighted_yaux_grid_m = CPPLSModel(
     ncomponents=1,
     gamma=0:0.001:1,
     mode=:discriminant,
@@ -323,7 +323,7 @@ weighted_yaux_grid_spec = CPPLSModel(
 )
 
 weighted_yaux_grid_model = fit(
-    weighted_yaux_grid_spec,
+    weighted_yaux_grid_m,
     X,
     classes;
     obs_weights=class_weights,
@@ -363,7 +363,7 @@ the best values retained from each interval, and the dashed line marks the overa
 winner.
 
 ```@example fit_da
-weighted_yaux_interval_spec = CPPLSModel(
+weighted_yaux_interval_m = CPPLSModel(
     ncomponents=1,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant,
@@ -373,17 +373,17 @@ weighted_yaux_interval_spec = CPPLSModel(
     scale_Yaux=true
 )
 
-weighted_yaux_interval_model = fit(
-    weighted_yaux_interval_spec,
+weighted_yaux_interval_mf = fit(
+    weighted_yaux_interval_m,
     X,
     classes;
     obs_weights=class_weights,
     Y_aux=Y_aux
 )
 
-weighted_yaux_interval_gammas = gammas(weighted_yaux_interval_model, 1)
-weighted_yaux_interval_rhos = rhos(weighted_yaux_interval_model, 1)
-selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_model)[1]
+weighted_yaux_interval_gammas = gammas(weighted_yaux_interval_mf, 1)
+weighted_yaux_interval_rhos = rhos(weighted_yaux_interval_mf, 1)
+selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_mf)[1]
 
 println("Interval-optimized gamma with obs_weights and Y_aux: ", selected_weighted_yaux_gamma)
 i = findfirst(==(selected_weighted_yaux_gamma), weighted_yaux_interval_gammas)
@@ -425,7 +425,7 @@ setup examined in this example because weighting, auxiliary supervision, and gam
 selection are all aligned with the same objective.
 
 ```@example fit_da
-weighted_yaux_best_spec = CPPLSModel(
+weighted_yaux_best_m = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
     mode=:discriminant,
@@ -435,8 +435,8 @@ weighted_yaux_best_spec = CPPLSModel(
     scale_Yaux=true
 )
 
-m_weighted_yaux_best = fit(
-    weighted_yaux_best_spec,
+weighted_yaux_best_mf = fit(
+    weighted_yaux_best_m,
     X,
     classes;
     obs_weights=class_weights,
@@ -446,14 +446,14 @@ m_weighted_yaux_best = fit(
 
 selected_weighted_yaux_rhos = [
     rhos(m_weighted_yaux_best, lv)[findfirst(
-        ==(gamma(m_weighted_yaux_best)[lv]),
-        gammas(m_weighted_yaux_best, lv),
+        ==(gamma(weighted_yaux_best_mf)[lv]),
+        gammas(weighted_yaux_best_mf, lv),
     )]
     for lv in 1:2
 ]
 
 println("Selected gammas for the two latent variables: ",
-    round.(gamma(m_weighted_yaux_best), digits=3))
+    round.(gamma(weighted_yaux_best_mf_, digits=3)))
 println("Associated rho^2: ", round.(selected_weighted_yaux_rhos, digits=6))
 
 cppls_weighted_yaux_best_plt = scoreplot(
@@ -509,8 +509,8 @@ classes  = data["classes"]
 Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
 
 
-# Set up regression spec: predict Y_main from X, use Y_aux_mat as auxiliary
-reg_spec = CPPLSModel(
+# Set up regression model: predict Y_main from X, use Y_aux_mat as auxiliary
+m = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.05:1),
     mode=:regression,
@@ -518,17 +518,14 @@ reg_spec = CPPLSModel(
     scale_X=true
 )
 
-m_reg = fit(
-    reg_spec,
-    X,
-    Y_main;
+mf = fit(m, X, Y_main;
     Y_aux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
     samplelabels=sample_labels
 )
 
 # For regression, visualize predicted Y vs. true Y, with regression line
 # Ensure both are 1D vectors for the first response column
-Y_pred = predict(m_reg, X, 1)[:, 1, 1]  # predicted values (vector)
+Y_pred = predict(m, X, 1)[:, 1, 1]  # predicted values (vector)
 Y_true = Y_main[:, 1]  # true values (vector, first response column)
 
 # Fit regression line using GLM

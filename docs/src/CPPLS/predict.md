@@ -72,14 +72,18 @@ We next fit a discriminant model with two latent components and allow `gamma` to
 selected during fitting.
 
 ```@example project
-spec = CPPLSModel(
+m = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.25:1),
+    center_X=true,
+    scale_X=true,
+    center_Yaux=true,
+    scale_Yaux=true
     mode=:discriminant
 )
 
-model = fit(
-    spec,
+mf = fit(
+    m,
     X_train,
     classes_train;
     obs_weights=invfreqweights(classes_train),
@@ -95,12 +99,12 @@ samples in the fitted score space. The returned `heldout_scores` matrix has one 
 held-out sample and one column per latent component.
 
 ```@example project
-heldout_scores = project(model, X_holdout)
+heldout_scores = project(mf, X_holdout)
 
 projected_plt = scoreplot(
     vcat(labels_train, labels_holdout),
     vcat(classes_train, plot_classes_holdout),
-    vcat(xscores(model), heldout_scores);
+    vcat(xscores(mf), heldout_scores);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores",
@@ -133,8 +137,8 @@ classes_holdout
 Let us now see what the model predicts:
 
 ```@example project
-heldout_predictions = predict(model, X_holdout)
-sampleclasses(model, heldout_predictions)
+heldout_predictions = predict(mf, X_holdout)
+sampleclasses(mf, heldout_predictions)
 ```
 
 As we can see, the predicted labels match the classes from which the samples were
@@ -154,7 +158,7 @@ This is often more convenient in discriminant-analysis workflows than working wi
 full prediction tensor.
 
 ```@example project
-sampleclasses(model, X_holdout)
+sampleclasses(mf, X_holdout)
 ```
 
 ## API

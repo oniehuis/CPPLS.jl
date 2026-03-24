@@ -185,7 +185,7 @@ moderately better than random guessing. This raises the question of whether the 
 nonetheless significantly better than chance. To answer that, we compare it with a null
 distribution obtained from permuted data in which the correspondence between predictors
 and class labels has been broken. For a fair comparison, the permutation procedure uses
-exactly the same settings as `cvda`, here with a total of `1000` permutations.
+exactly the same settings as `cvda`, here with a total of `100` permutations.
 
 ```@example crossvalidation
 permutation_scores = permda(
@@ -193,7 +193,7 @@ permutation_scores = permda(
     classes;
     spec=m,
     fit_kwargs=fit_kwargs,
-    num_permutations=1000,
+    num_permutations=100,
     num_outer_folds=5,
     num_outer_folds_repeats=5,
     num_inner_folds=4,
@@ -264,7 +264,7 @@ outlier_scan = outlierscan(
     spec=m,
     fit_kwargs=(; Y_aux=Y_aux, samplelabels=samplelabels),
     num_outer_folds=5,
-    num_outer_folds_repeats=500,
+    num_outer_folds_repeats=100,
     num_inner_folds=4,
     num_inner_folds_repeats=4,
     max_components=2,
@@ -295,7 +295,7 @@ samples whose outlier-scan error rate is `1.00`. In this synthetic example,
 those are the samples that consistently fail across repeated outer-fold predictions.
 
 ```@example crossvalidation
-major_outlier_threshold = 0.75
+major_outlier_threshold = 0.5
 major_outlier_idx = findall(>=(major_outlier_threshold), outlier_scan.rate)
 class_weights = invfreqweights(classes)
 

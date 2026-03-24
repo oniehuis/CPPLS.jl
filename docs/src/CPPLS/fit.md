@@ -314,7 +314,7 @@ then use interval-based optimization to obtain a practical two-component fit.
 ```@example fit_da
 weighted_yaux_grid_m = CPPLSModel(
     ncomponents=1,
-    gamma=0:0.001:1,
+    gamma=0:0.01:1,
     mode=:discriminant,
     center_X=true,
     scale_X=true,
@@ -365,7 +365,7 @@ winner.
 ```@example fit_da
 weighted_yaux_interval_m = CPPLSModel(
     ncomponents=1,
-    gamma=intervalize(0:0.05:1),
+    gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
     scale_X=true,
@@ -427,7 +427,7 @@ selection are all aligned with the same objective.
 ```@example fit_da
 weighted_yaux_best_m = CPPLSModel(
     ncomponents=2,
-    gamma=intervalize(0:0.05:1),
+    gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
     scale_X=true,
@@ -445,7 +445,7 @@ weighted_yaux_best_mf = fit(
 )
 
 selected_weighted_yaux_rhos = [
-    rhos(m_weighted_yaux_best, lv)[findfirst(
+    rhos(weighted_yaux_best_mf, lv)[findfirst(
         ==(gamma(weighted_yaux_best_mf)[lv]),
         gammas(weighted_yaux_best_mf, lv),
     )]
@@ -453,13 +453,13 @@ selected_weighted_yaux_rhos = [
 ]
 
 println("Selected gammas for the two latent variables: ",
-    round.(gamma(weighted_yaux_best_mf_, digits=3)))
+    round.(gamma(weighted_yaux_best_mf), digits=3))
 println("Associated rho^2: ", round.(selected_weighted_yaux_rhos, digits=6))
 
 cppls_weighted_yaux_best_plt = scoreplot(
     sample_labels,
     classes,
-    xscores(m_weighted_yaux_best, 1:2);
+    xscores(weighted_yaux_best_mf, 1:2);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
     title="CPPLS-DA scores with weights, Y_aux, and optimized gamma",
@@ -512,7 +512,7 @@ Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
 # Set up regression model: predict Y_main from X, use Y_aux_mat as auxiliary
 m = CPPLSModel(
     ncomponents=2,
-    gamma=intervalize(0:0.05:1),
+    gamma=intervalize(0:0.25:1),
     mode=:regression,
     center_X=true,
     scale_X=true
@@ -525,7 +525,7 @@ mf = fit(m, X, Y_main;
 
 # For regression, visualize predicted Y vs. true Y, with regression line
 # Ensure both are 1D vectors for the first response column
-Y_pred = predict(m, X, 1)[:, 1, 1]  # predicted values (vector)
+Y_pred = predict(mf, X, 1)[:, 1, 1]  # predicted values (vector)
 Y_true = Y_main[:, 1]  # true values (vector, first response column)
 
 # Fit regression line using GLM
@@ -545,7 +545,7 @@ axislegend(ax)
 save("regression_scoreplot.svg", fig)
 nothing # hide
 #+# Additional plot: LV1 vs. Y_true
-LV1 = xscores(m_reg, 1)[:, 1]  # first latent variable (component 1)
+LV1 = xscores(mf, 1)[:, 1]  # first latent variable (component 1)
 
 fig_lv1 = Figure(size=(900, 450))
 ax_lv1 = Axis(fig_lv1[1, 1],

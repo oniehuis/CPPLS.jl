@@ -24,6 +24,8 @@ point that follows the CPPLS pipeline of building W0(gamma), projecting X to Z, 
 aligning Z with the primary responses through CCA. A fixed gamma can be supplied directly,
 or a search/grid specification can be used to select gamma by maximizing the leading
 canonical correlation.
+
+Type stablity tested: 03/25/2026
 """
 function compute_cppls_weights(
     m::CPPLSModel,
@@ -78,12 +80,22 @@ function compute_cppls_weights(
     compute_best_loadings(m, X_def, S_x, C, C_sign, Y_prim, obs_weights, gamma, size(Y, 2))
 end
 
+# Type stablity tested: 03/25/2026
+
+"""
+    gamma_search_candidate_count(gamma)
+
+Return the number of candidate gamma values for CPPLS grid or search. If `gamma` is a 
+scalar `Real` or a 2-tuple of `Real`, returns 1 (single candidate). If `gamma` is a vector 
+of `Real` and/or 2-tuples, returns the vector length (number of candidates).
+
+Type stability tested: 03/25/2026
+"""
 gamma_search_candidate_count(::Real) = 1
 gamma_search_candidate_count(::NTuple{2, <:Real}) = 1
 gamma_search_candidate_count(
     gamma::AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
 ) = length(gamma)
-
 
 """
     compute_best_loadings(
@@ -107,6 +119,8 @@ canonical direction used to form the component. The return values include w, the
 canonical correlation, canonical coefficient vectors, the selected gamma, and W0. q is the 
 total number of response columns (primary + auxiliary) used to construct the supervised 
 projection space.
+
+Type stablity tested: 03/25/2026
 """
 function compute_best_loadings(
     m::CPPLSModel,
@@ -191,6 +205,8 @@ end
 Select the gamma that maximizes the leading canonical correlation between Z = X W0(gamma)
 and Y_prim. The tuple form uses a bounded Brent search, while the vector form evaluates a
 set of candidate values or bounds and returns the best.
+
+Type stablity tested: 03/25/2026
 """
 function compute_best_gamma(
     m::CPPLSModel,
@@ -298,6 +314,8 @@ Evaluate the negative squared leading canonical correlation for a given gamma. T
 corresponds to constructing Z = X W0(gamma) and measuring how well Z aligns with the
 primary responses under CCA. The sign is flipped so that scalar optimizers can minimize
 the value.
+
+Type stablity tested: 03/25/2026
 """
 function evaluate_canonical_correlation(
     gamma::Real,
@@ -331,6 +349,8 @@ end
 Center `M` and apply observation weights in a single step. With weights, each row is
 centered by the weighted mean and then scaled by the weights. Without weights, only
 centering is performed.
+
+Type stablity tested: 03/25/2026
 """
 centerweight(M::AbstractMatrix{<:Real}, obs_weights::AbstractVector{<:Real}) =
     (M .- (obs_weights' * M) / sum(obs_weights)) .* obs_weights
@@ -351,6 +371,8 @@ centerweight(M::AbstractMatrix{<:Real}, ::Nothing) = M .- mean(M, dims=1)
 Compute the weighted predictor-response correlation matrix C and weighted predictor scales
 S_x used to build W0(gamma). The weighted centering and scaling follow the same
 sample-weighting logic used throughout CPPLS.
+
+Type stablity tested: 03/25/2026
 """
 @inline function correlation(
     X_def::AbstractMatrix{<:Real},
@@ -393,6 +415,8 @@ end
 
 Compute the supervised weight matrix W0(gamma) for 0 < gamma < 1 using the power-law
 combination of weighted predictor scales and signed correlations.
+
+Type stablity tested: 03/25/2026
 """
 @inline function compute_general_weights(
     S::AbstractMatrix{<:Real},
@@ -412,6 +436,8 @@ end
 
 Construct the extreme gamma = 1 supervised weights that select predictors by maximal
 weighted correlation, matching the correlation-dominant limit.
+
+Type stablity tested: 03/25/2026
 """
 @inline function compute_correlation_weights(C::AbstractMatrix{<:Real})
     mask = C .== maximum(C)
@@ -423,6 +449,8 @@ end
 
 Construct the extreme gamma = 0 supervised weights that select predictors by maximal
 weighted variance, matching the limiting case of the power formulation.
+
+Type stablity tested: 03/25/2026
 """
 @inline function compute_variance_weights(S::AbstractMatrix{<:Real})::Matrix{Float64}
     mask = S .== maximum(S)
@@ -453,6 +481,8 @@ correlations and vectors via SVD.
 In CPPLS, this corresponds to the CCA stage that finds directions a and b maximizing the
 correlation between Z a and Y_prim b, after Z has been built as X W0(gamma). Observation
 weights are incorporated by scaling rows prior to the decomposition.
+
+Type stablity tested: 03/25/2026
 """
 @inline function cca_decomposition(
     X::AbstractMatrix{<:Real},
@@ -507,6 +537,8 @@ end
 Return the leading canonical correlation between X and Y under the same weighting scheme
 used in CPPLS. This value is used as the score when comparing gamma values during
 selection.
+
+Type stablity tested: 03/25/2026
 """
 @inline function cca_corr(
     X::AbstractMatrix{<:Real},
@@ -528,6 +560,8 @@ Compute canonical coefficient matrices a and b together with the leading canonic
 correlation. These coefficients map from the orthonormal CCA bases back into the original
 predictor and response spaces, matching the CPPLS step where supervised directions are
 combined into a single latent axis aligned with the primary responses.
+
+Type stablity tested: 03/25/2026
 """
 function cca_coeffs_and_corr(
     X::AbstractMatrix{<:Real},
@@ -570,6 +604,8 @@ end
 
 Return the canonical coefficient matrix for predictors only. In CPPLS this corresponds to
 the direction a that combines the supervised axes of Z = X W0 into a single component.
+
+Type stablity tested: 03/25/2026
 """
 @inline function cca_coeffs(
     X::AbstractMatrix{<:Real},
@@ -589,6 +625,8 @@ end
 
 Return the canonical coefficient matrix for the responses. In CPPLS this is the direction
 b that maximizes correlation with the supervised predictor component.
+
+Type stablity tested: 03/25/2026
 """
 @inline function cca_coeffs_y(
     X::AbstractMatrix{<:Real},
@@ -605,6 +643,8 @@ end
 Construct a rectangular identity matrix with ones on the diagonal and zeros elsewhere.
 This helper is used in the CCA step of CPPLS to align QR bases so the SVD acts on the
 overlap between the column spaces.
+
+Type stablity tested: 03/25/2026
 """
 @inline function Iᵣ(rowcount::Integer, columncount::Integer)
     M = zeros(rowcount, columncount)

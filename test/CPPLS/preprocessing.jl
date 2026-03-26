@@ -32,6 +32,56 @@ end
     @test converted_vec == float.(int_vec)
 end
 
+@testset "centerscale correctly centers and scales unweighted matrices" begin
+    M = [1.0 2.0; 3.0 4.0; 5.0 6.0]
+
+    M_cs, μ, σ = CPPLS.centerscale(M, true, true, nothing)
+
+    expected_std = vec(sqrt.(sum((M .- mean(M, dims = 1)).^2, dims = 1) / size(M, 1)))
+
+    @test μ == [3.0, 4.0]
+    @test σ ≈ expected_std
+    @test vec(mean(M_cs, dims = 1)) ≈ [0.0, 0.0]
+    @test vec(sqrt.(sum(M_cs .^ 2, dims = 1) / size(M_cs, 1))) ≈ [1.0, 1.0]
+end
+
+@testset "centerscale correctly handles weighted matrices" begin
+    M = [1.0 2.0; 3.0 4.0; 5.0 8.0]
+    weights = [1.0, 2.0, 1.0]
+
+    M_cs, μ, σ = CPPLS.centerscale(M, true, true, weights)
+
+    expected_mean = vec((weights' * M) / sum(weights))
+    centered = M .- reshape(expected_mean, 1, :)
+    expected_std = vec(sqrt.(sum(weights .* centered.^2, dims = 1) / sum(weights)))
+
+    @test μ ≈ expected_mean
+    @test σ ≈ expected_std
+    @test isapprox(vec((weights' * M_cs) / sum(weights)), [0.0, 0.0], atol = 1e-12)
+    @test vec(sqrt.(sum(weights .* M_cs.^2, dims = 1) / sum(weights))) ≈ [1.0, 1.0]
+end
+
+@testset "centerscale handles degenerate columns and invalid weights" begin
+    single_row = [1.0 2.0 3.0]
+    M_cs, μ, σ = CPPLS.centerscale(single_row, true, true, nothing)
+
+    @test M_cs == zeros(1, 3)
+    @test μ == [1.0, 2.0, 3.0]
+    @test σ == ones(3)
+
+    int_input = [1 2; 3 4; 5 6]
+    M_int, μ_int, σ_int = CPPLS.centerscale(int_input, true, true, nothing)
+    expected_std_int = vec(sqrt.(sum((float.(int_input) .- mean(float.(int_input), dims = 1)).^2,
+        dims = 1) / size(int_input, 1)))
+    @test M_int isa Matrix{Float64}
+    @test μ_int == [3.0, 4.0]
+    @test σ_int ≈ expected_std_int
+
+    @test_throws ArgumentError CPPLS.centerscale([1.0 2.0; 3.0 4.0], true, true, [1.0, -1.0])
+    @test_throws ArgumentError CPPLS.centerscale([1.0 2.0; 3.0 4.0], true, true, [0.0, 0.0])
+    @test_throws DimensionMismatch CPPLS.centerscale([1.0 2.0; 3.0 4.0], true, true, [1.0])
+end
+
 @testset "preprocess validates shapes and returns deflated matrices" begin
     X = Float32[1 2; 3 4; 5 6; 7 8]
     Y_prim = Float32[1 0; 0 1; 1 0; 0 1]

@@ -103,6 +103,7 @@ function centerscale(
     scale::Bool,
     obs_weights::Union{AbstractVector{<:Real}, Nothing}
 ) where {T<:Real}
+
     M_working = M
 
     if center

@@ -37,11 +37,11 @@ end
 
     M_cs, μ, σ = CPPLS.centerscale(M, true, true, nothing)
 
-    expected_std = vec(sqrt.(sum((M .- mean(M, dims = 1)).^2, dims = 1) / size(M, 1)))
+    expected_std = vec(sqrt.(sum((M .- CPPLS.mean(M, dims = 1)).^2, dims = 1) / size(M, 1)))
 
     @test μ == [3.0, 4.0]
     @test σ ≈ expected_std
-    @test vec(mean(M_cs, dims = 1)) ≈ [0.0, 0.0]
+    @test vec(CPPLS.mean(M_cs, dims = 1)) ≈ [0.0, 0.0]
     @test vec(sqrt.(sum(M_cs .^ 2, dims = 1) / size(M_cs, 1))) ≈ [1.0, 1.0]
 end
 
@@ -71,7 +71,7 @@ end
 
     int_input = [1 2; 3 4; 5 6]
     M_int, μ_int, σ_int = CPPLS.centerscale(int_input, true, true, nothing)
-    expected_std_int = vec(sqrt.(sum((float.(int_input) .- mean(float.(int_input), dims = 1)).^2,
+    expected_std_int = vec(sqrt.(sum((float.(int_input) .- CPPLS.mean(float.(int_input), dims = 1)).^2,
         dims = 1) / size(int_input, 1)))
     @test M_int isa Matrix{Float64}
     @test μ_int == [3.0, 4.0]

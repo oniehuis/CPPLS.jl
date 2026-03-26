@@ -77,8 +77,6 @@ m = CPPLSModel(
     gamma=intervalize(0:0.25:1),
     center_X=true,
     scale_X=true,
-    center_Yaux=true,
-    scale_Yaux=true,
     mode=:discriminant
 )
 

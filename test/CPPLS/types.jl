@@ -84,11 +84,7 @@
         X_mean = T_el.(1:n_predictors)
         X_std = T_el.(1:n_predictors)
         Yprim_z = reshape(T_el.(1:(n_samples*n_responses)), n_samples, n_responses)
-        Yprim_mean = T_el.(1:n_responses)
         Yprim_std = T_el.(1:n_responses)
-        Yaux_z = nothing
-        Yaux_mean = nothing
-        Yaux_std = nothing
         cppls = CPPLS.CPPLSFit(
             B,
             T_scores,
@@ -111,10 +107,7 @@
             W0,
             X_mean,
             X_std,
-            Yprim_mean,
             Yprim_std,
-            Yaux_mean,
-            Yaux_std,
             samplelabels,
             predictorlabels,
             responselabels,
@@ -145,17 +138,13 @@
             W0,
             X_mean,
             X_std,
-            Yprim_mean,
             Yprim_std,
-            Yaux_mean,
-            Yaux_std,
             samplelabels,
             predictorlabels,
             responselabels,
             :discriminant,
             sampleclasses,
         )
-        @test cppls.Yaux_std === Yaux_std
         @test cppls.samplelabels === samplelabels
         @test cppls.predictorlabels === predictorlabels
         @test cppls.responselabels === responselabels
@@ -168,8 +157,6 @@
         @test size(cppls.T) == (n_samples, ncomponents)
         @test size(cppls.U) == (n_samples, ncomponents)
         @test size(xmean(cppls)) == (n_predictors,)
-        @test size(ymean(cppls)) == (n_responses,)
-
         cppls_default = CPPLS.CPPLSFit(
             B,
             T_scores,
@@ -192,10 +179,7 @@
             W0,
             X_mean,
             X_std,
-            Yprim_mean,
             Yprim_std,
-            Yaux_mean,
-            Yaux_std,
             [],
             [],
             [],
@@ -230,10 +214,7 @@
             W0,
             X_mean,
             X_std,
-            Yprim_mean,
             Yprim_std,
-            Yaux_mean,
-            Yaux_std,
             samplelabels,
             predictorlabels,
             responselabels,
@@ -264,27 +245,23 @@ end
         )
         X_mean = T.(1:n_predictors)
         X_std = fill(T(1), n_predictors)
-        Yprim_mean = T.(1:n_responses) .+ T(100)
         Yprim_std = fill(T(1), n_responses)
 
         light_model =
-            CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, :regression)
+            CPPLSFitLight(B, X_mean, X_std, Yprim_std, :regression)
 
         @test light_model isa CPPLS.AbstractCPPLSFit
         @test light_model isa CPPLSFitLight{T}
         @test light_model.B === B
         @test light_model.X_mean === X_mean
         @test light_model.X_std === X_std
-        @test light_model.Yprim_mean === Yprim_mean
         @test light_model.Yprim_std === Yprim_std
         @test xmean(light_model) === X_mean
-        @test ymean(light_model) === Yprim_mean
         @test light_model.mode === :regression
         @test size(light_model.B) ==
               (n_predictors, n_responses, ncomponents)
         @test size(xmean(light_model)) == (n_predictors,)
-        @test size(ymean(light_model)) == (n_responses,)
-        light_da = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, :discriminant)
+        light_da = CPPLSFitLight(B, X_mean, X_std, Yprim_std, :discriminant)
         @test light_da.mode === :discriminant
     end
 end
@@ -294,14 +271,12 @@ end
     @test spec.ncomponents == 2
     @test spec.gamma == 0.5
     @test spec.center_X === false
-    @test spec.center_Y === false
     @test spec.mode === :regression
 
     tuned = CPPLS.CPPLSModel(
         ncomponents = 3,
         gamma = (0.2, 0.8),
         center_X = false,
-        center_Y = false,
         X_tolerance = 1e-8,
         X_loading_weight_tolerance = 1e-9,
         t_squared_norm_tolerance = 1e-7,
@@ -312,7 +287,6 @@ end
     @test tuned.ncomponents == 3
     @test tuned.gamma == (0.2, 0.8)
     @test tuned.center_X === false
-    @test tuned.center_Y === false
     @test tuned.mode === :discriminant
 
     @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents = 0)
@@ -362,20 +336,13 @@ end
     X_mean = Float64.(1:n_predictors)
     X_std = fill(1.0, n_predictors)
     Yprim_z = reshape(Float64.(1:(n_samples*n_responses)), n_samples, n_responses)
-    Yprim_mean = Float64.(1:n_responses)
     Yprim_std = fill(1.0, n_responses)
-    Yaux_z = nothing
-    Yaux_mean = nothing
-    Yaux_std = nothing
     model = CPPLS.CPPLSFit(
         B, T_scores, P, W_comp, U, C, R, Y_hat, F, X_var, X_var_total,
         gamma, rho, gammas, rhos, zero_mask, a, b, W0,
         X_mean,
         X_std,
-        Yprim_mean,
         Yprim_std,
-        Yaux_mean,
-        Yaux_std,
         samplelabels,
         predictorlabels,
         responselabels,
@@ -399,9 +366,8 @@ end
     # Updated: CPPLSFitLight with normalization fields
     X_mean_light = Float64.(1:n_predictors)
     X_std_light = fill(1.0, n_predictors)
-    Yprim_mean_light = Float64.(1:n_responses)
     Yprim_std_light = fill(1.0, n_responses)
-    light = CPPLS.CPPLSFitLight(B, X_mean_light, X_std_light, Yprim_mean_light, Yprim_std_light, :discriminant)
+    light = CPPLS.CPPLSFitLight(B, X_mean_light, X_std_light, Yprim_std_light, :discriminant)
     light_inline = sprint(show, light)
     light_plain = sprint(io -> show(io, MIME"text/plain"(), light))
     @test occursin("CPPLSFitLight(", light_inline)

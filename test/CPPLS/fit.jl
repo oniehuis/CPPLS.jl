@@ -2,7 +2,7 @@ using CategoricalArrays
 using StatsAPI
 
 @testset "fit_cppls builds diagnostic-rich model" begin
-    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, center_X=true, center_Y=true)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, center_X=true)
 
     X = Float64[
         1 0 2
@@ -28,7 +28,6 @@ using StatsAPI
     @test size(model.T) == (size(X, 1), 2)
     @test size(model.U) == (size(Y, 1), 2)
     @test xmean(model) ≈ vec(CPPLS.mean(X, dims = 1))
-    @test ymean(model) ≈ vec(CPPLS.mean(Y, dims = 1))
     @test model.gamma ≈ fill(0.5, 2)
     @test length(model.rho) == 2
     @test size(CPPLS.gammas(model)) == (1, 2)
@@ -227,7 +226,6 @@ end
     @test light.B ≈ full.B
     @test light.X_mean ≈ full.X_mean
     @test light.X_std ≈ full.X_std
-    @test light.Yprim_mean ≈ full.Yprim_mean
     @test light.Yprim_std ≈ full.Yprim_std
 
     spec = CPPLS.CPPLSModel(ncomponents = 2, gamma = gamma_bounds)
@@ -236,7 +234,6 @@ end
     @test light_from_spec.B ≈ full.B
     @test light_from_spec.X_mean ≈ full.X_mean
     @test light_from_spec.X_std ≈ full.X_std
-    @test light_from_spec.Yprim_mean ≈ full.Yprim_mean
     @test light_from_spec.Yprim_std ≈ full.Yprim_std
 end
 
@@ -316,7 +313,6 @@ end
     @test light_from_labels.B ≈
           manual_discriminant.B
     @test xmean(light_from_labels) ≈ xmean(manual_discriminant)
-    @test ymean(light_from_labels) ≈ ymean(manual_discriminant)
     plain_labels = ["a", "b", "a", "b"]
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
     light_from_plain =
@@ -325,8 +321,6 @@ end
     @test light_from_plain.B ≈
           light_from_labels.B
     @test xmean(light_from_plain) ≈ xmean(light_from_labels)
-    @test ymean(light_from_plain) ≈ ymean(light_from_labels)
-
     Y_vec = Float64[1, 0, 1, 0]
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
     light_vec = CPPLS.fit_cppls_light(model, X, Y_vec)
@@ -359,7 +353,6 @@ end
     @test cat_light.mode === :discriminant
     @test cat_light.B ≈ plain_light.B
     @test xmean(cat_light) ≈ xmean(plain_light)
-    @test ymean(cat_light) ≈ ymean(plain_light)
 end
 
 @testset "process_component! normalizes weights and deflates predictors" begin
@@ -375,7 +368,7 @@ end
     ]
     ncomponents = 1
 
-    m = CPPLS.CPPLSModel(ncomponents=ncomponents, gamma=0.5, center_X=true, center_Y=true, X_tolerance=1e-12, 
+    m = CPPLS.CPPLSModel(ncomponents=ncomponents, gamma=0.5, center_X=true, X_tolerance=1e-12, 
     X_loading_weight_tolerance=1e-12, t_squared_norm_tolerance=1e-10)
     
     d = CPPLS.preprocess(
@@ -430,7 +423,7 @@ end
         1 0
     ]
 
-    m = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center_X=true, center_Y=true)
+    m = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center_X=true)
 
     # X,
     # Y_prim,
@@ -452,7 +445,7 @@ end
     initial_weights = [1.0, 2.0]
     tol = 1e-8
 
-    m = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center_X=true, center_Y=true, X_tolerance=1e-12,
+    m = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, center_X=true, X_tolerance=1e-12,
         X_loading_weight_tolerance=1e-12, t_squared_norm_tolerance=tol)
     _, t_norm, _ = CPPLS.process_component!(
         m,

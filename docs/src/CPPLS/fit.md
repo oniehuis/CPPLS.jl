@@ -115,9 +115,7 @@ m = CPPLSModel(
     gamma=0.5,
     mode=:discriminant,
     center_X=true,
-    scale_X=true,
-    center_Yaux=true,
-    scale_Yaux=true
+    scale_X=true
 )
 
 m_plain = fit(
@@ -317,9 +315,7 @@ weighted_yaux_grid_m = CPPLSModel(
     gamma=0:0.01:1,
     mode=:discriminant,
     center_X=true,
-    scale_X=true,
-    center_Yaux=true,
-    scale_Yaux=true
+    scale_X=true
 )
 
 weighted_yaux_grid_model = fit(
@@ -368,9 +364,7 @@ weighted_yaux_interval_m = CPPLSModel(
     gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
-    scale_X=true,
-    center_Yaux=true,
-    scale_Yaux=true
+    scale_X=true
 )
 
 weighted_yaux_interval_mf = fit(
@@ -430,9 +424,7 @@ weighted_yaux_best_m = CPPLSModel(
     gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
-    scale_X=true,
-    center_Yaux=true,
-    scale_Yaux=true
+    scale_X=true
 )
 
 weighted_yaux_best_mf = fit(

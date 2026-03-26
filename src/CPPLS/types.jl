@@ -10,10 +10,7 @@ struct CPPLSModel{T}
     gamma::T
     center_X::Bool
     scale_X::Bool
-    center_Y::Bool
     scale_Y::Bool
-    center_Yaux::Bool
-    scale_Yaux::Bool
     X_tolerance::Float64
     X_loading_weight_tolerance::Float64
     t_squared_norm_tolerance::Float64
@@ -28,10 +25,7 @@ end
         gamma=0.5,
         center_X::Bool=false,
         scale_X::Bool=false,
-        center_Y::Bool=false,
         scale_Y::Bool=false,
-        center_Yaux::Bool=false,
-        scale_Yaux::Bool=false,
         X_tolerance::Real=1e-12, 
         X_loading_weight_tolerance::Real=eps(Float64), 
         t_squared_norm_tolerance::Real=1e-10, 
@@ -49,10 +43,7 @@ function CPPLSModel(;
     gamma=0.5,
     center_X::Bool=false,
     scale_X::Bool=false,
-    center_Y::Bool=false,
     scale_Y::Bool=false,
-    center_Yaux::Bool=false,
-    scale_Yaux::Bool=false,
     X_tolerance::T2=1e-12,
     X_loading_weight_tolerance::T3=eps(Float64),
     t_squared_norm_tolerance::T4=1e-10,
@@ -77,10 +68,7 @@ function CPPLSModel(;
         gamma,
         center_X,
         scale_X,
-        center_Y,
         scale_Y,
-        center_Yaux,
-        scale_Yaux,
         Float64(X_tolerance),
         Float64(X_loading_weight_tolerance),
         Float64(t_squared_norm_tolerance),
@@ -96,10 +84,7 @@ function Base.show(io::IO, spec::CPPLSModel)
         ", gamma=", repr(spec.gamma),
         ", center_X=", spec.center_X,
         ", scale_X=", spec.scale_X,
-        ", center_Y=", spec.center_Y,
         ", scale_Y=", spec.scale_Y,
-        ", center_Yaux=", spec.center_Yaux,
-        ", scale_Yaux=", spec.scale_Yaux,
         ", mode=", spec.mode,
         ")")
 end
@@ -110,10 +95,7 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSModel)
     println(io, "  gamma: ", repr(spec.gamma))
     println(io, "  center_X: ", spec.center_X)
     println(io, "  scale_X: ", spec.scale_X)
-    println(io, "  center_Y: ", spec.center_Y)
     println(io, "  scale_Y: ", spec.scale_Y)
-    println(io, "  center_Yaux: ", spec.center_Yaux)
-    println(io, "  scale_Yaux: ", spec.scale_Yaux)
     print(io, "  mode: ", spec.mode)
 end
 
@@ -177,13 +159,6 @@ Return the predictor standard deviation vector for the fitted model.
 xstd(mf::AbstractCPPLSFit) = mf.X_std
 
 """
-    ymean(mf::AbstractCPPLSFit)
-
-Return the response mean vector for the fitted model.
-"""
-ymean(mf::AbstractCPPLSFit) = mf.Yprim_mean
-
-"""
     ystd(mf::AbstractCPPLSFit)
 
 Return the response standard deviation vector for the fitted model.
@@ -204,11 +179,10 @@ directly.
 struct CPPLSFit{
     T1<:Real,
     T2<:Integer,
-    T3<:Union{Vector{T1}, Nothing},
+    T3<:AbstractVector,
     T4<:AbstractVector,
     T5<:AbstractVector,
-    T6<:AbstractVector,
-    T7<:Union{AbstractVector, Nothing}
+    T6<:Union{AbstractVector, Nothing}
 } <: AbstractCPPLSFit
 
     B::Array{T1,3}
@@ -232,15 +206,12 @@ struct CPPLSFit{
     W0::Array{T1,3}
     X_mean::Vector{T1}
     X_std::Vector{T1}
-    Yprim_mean::Vector{T1}
     Yprim_std::Vector{T1}
-    Yaux_mean::T3
-    Yaux_std::T3
-    samplelabels::T4
-    predictorlabels::T5
-    responselabels::T6
+    samplelabels::T3
+    predictorlabels::T4
+    responselabels::T5
     mode::Symbol
-    sampleclasses::T7
+    sampleclasses::T6
 end
 
 function CPPLSFit(
@@ -265,23 +236,19 @@ function CPPLSFit(
     W0::Array{T1,3},
     X_mean::Vector{T1},
     X_std::Vector{T1},
-    Yprim_mean::Vector{T1},
-    Yprim_std::Vector{T1},
-    Yaux_mean::T3,
-    Yaux_std::T3;
-    samplelabels::T4=String[],
-    predictorlabels::T5=String[],
-    responselabels::T6=String[],
+    Yprim_std::Vector{T1};
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
     mode::Symbol=:regression,
-    sampleclasses::T7=nothing
+    sampleclasses::T6=nothing
 ) where {
         T1<:Real,
         T2<:Integer,
-        T3<:Union{Vector{T1}, Nothing},
+        T3<:AbstractVector,
         T4<:AbstractVector,
         T5<:AbstractVector,
-        T6<:AbstractVector,
-        T7<:Union{AbstractVector, Nothing}
+        T6<:Union{AbstractVector, Nothing}
     }
 
     mode in (:regression, :discriminant) || throw(ArgumentError(
@@ -290,9 +257,9 @@ function CPPLSFit(
     mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
         "sampleclasses are only stored for discriminant analysis models"))
 
-    CPPLSFit{T1, T2, T3, T4, T5, T6, T7}(B, T, P, W_comp, U, C, R, Y_hat, 
+    CPPLSFit{T1, T2, T3, T4, T5, T6}(B, T, P, W_comp, U, C, R, Y_hat, 
         F, X_var, X_var_total, gamma, rho, gammas, rhos, zero_mask, a, b, W0, 
-        X_mean, X_std, Yprim_mean, Yprim_std, Yaux_mean, Yaux_std,
+        X_mean, X_std, Yprim_std,
         samplelabels, predictorlabels, responselabels, mode, sampleclasses)
 end
 
@@ -455,7 +422,6 @@ struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
     B::Array{T, 3}   
     X_mean::Vector{T}
     X_std::Vector{T}
-    Yprim_mean::Vector{T}
     Yprim_std::Vector{T}
     mode::Symbol
 end

@@ -78,10 +78,7 @@ CPPLSModel
   gamma: 0.01:0.01:1.0
   center_X: false
   scale_X: false
-  center_Y: false
   scale_Y: false
-  center_Yaux: false
-  scale_Yaux: false
   mode: discriminant
 
 julia> cpplsfit = fit(m, X, classes; samplelabels=labels);
@@ -95,10 +92,7 @@ CPPLSModel
   gamma: 0.75
   center_X: false
   scale_X: false
-  center_Y: false
   scale_Y: false
-  center_Yaux: false
-  scale_Yaux: false
   mode: discriminant
 
 julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Yaux=Yaux)
@@ -179,15 +173,15 @@ function fit_cppls_core(
     d = preprocess(m, X, Yprim, Yaux, obs_weights)
 
     # Validate label lengths and generate default sample labels if needed.
-    samplelabels = validate_label_length(samplelabels, d.n_samples_X, "samplelabels")
-    samplelabels = default_sample_labels(samplelabels, d.n_samples_X)
+    samplelabels = validate_label_length(samplelabels, d.nrow_X, "samplelabels")
+    samplelabels = default_sample_labels(samplelabels, d.nrow_X)
     
     # Validate predictor label length (none or exact X column count).
     predictorlabels = 
         validate_label_length(predictorlabels, n_predictors, "predictorlabels")
     
     # Validate response label length (none or exact Yprim column count).
-    responselabels = validate_label_length(responselabels, d.n_targets_Y, "responselabels")
+    responselabels = validate_label_length(responselabels, d.ncol_Y, "responselabels")
 
     # For discriminant analysis, responselabels must be provided to name the classes.
     if m.mode ≡ :discriminant && isempty(responselabels)
@@ -196,9 +190,9 @@ function fit_cppls_core(
     end
 
     # Preallocate arrays for scores, loadings, regression coefficients, and diagnostics.
-    T = Matrix{Float64}(undef, d.n_samples_X, m.ncomponents)
+    T = Matrix{Float64}(undef, d.nrow_X, m.ncomponents)
     a = Matrix{Float64}(undef, size(d.Y, 2), m.ncomponents)
-    b = Matrix{Float64}(undef, d.n_targets_Y, m.ncomponents)
+    b = Matrix{Float64}(undef, d.ncol_Y, m.ncomponents)
     rho = Vector{Float64}(undef, m.ncomponents)
     gamma_vals = fill(0.5, m.ncomponents)
     gammas = Matrix{Float64}(undef, gamma_search_candidate_count(m.gamma),
@@ -206,10 +200,10 @@ function fit_cppls_core(
     rhos = Matrix{Float64}(undef, gamma_search_candidate_count(m.gamma),
         m.ncomponents)
     t_norms = Vector{Float64}(undef, m.ncomponents)
-    U = Matrix{Float64}(undef, d.n_samples_X, m.ncomponents)
-    Y_hat = Array{Float64}(undef, d.n_samples_X, d.n_targets_Y, m.ncomponents)
+    U = Matrix{Float64}(undef, d.nrow_X, m.ncomponents)
+    Y_hat = Array{Float64}(undef, d.nrow_X, d.ncol_Y, m.ncomponents)
     W0 = Array{Float64}(undef, n_predictors, size(d.Y, 2), m.ncomponents)
-    Z = Array{Float64}(undef, d.n_samples_X, size(d.Y, 2), m.ncomponents)
+    Z = Array{Float64}(undef, d.nrow_X, size(d.Y, 2), m.ncomponents)
 
     # Main loop over components: compute weights, scores, loadings, deflate, and 
     # store results.
@@ -233,16 +227,14 @@ function fit_cppls_core(
         Y_hat[:, :, i] = d.X * d.B[:, :, i]
     end
 
-    Y_hat .+= reshape(repeat(reshape(d.Yprim_mean, 1, :), d.n_samples_X), d.n_samples_X, 
-        length(reshape(d.Yprim_mean, 1, :)), 1)
     F = d.Yprim .- Y_hat
     R = d.W_comp * pinv(d.P' * d.W_comp)
     X_var = vec(sum(d.P .* d.P, dims = 1)) .* t_norms
     X_var_total = sum(d.X .* d.X)
 
     CPPLSFit(d.B, T, d.P, d.W_comp, U, d.C, R, Y_hat, F, X_var, X_var_total, gamma_vals, 
-        rho, gammas, rhos, d.zero_mask, a, b, W0, d.X_mean, d.X_std, d.Yprim_mean, 
-        d.Yprim_std, d.Yaux_mean, d.Yaux_std; 
+        rho, gammas, rhos, d.zero_mask, a, b, W0, d.X_mean, d.X_std,
+        d.Yprim_std; 
         samplelabels=samplelabels,
         predictorlabels=predictorlabels, 
         responselabels=responselabels,

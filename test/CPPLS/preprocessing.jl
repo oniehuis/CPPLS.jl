@@ -88,14 +88,13 @@ end
     Y_aux = Float32[0.1 0.2; 0.2 0.3; 0.3 0.4; 0.4 0.5]
     weights = Float32[1, 2, 1, 2]
 
-    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, center_Y=false)  
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)  
 
     d = CPPLS.preprocess(model, X, Y_prim, Y_aux, weights)
 
     X_prep      = d.X
     Y_prim_prep = d.Yprim
     X_mean      = d.X_mean
-    Y_mean      = d.Yprim_mean
     Y_all       = d.Y
     X_def       = d.X_def
     W_comp      = d.W_comp
@@ -103,14 +102,13 @@ end
     C           = d.C
     zero_mask   = d.zero_mask
     B           = d.B
-    n_samples   = d.n_samples_X
-    n_targets   = d.n_targets_Y
+    n_samples   = d.nrow_X
+    n_targets   = d.ncol_Y
 
     @test X_prep isa Matrix{Float64}
     @test Y_prim_prep isa Matrix{Float64}
     # @test Y_all == hcat(Y_prim_prep, Float64.(Y_aux))
     @test length(X_mean) == size(X, 2)
-    @test length(Y_mean) == size(Y_prim, 2)
     @test size(X_def) == size(X_prep)
     @test size(W_comp) == (size(X, 2), 2)
     @test size(P) == (size(X, 2), 2)

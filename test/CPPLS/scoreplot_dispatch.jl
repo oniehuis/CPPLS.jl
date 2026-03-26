@@ -82,11 +82,7 @@ end
         X_mean = collect(1.0:n_predictors)
         X_std = collect(1.0:n_predictors)
         Yprim_z = reshape(collect(1.0:(n_samples*n_responses)), n_samples, n_responses)
-        Yprim_mean = collect(1.0:n_responses)
         Yprim_std = collect(1.0:n_responses)
-        Yaux_z = nothing
-        Yaux_mean = nothing
-        Yaux_std = nothing
         cppls = CPPLS.CPPLSFit(
             B,
             T,
@@ -109,10 +105,7 @@ end
             W0,
             X_mean,
             X_std,
-            Yprim_mean,
             Yprim_std,
-            Yaux_mean,
-            Yaux_std,
             samplelabels,
             predictorlabels,
             responselabels,
@@ -149,10 +142,7 @@ end
             W0,
             X_mean,
             X_std,
-            Yprim_mean,
             Yprim_std,
-            Yaux_mean,
-            Yaux_std,
             samplelabels,
             predictorlabels,
             String[],

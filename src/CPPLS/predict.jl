@@ -43,18 +43,18 @@ function predict(
     X::AbstractMatrix{<:Real},
     ncomponents::Integer=size(coefall(m), 3)
 )
-    n_samples_X = size(X, 1)
-    n_targets_Y = length(ymean(m))
+    nrow_X = size(X, 1)
+    ncol_Y = length(ystd(m))
 
     ncomponents ≤ size(coefall(m), 3) || throw(DimensionMismatch(
         "ncomponents exceeds the number of components in the model"))
 
     X_norm = (X .- xmean(m)') ./ xstd(m)'
     
-    Y_hat = similar(X, n_samples_X, n_targets_Y, ncomponents)
+    Y_hat = similar(X, nrow_X, ncol_Y, ncomponents)
 
     for i = 1:ncomponents
-        @views Y_hat[:, :, i] .= (X_norm * coefall(m)[:, :, i]) .* ystd(m)' .+ ymean(m)'
+        @views Y_hat[:, :, i] .= (X_norm * coefall(m)[:, :, i]) .* ystd(m)'
     end
 
     Y_hat
@@ -68,8 +68,8 @@ end
     ) -> Matrix{Int}
 
 Generate one-hot encoded class predictions from a fitted CPPLS model and predictors `X`.
-This calls `predict`, sums predictions across components, corrects for repeated mean
-addition, and assigns each sample to the highest-scoring class.
+This calls `predict`, sums predictions across components, and assigns each sample to the
+highest-scoring class.
 
 See also
 [`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
@@ -109,8 +109,8 @@ end
     ) -> Matrix{Int}
 
 Convert a 3D prediction tensor (as returned by `predict`) into a one-hot encoded matrix.
-Predictions are summed across components and corrected for repeated mean addition before
-selecting the highest-scoring class for each sample.
+Predictions are summed across components before selecting the highest-scoring class for
+each sample.
 
 See also
 [`AbstractCPPLSFit`](@ref CPPLS.AbstractCPPLSFit), 
@@ -141,11 +141,9 @@ function onehot(
   mf::AbstractCPPLSFit, 
   predictions::AbstractArray{<:Real, 3}
 )
-    ncomponents = size(predictions, 3)
     n_classes = size(predictions, 2)
 
-    Y_pred_sum = sum(predictions, dims=3)[:, :, 1]
-    Y_pred_final = Y_pred_sum .- (ncomponents - 1) .* ymean(mf)'
+    Y_pred_final = sum(predictions, dims=3)[:, :, 1]
 
     predicted_class_indices = argmax.(eachrow(Y_pred_final))
 

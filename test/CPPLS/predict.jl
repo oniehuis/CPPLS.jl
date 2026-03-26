@@ -4,13 +4,11 @@
     B[:, :, 2] = [0.5 -0.2; 0.3 0.1]
     X_mean = [1.0, 2.0]
     X_std = [1.0, 1.0]
-    Yprim_mean = [0.25, -0.5]
     Yprim_std = [1.0, 1.0]
     cppls = CPPLS.CPPLSFitLight(
         B,
         X_mean,
         X_std,
-        Yprim_mean,
         Yprim_std,
         :regression,
     )
@@ -22,9 +20,9 @@
     ]
     centered = X .- X_mean'
 
-    expected = Array{Float64}(undef, size(X, 1), length(Yprim_mean), 2)
+    expected = Array{Float64}(undef, size(X, 1), length(Yprim_std), 2)
     for i = 1:2
-        expected[:, :, i] = centered * B[:, :, i] .+ Yprim_mean'
+        expected[:, :, i] = centered * B[:, :, i]
     end
 
     preds_full = CPPLS.predict(cppls, X)
@@ -32,7 +30,7 @@
 
     @test preds_full ≈ expected
     @test preds_one[:, :, 1] ≈ expected[:, :, 1]
-    @test size(preds_full) == (size(X, 1), length(Yprim_mean), 2)
+    @test size(preds_full) == (size(X, 1), length(Yprim_std), 2)
     @test_throws DimensionMismatch CPPLS.predict(cppls, X, 3)
 end
 
@@ -40,13 +38,11 @@ end
     B = ones(Float64, 1, 2, 1)
     X_mean = [0.0]
     X_std = [1.0]
-    Yprim_mean = [0.1, -0.2]
     Yprim_std = [1.0, 1.0]
     cppls = CPPLS.CPPLSFitLight(
         B,
         X_mean,
         X_std,
-        Yprim_mean,
         Yprim_std,
         :regression
     )
@@ -64,8 +60,7 @@ end
     ]
 
     summed = sum(predictions, dims = 3)[:, :, 1]
-    adjusted = summed .- (size(predictions, 3) - 1) .* cppls.Yprim_mean'
-    expected_labels = map(argmax, eachrow(adjusted))
+    expected_labels = map(argmax, eachrow(summed))
 
     expected_one_hot = zeros(Int, 3, 2)
     for (row, label) in enumerate(expected_labels)
@@ -82,13 +77,11 @@ end
     B[:, :, 2] = [0.3 -0.6; 0.5 0.2]
     X_mean = [0.2, -0.1]
     X_std = [1.0, 1.0]
-    Yprim_mean = [0.05, -0.05]
     Yprim_std = [1.0, 1.0]
     cppls = CPPLS.CPPLSFitLight(
         B,
         X_mean,
         X_std,
-        Yprim_mean,
         Yprim_std,
         :regression
     )

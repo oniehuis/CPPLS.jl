@@ -149,9 +149,7 @@ m = CPPLSModel(
     gamma=intervalize(0:0.25:1),
     mode=:discriminant,
     center_X=true,
-    scale_X=true,
-    center_Yaux=true,
-    scale_Yaux=true
+    scale_X=true
 )
 
 fit_kwargs = (

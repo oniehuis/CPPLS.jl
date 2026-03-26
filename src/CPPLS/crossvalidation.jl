@@ -189,18 +189,16 @@ julia> X_mean = [0.0];
 
 julia> X_std = [1.0];
 
-julia> Yprim_mean = [0.5];
-
 julia> Yprim_std = [1.0];
 
-julia> model = CPPLSFitLight(B, X_mean, X_std, Yprim_mean, Yprim_std, :regression);
+julia> model = CPPLSFitLight(B, X_mean, X_std, Yprim_std, :regression);
 
 julia> X = reshape([1.0, 2.0], :, 1);
 
 julia> cb.predict_fn(model, X, 1)
 2×1 Matrix{Float64}:
- 2.5
- 4.5
+ 2.0
+ 4.0
 
 julia> cb.select_fn([0.3, 0.2])
 2
@@ -2035,7 +2033,7 @@ function subset_fit_kwargs(
     for (key, value) in Base.pairs(fit_kwargs)
         adjusted = if key in (:obs_weights, :samplelabels, :sampleclasses)
             subset_vector_like(value, train_indices, n_samples, key)
-        elseif key in (:Yaux, :Y_auxiliary)
+        elseif key === :Yaux
             subset_matrix_like(value, train_indices, n_samples, key)
         else
             value
@@ -2135,11 +2133,8 @@ function with_n_components(m::CPPLSModel, ncomponents::Integer)
         ncomponents=ncomponents, 
         gamma=m.gamma,
         center_X=m.center_X, 
-        scale_X=m.scale_X, 
-        center_Y=m.center_Y, 
+        scale_X=m.scale_X,
         scale_Y=m.scale_Y,
-        center_Yaux=m.center_Yaux,
-        scale_Yaux=m.scale_Yaux,
         X_tolerance=m.X_tolerance,
         X_loading_weight_tolerance=m.X_loading_weight_tolerance,
         t_squared_norm_tolerance=m.t_squared_norm_tolerance,

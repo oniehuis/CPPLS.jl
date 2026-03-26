@@ -28,23 +28,13 @@ function preprocess(
     !isnothing(obs_weights) && length(obs_weights) ≠ nrow_X && throw(DimensionMismatch(
         "Length of observation_weights must match the number of rows in X and Yprim"))
 
-    X = float64(X)
-    X_z, X_mean, X_std = centerscale(X, m.center_X, m.scale_X, obs_weights)
+    X, X_mean, X_std = centerscale(float64(X), m.center_X, m.scale_X, obs_weights)
 
-    Yprim = float64(Yprim)
-    Yprim_z, Yprim_mean, Yprim_std = centerscale(Yprim, m.center_Y, m.scale_Y, obs_weights)
+    Yprim, _, Yprim_std = centerscale(float64(Yprim), false, m.scale_Y, obs_weights)
 
-    if isnothing(Yaux)
-        Yaux_z, Yaux_mean, Yaux_std = nothing, nothing, nothing
-        Y_z = Yprim_z
-    else
-        Yaux = float64(Yaux)
-        Yaux_z, Yaux_mean, Yaux_std = 
-            centerscale(Yaux, m.center_Yaux, m.scale_Yaux, obs_weights)
-        Y_z = hcat(Yprim_z, Yaux_z)
-    end
+    Y = isnothing(Yaux) ? Yprim : hcat(Yprim, float64(Yaux))
 
-    Xdef      = copy(X_z)
+    X_def     = copy(X)
     B         = Array{Float64}(undef, (ncol_X, ncol_Y, ncomponents(m)))
     C         = Matrix{Float64}(undef, ncol_Y, ncomponents(m))
     P         = Matrix{Float64}(undef, ncol_X, ncomponents(m))
@@ -52,28 +42,23 @@ function preprocess(
     zero_mask = Matrix{Bool}(undef, (ncomponents(m), ncol_X))
     
     (   # Preprocessed predictors
-        X=X_z,
+        X=X,
         X_mean=X_mean, 
         X_std=X_std, 
+
+        # Preprocessed primary responses
+        Yprim=Yprim,
+        Yprim_std=Yprim_std, 
       
         # Preprocessed combined (Yprim and Yaux) responses
-        Y=Y_z, 
+        Y=Y, 
       
-        # Preprocessed primary responses
-        Yprim=Yprim_z,
-        Yprim_mean=Yprim_mean, 
-        Yprim_std=Yprim_std, 
-
-        # Preprocessed auxiliary responses
-        Yaux_mean=Yaux_mean, 
-        Yaux_std=Yaux_std,
-
         # Dimensions
-        n_samples_X=nrow_X, 
-        n_targets_Y=ncol_Y, 
+        nrow_X=nrow_X, 
+        ncol_Y=ncol_Y, 
       
         # Working arrays for fit routine
-        X_def=Xdef, 
+        X_def=X_def, 
         B=B, 
         C=C,
         P=P, 

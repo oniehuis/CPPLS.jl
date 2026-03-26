@@ -76,7 +76,7 @@ julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.01:0.01:1.0
-  center_X: false
+  center_X: true
   scale_X: false
   scale_Y: false
   mode: discriminant
@@ -90,7 +90,7 @@ julia> m = CPPLSModel(ncomponents=2, gamma=0.75, mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.75
-  center_X: false
+  center_X: true
   scale_X: false
   scale_Y: false
   mode: discriminant

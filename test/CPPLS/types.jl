@@ -270,7 +270,7 @@ end
     spec = CPPLS.CPPLSModel()
     @test spec.ncomponents == 2
     @test spec.gamma == 0.5
-    @test spec.center_X === false
+    @test spec.center_X === true
     @test spec.mode === :regression
 
     tuned = CPPLS.CPPLSModel(

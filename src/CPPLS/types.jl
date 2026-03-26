@@ -23,7 +23,7 @@ end
     CPPLSModel(; 
         ncomponents::Integer=2, 
         gamma=0.5,
-        center_X::Bool=false,
+        center_X::Bool=true,
         scale_X::Bool=false,
         scale_Y::Bool=false,
         X_tolerance::Real=1e-12, 
@@ -41,7 +41,7 @@ Construct a model specification for `fit`. The most commonly adjusted settings a
 function CPPLSModel(;
     ncomponents::T1=2,
     gamma=0.5,
-    center_X::Bool=false,
+    center_X::Bool=true,
     scale_X::Bool=false,
     scale_Y::Bool=false,
     X_tolerance::T2=1e-12,

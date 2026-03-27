@@ -30,7 +30,7 @@ DocMeta.setdocmeta!(
 
 makedocs(
     sitename = "CPPLS",
-    format = Documenter.HTML(mathengine = Documenter.MathJax2()),
+    format = Documenter.HTML(mathengine = Documenter.KaTeX()),
     modules = [CPPLS],
     checkdocs = :none,
     authors = "Oliver Niehuis",

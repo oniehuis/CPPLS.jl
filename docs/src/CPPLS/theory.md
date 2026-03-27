@@ -30,31 +30,75 @@ computation of supervised directions in the first stage, shaping the latent
 space that is subsequently analyzed by CCA, while the CCA itself is guided
 solely by the primary responses under the same weighting structure.
 
-## Weighted Preprocessing
+## Preprocessing and Observation Weights
 
-To begin, $X$ and $Y$ are centered using the supplied sample weights. If $w_i$
-is the weight of sample $i$ and the weights are normalized to sum to one, the
-weighted mean of a variable $x$ becomes
+Let $v_i \ge 0$ denote the observation weight of sample $i$. CPPLS uses these
+weights in centering, optional standard-deviation scaling, predictor-response
+correlations, and the later CCA step. The weighted mean of a variable $x$ is
+
 ```math
-\bar{x} = \sum_i w_i x_i .
+\bar{x}_w = \frac{\sum_i v_i x_i}{\sum_i v_i}.
 ```
-All variances, covariances, and correlations are computed in a weighted sense.
-For a centered variable $x$, the weighted variance is
+
+For a centered variable, the weighted variance and weighted standard deviation
+are
+
 ```math
-\operatorname{Var}_w(x) = \sum_i w_i x_i^2 ,
+\operatorname{Var}_w(x) = \frac{\sum_i v_i x_i^2}{\sum_i v_i},
+\qquad
+\operatorname{std}_w(x) = \sqrt{\operatorname{Var}_w(x)}.
 ```
-and for two centered variables $x$ and $y$, the weighted covariance is
+
+For two centered variables $x$ and $y$, the weighted covariance and weighted
+correlation are
+
 ```math
-\operatorname{Cov}_w(x,y) = \sum_i w_i x_i y_i .
+\operatorname{Cov}_w(x,y) = \frac{\sum_i v_i x_i y_i}{\sum_i v_i},
 ```
-Weighted correlations are obtained by normalizing the weighted covariance by
-the corresponding weighted standard deviations.
-For two centered variables $x$ and $y$, the weighted correlation is
+
 ```math
 \operatorname{corr}_w(x,y) =
 \frac{\operatorname{Cov}_w(x,y)}
 {\sqrt{\operatorname{Var}_w(x)\operatorname{Var}_w(y)}} .
 ```
+
+The implementation preprocesses predictors, primary responses, and auxiliary
+responses asymmetrically because they enter the algorithm differently.
+
+For the predictor block $X$, CPPLS optionally centers and optionally scales
+each column. If both are enabled, predictor $x_j$ becomes
+
+```math
+\tilde x_j = \frac{x_j - \bar{x}_{j,w}}{\operatorname{std}_w(x_j)}.
+```
+
+If only centering is enabled, only the weighted mean is removed. If only
+scaling is enabled, the weighted standard deviation is computed from the
+uncentered column. Columns with zero or non-finite standard deviation are left
+unscaled by replacing the divisor with `1`.
+
+For the primary response block $Y_{\mathrm{prim}}$, CPPLS may scale columns but
+does not apply a separate preprocessing centering step. Thus
+
+```math
+\tilde y_k =
+\frac{y_k}{\operatorname{std}_w(y_k)}
+```
+
+when response scaling is enabled, and $\tilde y_k = y_k$ otherwise. This is
+not in conflict with the correlation-based theory, because the response
+columns are centered internally later when predictor-response correlations are
+computed.
+
+Auxiliary responses are concatenated after this preprocessing step,
+
+```math
+Y = [\,\tilde Y_{\mathrm{prim}} \;\; Y_{\mathrm{aux}}\,],
+```
+
+and they are not given separate centering or scaling options. Their influence
+is instead controlled through response-column weights in the supervised
+compression step.
 
 ## Supervised Compression
 
@@ -63,10 +107,13 @@ scale and predictor–response correlation, with the balance controlled by the
 power parameter $\gamma \in [0,1]$. The expressions below are written for the
 interior case $0 < \gamma < 1$; the endpoint values $\gamma = 0$ and
 $\gamma = 1$ are handled in CPPLS as limiting cases. For each predictor $x_j$
-(a column of $X$) and each response $y_k$ (a column of $Y$), CPPLS computes
-the weighted standard deviation $\operatorname{std}_w(x_j)$ and the weighted
-correlation $\operatorname{corr}_w(x_j,y_k)$. These quantities are not
-combined additively, but multiplicatively through $\gamma$-dependent powers.
+(a column of $X$) and each response $y_k$ (a column of the combined response
+matrix $Y$), CPPLS computes the weighted standard deviation
+$\operatorname{std}_w(x_j)$ and the weighted correlation
+$\operatorname{corr}_w(x_j,y_k)$. In the implementation, both the current
+predictor matrix and the combined response matrix are centered internally
+before these correlations are computed. These quantities are not combined
+additively, but multiplicatively through $\gamma$-dependent powers.
 
 The resulting supervised weight matrix is
 
@@ -75,8 +122,9 @@ W_0(\gamma) \in \mathbb{R}^{p \times q},
 ```
 
 where $p$ is the number of predictors and $q$ is the number of response
-columns, including auxiliary ones. It can be written as a product of a
-diagonal scale matrix and a correlation matrix,
+columns used to construct the supervised space, including auxiliary ones. It
+can be written as a product of a diagonal scale matrix and a correlation
+matrix,
 
 ```math
 W_0(\gamma) = S_x(\gamma)\,C(\gamma),
@@ -108,6 +156,53 @@ evaluates candidate values of $\gamma$ to identify the supervised
 representation of $X$ that is best aligned with $Y$. This reduces the need for
 separate scaling decisions as a preprocessing step while making the
 variance-correlation trade-off part of the fitted model itself.
+
+## Response Weights and Target Weights
+
+Besides observation weights, CPPLS supports two different response-column
+weighting schemes.
+
+Let $r_k \ge 0$ denote the `response_weights` for the columns of the combined
+response block $Y$, including auxiliary responses when present. These weights
+are injected into the supervised compression step by weighting each response
+column before the supervised directions are formed. In matrix form,
+
+```math
+Y^{(r)} = Y D_r,
+\qquad
+D_r = \operatorname{diag}(r_1,\dots,r_q).
+```
+
+Equivalently, one may view this as weighting the predictor-response
+correlation matrix columnwise:
+
+```math
+C^{(r)}_{jk} = r_k\, \operatorname{corr}_w(x_j,y_k).
+```
+
+The supervised weight matrix $W_0(\gamma)$ is then built from predictor scale
+and these weighted correlations. This is the stage at which both primary and
+auxiliary response columns are allowed to have more or less influence on the
+construction of the supervised space.
+
+Now let $t_\ell \ge 0$ denote the `target_weights` for the primary-response
+columns only. These weights do not alter the construction of $W_0(\gamma)$.
+Instead, they are injected into the CCA alignment step through
+
+```math
+Y_{\mathrm{prim}}^{(t)} = \tilde Y_{\mathrm{prim}} D_t,
+\qquad
+D_t = \operatorname{diag}(t_1,\dots,t_{q_{\mathrm{prim}}}).
+```
+
+CCA is therefore performed between $Z(\gamma)$ and
+$Y_{\mathrm{prim}}^{(t)}$, not between $Z(\gamma)$ and the unweighted primary
+response block. Consequently, `target_weights` control how strongly each
+primary response contributes when candidate values of $\gamma$ are scored and
+when the final canonical direction is chosen.
+
+In short, `response_weights` influence the supervised compression stage,
+whereas `target_weights` influence the CCA alignment stage.
 
 Each column of $W_0(\gamma)$ admits a direct geometric interpretation. For
 each response variable $y_k$, CPPLS constructs a direction in the original
@@ -149,12 +244,13 @@ Z(\gamma) = X W_0(\gamma),
 where the matrix $W_0(\gamma)$ depends on $\gamma$ through a power-based
 trade-off between predictor scale, represented by weighted standard
 deviations, and predictor–response association, represented by weighted
-correlations. CPPLS then performs a weighted canonical correlation analysis
-between $Z(\gamma)$ and the primary response block $Y_{\mathrm{prim}}$, and
-records the first (largest) canonical correlation
+correlations after response-column weighting. CPPLS then performs a weighted
+canonical correlation analysis between $Z(\gamma)$ and the target-weighted
+primary response block $Y_{\mathrm{prim}}^{(t)}$, and records the first
+(largest) canonical correlation
 
 ```math
-\rho_1(\gamma) = \operatorname{ccorr}_w\!\big(Z(\gamma),\, Y_{\mathrm{prim}}\big) 
+\rho_1(\gamma) = \operatorname{ccorr}_w\!\big(Z(\gamma),\, Y_{\mathrm{prim}}^{(t)}\big) 
 ```
 
 as a score for that value of $\gamma$. The optimal value
@@ -177,18 +273,20 @@ Once the optimal $\gamma$ has been determined, CPPLS recomputes
 ```math
 Z = Z(\gamma_{\mathrm{best}})
 ```
-and performs a full weighted CCA between this matrix and the primary response
-columns of $Y$. The result is a canonical direction $a$ in the $Z$-space and a
-corresponding direction $b$ in the primary response space. The direction $a$
-specifies how to combine the supervised directions in $Z$ into one axis that
-maximally correlates with the primary responses. Providing
+and performs a full weighted CCA between this matrix and the target-weighted
+primary response block $Y_{\mathrm{prim}}^{(t)}$. The result is a canonical
+direction $a$ in the $Z$-space and a corresponding direction $b$ in the
+primary response space. The direction $a$ specifies how to combine the
+supervised directions in $Z$ into one axis that maximally correlates with the
+weighted primary responses. Providing
 $Y_{\mathrm{aux}}$ changes the supervised directions $W_0$, so the
 intermediate representation $Z = X W_0$ reflects both the primary responses
 and auxiliary structure. The CCA direction $a$ is still chosen only to align
-$Z$ with $Y_{\mathrm{prim}}$, but it is chosen inside a supervised space that
-already accounts for systematic variation captured by $Y_{\mathrm{aux}}$. In
-practice, this means auxiliary variables can steer the construction of the
-latent space without becoming prediction targets themselves.
+$Z$ with $Y_{\mathrm{prim}}^{(t)}$, but it is chosen inside a supervised space
+that already accounts for systematic variation captured by
+$Y_{\mathrm{aux}}$. In practice, this means auxiliary variables can steer the
+construction of the latent space without becoming prediction targets
+themselves.
 
 The canonical direction is then mapped back into the predictor space through
 ```math
@@ -219,17 +317,17 @@ likewise contains linear coefficients describing how each response variable,
 including auxiliary responses when present, varies with the component under
 the weighting structure.
 
-Deflation removes the part of $X$ and $Y$ that can be explained by this component:
+Deflation removes the part of $X$ explained by this component:
 ```math
-X \leftarrow X - t p^\top,\qquad
-Y \leftarrow Y - t c^\top .
+X \leftarrow X - t p^\top .
 ```
 
-After this deflation, the dominant structure captured by the current
-component has been removed from both $X$ and $Y$. Because subsequent
-components are extracted from the deflated matrices, they often describe
-remaining structured variation rather than repeating the same dominant signal.
-In discriminant analysis, for example, the first component may capture most of
+After this deflation, the dominant predictor structure captured by the current
+component has been removed from $X$. Subsequent components are therefore
+extracted from a predictor matrix that no longer contains the previously
+explained direction, which helps later components describe remaining
+structured variation rather than repeating the same dominant signal. In
+discriminant analysis, for example, the first component may capture most of
 the class separation, while later components may describe residual within-class
 structure or additional sources of systematic variation.
 

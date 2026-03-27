@@ -15,7 +15,7 @@ For convenience,
 [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) 
 and
 [`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
-take predictor data, call[`predict`](@ref) internally, and return one-hot encoded class 
+take predictor data, call [`predict`](@ref) internally, and return one-hot encoded class
 predictions and predicted class labels directly, respectively.
 
 ## Example

@@ -203,7 +203,7 @@ permutation_scores = permda(
 ```
 
 The `permutation_scores` vector contains the mean outer-fold accuracies for each of the
-`1000` permutations. Let us visualize that distribution.
+`100` permutations. Let us visualize that distribution.
 
 ```@example crossvalidation
 f = Figure(; size=(900, 600))

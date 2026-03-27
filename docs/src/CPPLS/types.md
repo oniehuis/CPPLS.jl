@@ -17,9 +17,9 @@ and [`ncomponents`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref
 [`predictorlabels`](@ref), [`responselabels`](@ref), [`residuals`](@ref),
 [`sampleclasses`](@ref), [`samplelabels`](@ref), and [`xscores`](@ref).
 
-Both container types contain additional named fields of possible interest. You can inspect 
-them with `names(spec)` or `names(model)` and access them directly via dot notation, for 
-example `spec.X_loading_weight_tolerance`.
+Both container types contain additional named fields of possible interest. You can inspect
+them with `propertynames(spec)` or `propertynames(model)` and access them directly via dot
+notation, for example `spec.X_loading_weight_tolerance`.
 
 ## CPPLSModel
 

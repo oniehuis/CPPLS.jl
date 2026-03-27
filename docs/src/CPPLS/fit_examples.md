@@ -51,9 +51,10 @@ X             = data["X"]
 classes       = data["classes"]
 Y_aux_raw     = data["Y_aux"]
 
-# Standardize Y_aux to ensure balanced impact with one-hot Y
-using Statistics
-Y_aux = (Y_aux_raw .- mean(Y_aux_raw; dims=1)) ./ std(Y_aux_raw; dims=1)
+# Keep the auxiliary response on its original scale. In CPPLS, auxiliary variables enter
+# through predictor-response correlations, so ordinary centering or scaling of Y_aux is
+# not the main mechanism for controlling its influence; use response_weights instead.
+Y_aux = Y_aux_raw
 
 nothing # hide
 ```
@@ -97,7 +98,7 @@ parameter of interest varies. In a real-world scenario, you would typically deci
 to include observation weights and auxiliary responses before the main analysis, and then
 optimize gamma in a model that already includes these parameters.
 
-We start with a plain model in which neither observational weights nore auxiliary response
+We start with a plain model in which neither observation weights nor auxiliary response
 information is considered.
 
 ```@example fit_da
@@ -122,7 +123,7 @@ cppls_plain_plt = scoreplot(
     xscores(m_plain, 1:2);
     backend=:makie,
     figure_kwargs=(; size=(900, 600)),
-    title="CPPLS-DA scores from an inverse-frequency-weighted model",
+    title="CPPLS-DA scores from an unweighted model",
     group_order=["minor", "major"],
     group_marker=Dict("minor" => (; color=orange), "major" => (; color=blue)),
     default_marker=(; markersize=14)
@@ -224,7 +225,7 @@ by a correlated covariate. To make that difference easier to see, we plot the la
 score sets again, now shading each point by its auxiliary response value.
 
 ```@example fit_da
-# Convert auxialliary matrix to a vector
+# Convert auxiliary matrix to a vector
 aux = vec(Y_aux[:, 1])
 
 # Generate colors for each Yaux value within range Gray(0.1) and Gray(0.8)

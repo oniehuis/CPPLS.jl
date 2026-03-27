@@ -83,7 +83,7 @@ CPPLSModel
   gamma: 0.01:0.01:1.0
   center_X: true
   scale_X: false
-  scale_Y: false
+  scale_Yprim: false
   mode: discriminant
 
 julia> cpplsfit = fit(m, X, classes; samplelabels=labels);
@@ -97,7 +97,7 @@ CPPLSModel
   gamma: 0.75
   center_X: true
   scale_X: false
-  scale_Y: false
+  scale_Yprim: false
   mode: discriminant
 
 julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Yaux=Yaux)

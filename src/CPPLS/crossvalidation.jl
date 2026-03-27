@@ -2137,7 +2137,7 @@ function with_n_components(m::CPPLSModel, ncomponents::Integer)
         gamma=m.gamma,
         center_X=m.center_X, 
         scale_X=m.scale_X,
-        scale_Y=m.scale_Y,
+        scale_Yprim=m.scale_Yprim,
         X_tolerance=m.X_tolerance,
         X_loading_weight_tolerance=m.X_loading_weight_tolerance,
         t_squared_norm_tolerance=m.t_squared_norm_tolerance,

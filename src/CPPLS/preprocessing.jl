@@ -36,7 +36,7 @@ function preprocess(
 
     X, X_mean, X_std = centerscale(float64(X), m.center_X, m.scale_X, obs_weights)
 
-    Yprim, _, Yprim_std = centerscale(float64(Yprim), false, m.scale_Y, obs_weights)
+    Yprim, _, Yprim_std = centerscale(float64(Yprim), false, m.scale_Yprim, obs_weights)
 
     Y = isnothing(Yaux) ? Yprim : hcat(Yprim, float64(Yaux))
     response_weights = prepare_response_weights(response_weights, size(Y, 2), "response_weights")

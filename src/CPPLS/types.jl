@@ -10,7 +10,7 @@ struct CPPLSModel{T}
     gamma::T
     center_X::Bool
     scale_X::Bool
-    scale_Y::Bool
+    scale_Yprim::Bool
     X_tolerance::Float64
     X_loading_weight_tolerance::Float64
     t_squared_norm_tolerance::Float64
@@ -25,7 +25,7 @@ end
         gamma=0.5,
         center_X::Bool=true,
         scale_X::Bool=false,
-        scale_Y::Bool=false,
+        scale_Yprim::Bool=false,
         X_tolerance::Real=1e-12, 
         X_loading_weight_tolerance::Real=eps(Float64), 
         t_squared_norm_tolerance::Real=1e-10, 
@@ -43,7 +43,7 @@ function CPPLSModel(;
     gamma=0.5,
     center_X::Bool=true,
     scale_X::Bool=false,
-    scale_Y::Bool=false,
+    scale_Yprim::Bool=false,
     X_tolerance::T2=1e-12,
     X_loading_weight_tolerance::T3=eps(Float64),
     t_squared_norm_tolerance::T4=1e-10,
@@ -68,7 +68,7 @@ function CPPLSModel(;
         gamma,
         center_X,
         scale_X,
-        scale_Y,
+        scale_Yprim,
         Float64(X_tolerance),
         Float64(X_loading_weight_tolerance),
         Float64(t_squared_norm_tolerance),
@@ -84,7 +84,7 @@ function Base.show(io::IO, spec::CPPLSModel)
         ", gamma=", repr(spec.gamma),
         ", center_X=", spec.center_X,
         ", scale_X=", spec.scale_X,
-        ", scale_Y=", spec.scale_Y,
+        ", scale_Yprim=", spec.scale_Yprim,
         ", mode=", spec.mode,
         ")")
 end
@@ -95,7 +95,7 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSModel)
     println(io, "  gamma: ", repr(spec.gamma))
     println(io, "  center_X: ", spec.center_X)
     println(io, "  scale_X: ", spec.scale_X)
-    println(io, "  scale_Y: ", spec.scale_Y)
+    println(io, "  scale_Yprim: ", spec.scale_Yprim)
     print(io, "  mode: ", spec.mode)
 end
 

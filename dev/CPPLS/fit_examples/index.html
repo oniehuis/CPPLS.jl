@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Fit Examples · CPPLS</title><meta name="title" content="Fit Examples · CPPLS"/><meta property="og:title" content="Fit Examples · CPPLS"/><meta property="twitter:title" content="Fit Examples · CPPLS"/><meta name="description" content="Documentation for CPPLS."/><meta property="og:description" content="Documentation for CPPLS."/><meta property="twitter:description" content="Documentation for CPPLS."/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">CPPLS</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><span class="tocitem">CPPLS</span><ul><li><a class="tocitem" href="../theory/">Theory</a></li><li><a class="tocitem" href="../types/">Types</a></li><li><a class="tocitem" href="../fit/">Fit</a></li><li class="is-active"><a class="tocitem" href>Fit Examples</a><ul class="internal"><li><a class="tocitem" href="#Discriminant-Analysis-Workflow"><span>Discriminant-Analysis Workflow</span></a></li><li><a class="tocitem" href="#Regression-Example:-Predicting-a-Continuous-Response"><span>Regression Example: Predicting a Continuous Response</span></a></li></ul></li><li><a class="tocitem" href="../predict/">Projection and Prediction</a></li><li><a class="tocitem" href="../crossvalidation/">Cross Validation</a></li><li><a class="tocitem" href="../visualization/">Visualization</a></li></ul></li><li><span class="tocitem">Utils</span><ul><li><a class="tocitem" href="../../Utils/encoding/">Encoding</a></li><li><a class="tocitem" href="../../Utils/statistics/">Statistics</a></li><li><a class="tocitem" href="../../Utils/crossvalidation/">Cross Validation Utilities</a></li></ul></li><li><a class="tocitem" href="../../register/">Register</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">CPPLS</a></li><li class="is-active"><a href>Fit Examples</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Fit Examples</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/oniehuis/CPPLS.jl" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/oniehuis/CPPLS.jl/blob/main/docs/src/CPPLS/fit_examples.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><h1 id="Fit-Examples"><a class="docs-heading-anchor" href="#Fit-Examples">Fit Examples</a><a id="Fit-Examples-1"></a><a class="docs-heading-anchor-permalink" href="#Fit-Examples" title="Permalink"></a></h1><p>This page collects longer fitting workflows that complement the reference material in <a href="../fit/">Fit</a>. The examples below show how the same <code>fit</code> interface can be used for discriminant analysis and regression, and how observation weights, auxiliary responses, and gamma selection affect the resulting models.</p><h2 id="Discriminant-Analysis-Workflow"><a class="docs-heading-anchor" href="#Discriminant-Analysis-Workflow">Discriminant-Analysis Workflow</a><a id="Discriminant-Analysis-Workflow-1"></a><a class="docs-heading-anchor-permalink" href="#Discriminant-Analysis-Workflow" title="Permalink"></a></h2><p>In this example, we use a synthetic dataset that ships with the package. The dataset contains 100 samples: 10 belong to the minority class <code>minor</code> and 90 to the majority class <code>major</code>. Accordingly, the predictor matrix has 100 rows and 14 columns, representing 14 measured traits. The dataset is useful for illustrating three modeling choices that interact in practice: inverse-frequency observation weighting, the auxiliary response, and the selection of gamma once those ingredients are in place.</p><p>The dataset was constructed so that a plain PCA score plot is dominated by nuisance structure, whereas CPPLS-DA recovers the class contrast more clearly. That makes it a useful benchmark for showing how observation weighting and auxiliary responses change the fitted score space and how gamma should then be chosen for that full model.</p><p>In addition to <code>CPPLS</code>, the example uses <a href="https://github.com/JuliaIO/JLD2.jl">JLD2</a> to load the dataset from disk, <a href="https://github.com/JuliaStats/MultivariateStats.jl">MultivariateStats</a> to compute the PCA baseline, <a href="https://github.com/JuliaGraphics/Colors.jl">Colors</a> to convert the auxiliary variable into grayscale values in the later auxiliary-response plots, <a href="https://github.com/JuliaStats/Statistics.jl">Statistics</a> to orient the latent variables consistently across plots, and <a href="https://docs.makie.org">CairoMakie</a> to render static figures. The Julia Pkg documentation explains how to install registered packages in the <a href="https://pkgdocs.julialang.org/v1/getting-started/#Basic-Usage">Getting Started</a> section.</p><pre><code class="language-julia hljs">using CPPLS
+using JLD2
+using MultivariateStats
+using Statistics
+using CairoMakie
+using Colors
+
+# Get custom colors
+orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
+
+# Load example data from file
+data = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;))
+
+
+# Extract data of interest
+sample_labels = data[&quot;sample_labels&quot;]
+X             = data[&quot;X&quot;]
+classes       = data[&quot;classes&quot;]
+Y_aux_raw     = data[&quot;Y_aux&quot;]
+
+# Standardize Y_aux to ensure balanced impact with one-hot Y
+using Statistics
+Y_aux = (Y_aux_raw .- mean(Y_aux_raw; dims=1)) ./ std(Y_aux_raw; dims=1)</code></pre><p>For comparison, we first fit a Principal Component Analysis (PCA) baseline to inspect the separation of the two classes based on variance alone.</p><pre><code class="language-julia hljs">M = fit(PCA, X&#39;; maxoutdim=2)
+scores_pca = permutedims(predict(M, X&#39;))
+
+pca_plt = scoreplot(
+    sample_labels,
+    classes,
+    scores_pca;
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title=&quot;PCA scores&quot;,
+    xlabel=&quot;Principal Component 1&quot;,
+    ylabel=&quot;Principal Component 2&quot;,
+    group_order=[&quot;minor&quot;, &quot;major&quot;],
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
+    default_marker=(; markersize=14)
+)
+save(&quot;pca.svg&quot;, pca_plt)</code></pre><p><img src="../pca.svg" alt/></p><p>In this synthetic dataset, the first two principal components are not optimized for class discrimination, so a substantial part of the visible structure reflects nuisance variation rather than the class contrast of interest.</p><h3 id="Observation-Weights-and-Auxiliary-Responses"><a class="docs-heading-anchor" href="#Observation-Weights-and-Auxiliary-Responses">Observation Weights and Auxiliary Responses</a><a id="Observation-Weights-and-Auxiliary-Responses-1"></a><a class="docs-heading-anchor-permalink" href="#Observation-Weights-and-Auxiliary-Responses" title="Permalink"></a></h3><p>To illustrate the impact of class imbalance and auxiliary response information on latent variable extraction, we show how adding each of these factors changes the X scores of the fitted model. In this demonstration, we use a fixed gamma value of 0.5 so that only the parameter of interest varies. In a real-world scenario, you would typically decide whether to include observation weights and auxiliary responses before the main analysis, and then optimize gamma in a model that already includes these parameters.</p><p>We start with a plain model in which neither observational weights nore auxiliary response information is considered.</p><pre><code class="language-julia hljs">m = CPPLSModel(
+    ncomponents=2,
+    gamma=0.5,
+    mode=:discriminant,
+    center_X=true,
+    scale_X=true
+)
+
+m_plain = fit(
+    m,
+    X,
+    classes;
+    samplelabels=sample_labels
+)
+
+cppls_plain_plt = scoreplot(
+    sample_labels,
+    classes,
+    xscores(m_plain, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model&quot;,
+    group_order=[&quot;minor&quot;, &quot;major&quot;],
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
+    default_marker=(; markersize=14)
+)
+save(&quot;cppls_plain.svg&quot;, cppls_plain_plt)</code></pre><p><img src="../cppls_plain.svg" alt/></p><p>Even in this comparatively simple model, the samples belonging to the two classes are noticeably better separated from each other than in the PCA score plot.</p><p>Next, we add inverse-frequency observation weights by specifying the <code>obs_weights</code> keyword argument in the <a href="../fit/#StatsAPI.fit"><code>fit</code></a> function. To calculate the inverse-frequency weights for samples in each class, we use the function <a href="../../Utils/statistics/#CPPLS.invfreqweights"><code>invfreqweights</code></a>. This adjustment gives the two classes equal total influence on the fitted model and thus removes the class size imbalance.</p><pre><code class="language-julia hljs">class_weights = invfreqweights(classes)
+
+m_weighted = fit(
+    m,
+    X,
+    classes;
+    obs_weights=class_weights,   # &lt;- added parameter
+    samplelabels=sample_labels
+)
+
+cppls_weighted_plt = scoreplot(
+    sample_labels,
+    classes,
+    xscores(m_weighted, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model&quot;,
+    group_order=[&quot;minor&quot;, &quot;major&quot;],
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
+    default_marker=(; markersize=14)
+)
+save(&quot;cppls_weighted.svg&quot;, cppls_weighted_plt)</code></pre><p><img src="../cppls_weighted.svg" alt/></p><p>Applying inverse-frequency weights makes the discriminant structure more symmetric. In this example, the main effect is not a larger distance between the groups, but rather a recentering and slight rotation of the latent space so that the class contrast is less biased by class prevalence.</p><p>At this point, the class separation already looks convincing. In this dataset, however, it is driven not only by class-related variation but also by variation associated with auxiliary responses. For example, suppose the samples in the two groups were analyzed using two different instruments, and the choice of instrument is correlated with group membership. If most majority-class samples were measured with instrument A and most minority-class samples with instrument B, then instrument effects could confound the class separation.</p><p>If such auxiliary information is available, we can provide it to the model so that it can account for this confounding structure. This is done using the optional keyword argument <code>Yaux</code> in the <a href="../fit/#StatsAPI.fit"><code>fit</code></a> function. Supplying auxiliary response information changes how the latent variables are estimated: instead of forcing all supervised structure into the class contrast, the model can also explicitly model variation associated with the auxiliary responses. This helps ensure that the separation between the classes is not driven by confounding factors, but rather by the traits of true interest.</p><pre><code class="language-julia hljs">m_weighted_yaux = fit(
+    m,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Yaux=Y_aux,                  # &lt;- added parameter
+    samplelabels=sample_labels
+)
+
+cppls_weighted_yaux_plt = scoreplot(
+    sample_labels,
+    classes,
+    xscores(m_weighted_yaux, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses&quot;,
+    group_order=[&quot;minor&quot;, &quot;major&quot;],
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
+    default_marker=(; markersize=14)
+)
+save(&quot;cppls_weighted_yaux.svg&quot;, cppls_weighted_yaux_plt)</code></pre><p><img src="../cppls_weighted_yaux.svg" alt/></p><p>The visible class separation may not have increased, but it is now more likely to reflect information that is genuinely related to class membership rather than variation carried by a correlated covariate. To make that difference easier to see, we plot the last two score sets again, now shading each point by its auxiliary response value.</p><pre><code class="language-julia hljs"># Convert auxialliary matrix to a vector
+aux = vec(Y_aux[:, 1])
+
+# Generate colors for each Yaux value within range Gray(0.1) and Gray(0.8)
+aux_min, aux_max = extrema(aux)
+point_colors = Gray.(0.1 .+ 0.8 .* ((aux .- aux_min) ./ (aux_max - aux_min)))
+
+cppls_weighted_shaded_plt = scoreplot(
+    sample_labels,
+    fill(&quot;samples&quot;, length(sample_labels)),
+    xscores(m_weighted, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model &quot; *
+          &quot;shaded by auxiliary values&quot;,
+    show_legend=false,
+    default_scatter=(; color=point_colors),
+    default_marker=(; markersize=14)
+)
+save(&quot;cppls_weighted_shaded.svg&quot;, cppls_weighted_shaded_plt)
+
+cppls_weighted_yaux_shaded_plt = scoreplot(
+    sample_labels,
+    fill(&quot;samples&quot;, length(sample_labels)),
+    xscores(m_weighted_yaux, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title=&quot;CPPLS-DA scores from an inverse-frequency-weighted model with auxiliary responses &quot; *
+          &quot;shaded by auxiliary values&quot;,
+    show_legend=false,
+    default_scatter=(; color=point_colors),
+    default_marker=(; markersize=14)
+)
+save(&quot;cppls_weighted_yaux_shaded.svg&quot;, cppls_weighted_yaux_shaded_plt)</code></pre><p><img src="../cppls_weighted_shaded.svg" alt/></p><p><img src="../cppls_weighted_yaux_shaded.svg" alt/></p><p>In the first shaded score plot, fitted without auxiliary response information, the grayscale values are not randomly distributed across the score space. Instead, they are arranged roughly along the first latent dimension. This indicates that auxiliary signal correlated with class membership has leaked into the apparent class separation.</p><p>With the auxiliary response information included, as shown in the second plot, the auxiliary structure is much less pronounced in the fitted scores, as indicated by the grayscale values being more evenly distributed across the plot.</p><h3 id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model"><a class="docs-heading-anchor" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model">Choosing Gamma for the Weighted + Auxiliary Model</a><a id="Choosing-Gamma-for-the-Weighted-Auxiliary-Model-1"></a><a class="docs-heading-anchor-permalink" href="#Choosing-Gamma-for-the-Weighted-Auxiliary-Model" title="Permalink"></a></h3><p>With observation weights and <code>Yaux</code> in place, we can now choose <code>gamma</code> for the model we actually want to interpret.</p><p>The <code>gamma</code> argument supports three distinct workflows. A fixed scalar such as <code>0.5</code> uses the same value for every latent variable. A grid such as <code>0:0.01:1</code> evaluates a set of fixed candidate values and keeps the one with the largest leading canonical correlation for each latent variable. An interval specification such as <code>[(0.1, 0.3), (0.7, 0.9)]</code> performs one bounded search inside each closed interval, so both endpoints are included in the search, and then keeps the best interval-wise optimum. The package ships with the helper function <a href="../../Utils/statistics/#CPPLS.intervalize"><code>intervalize</code></a>, which converts a grid into a list of adjacent intervals, for example <code>intervalize(0:0.01:1)</code>.</p><p>That distinction matters for diagnostics. The stored values returned by <code>gammas(model, lv)</code> and <code>rhos(model, lv)</code> contain one point per candidate supplied to <code>gamma</code>. For a grid, that gives a sampled view of the objective curve across gamma. For <code>intervalize(...)</code>, it gives one selected optimum per interval, which is useful for comparing intervals but is not itself a dense landscape trace. If the goal is to visualize the shape of the gamma objective, prefer a grid. If the goal is robust optimization over subranges, prefer intervals.</p><p>We first inspect the objective landscape on a dense grid and then use interval-based optimization to obtain a practical two-component fit.</p><pre><code class="language-julia hljs">weighted_yaux_grid_m = CPPLSModel(
+    ncomponents=1,
+    gamma=0:0.01:1,
+    mode=:discriminant,
+    center_X=true,
+    scale_X=true
+)
+
+weighted_yaux_grid_model = fit(
+    weighted_yaux_grid_m,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Yaux=Y_aux
+)
+
+weighted_yaux_grid_gammas = gammas(weighted_yaux_grid_model, 1)
+weighted_yaux_grid_rhos = rhos(weighted_yaux_grid_model, 1)
+selected_weighted_yaux_grid_gamma = gamma(weighted_yaux_grid_model)[1]
+
+println(&quot;Best gamma with obs_weights and Yaux: &quot;, selected_weighted_yaux_grid_gamma)
+i = findfirst(==(selected_weighted_yaux_grid_gamma), weighted_yaux_grid_gammas)
+println(&quot;Associated rho^2: &quot;, weighted_yaux_grid_rhos[i])
+
+weighted_yaux_gamma_fig = Figure(size=(900, 450))
+weighted_yaux_gamma_ax = Axis(
+    weighted_yaux_gamma_fig[1, 1],
+    xlabel=&quot;Gamma&quot;,
+    ylabel=&quot;Leading Squared Canonical Correlation&quot;,
+    title=&quot;Weighted + auxiliary objective landscape over gamma&quot;
+)
+
+lines!(weighted_yaux_gamma_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rhos;
+    color=:grey70, linewidth=3)
+vlines!(weighted_yaux_gamma_ax, [selected_weighted_yaux_grid_gamma];
+    color=:black, linestyle=:dash)
+
+save(&quot;gamma_weighted_yaux_grid.svg&quot;, weighted_yaux_gamma_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Best gamma with obs_weights and Yaux: 0.55
+Associated rho^2: 0.7641649880231112</code></pre><p><img src="../gamma_weighted_yaux_grid.svg" alt/></p><p>To turn that landscape into an actual optimization step, we next search over adjacent intervals. The grey curve below is the dense landscape just plotted, the red points are the best values retained from each interval, and the dashed line marks the overall winner.</p><pre><code class="language-julia hljs">weighted_yaux_interval_m = CPPLSModel(
+    ncomponents=1,
+    gamma=intervalize(0:0.25:1),
+    mode=:discriminant,
+    center_X=true,
+    scale_X=true
+)
+
+weighted_yaux_interval_mf = fit(
+    weighted_yaux_interval_m,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Yaux=Y_aux
+)
+
+weighted_yaux_interval_gammas = gammas(weighted_yaux_interval_mf, 1)
+weighted_yaux_interval_rhos = rhos(weighted_yaux_interval_mf, 1)
+selected_weighted_yaux_gamma = gamma(weighted_yaux_interval_mf)[1]
+
+println(&quot;Interval-optimized gamma with obs_weights and Yaux: &quot;, selected_weighted_yaux_gamma)
+i = findfirst(==(selected_weighted_yaux_gamma), weighted_yaux_interval_gammas)
+println(&quot;Associated rho^2: &quot;, weighted_yaux_interval_rhos[i])
+
+weighted_yaux_interval_fig = Figure(size=(900, 450))
+weighted_yaux_interval_ax = Axis(
+    weighted_yaux_interval_fig[1, 1],
+    xlabel=&quot;Gamma&quot;,
+    ylabel=&quot;Leading Squared Canonical Correlation&quot;,
+    title=&quot;Interval-wise gamma optimization with weights and auxiliary responses&quot;
+)
+
+lines!(weighted_yaux_interval_ax, weighted_yaux_grid_gammas, weighted_yaux_grid_rhos;
+    color=:grey70, linewidth=3)
+scatter!(weighted_yaux_interval_ax, weighted_yaux_interval_gammas, weighted_yaux_interval_rhos;
+    color=:firebrick, markersize=10)
+vlines!(weighted_yaux_interval_ax, [selected_weighted_yaux_gamma];
+    color=:firebrick, linestyle=:dash)
+
+save(&quot;gamma_weighted_yaux_intervals.svg&quot;, weighted_yaux_interval_fig)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Interval-optimized gamma with obs_weights and Yaux: 0.554696082912611
+Associated rho^2: 0.764186580162515</code></pre><p><img src="../gamma_weighted_yaux_intervals.svg" alt/></p><p>In this example, the interval-based optimization returns almost the same <code>gamma</code> value as the dense grid search, so the difference is negligible in practice. That agreement should not be taken for granted, however. If the objective landscape is rugged or contains multiple local optima, an interval-based search can miss a narrow global maximum or favor different local solutions depending on how the interval partition is chosen. It is therefore advisable to first inspect the landscape on a grid and then decide whether a coarse or dense interval partition is appropriate for downstream analyses such as cross- validation and permutation testing.</p><p>Finally, we fit the two-component discriminant model with interval-optimized <code>gamma</code> while keeping both inverse-frequency weights and <code>Yaux</code>. This is the most favorable DA setup examined in this example because weighting, auxiliary supervision, and gamma selection are all aligned with the same objective.</p><pre><code class="language-julia hljs">weighted_yaux_best_m = CPPLSModel(
+    ncomponents=2,
+    gamma=intervalize(0:0.25:1),
+    mode=:discriminant,
+    center_X=true,
+    scale_X=true
+)
+
+weighted_yaux_best_mf = fit(
+    weighted_yaux_best_m,
+    X,
+    classes;
+    obs_weights=class_weights,
+    Yaux=Y_aux,
+    samplelabels=sample_labels
+)
+
+selected_weighted_yaux_rhos = [
+    rhos(weighted_yaux_best_mf, lv)[findfirst(
+        ==(gamma(weighted_yaux_best_mf)[lv]),
+        gammas(weighted_yaux_best_mf, lv),
+    )]
+    for lv in 1:2
+]
+
+println(&quot;Selected gammas for the two latent variables: &quot;,
+    round.(gamma(weighted_yaux_best_mf), digits=3))
+println(&quot;Associated rho^2: &quot;, round.(selected_weighted_yaux_rhos, digits=6))
+
+cppls_weighted_yaux_best_plt = scoreplot(
+    sample_labels,
+    classes,
+    xscores(weighted_yaux_best_mf, 1:2);
+    backend=:makie,
+    figure_kwargs=(; size=(900, 600)),
+    title=&quot;CPPLS-DA scores with weights, Yaux, and optimized gamma&quot;,
+    group_order=[&quot;minor&quot;, &quot;major&quot;],
+    group_marker=Dict(&quot;minor&quot; =&gt; (; color=orange), &quot;major&quot; =&gt; (; color=blue)),
+    default_marker=(; markersize=14)
+)
+save(&quot;cppls_weighted_yaux_best.svg&quot;, cppls_weighted_yaux_best_plt)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">Selected gammas for the two latent variables: [0.555, 0.534]
+Associated rho^2: [0.764187, 0.052149]</code></pre><p><img src="../cppls_weighted_yaux_best.svg" alt/></p><p>Overall, the example shows how observation weights can rebalance class influence, how auxiliary responses can help separate auxiliary structure from the signal that is genuinely relevant to group membership, and how <code>gamma</code> should be chosen only after those ingredients are in place.</p><h2 id="Regression-Example:-Predicting-a-Continuous-Response"><a class="docs-heading-anchor" href="#Regression-Example:-Predicting-a-Continuous-Response">Regression Example: Predicting a Continuous Response</a><a id="Regression-Example:-Predicting-a-Continuous-Response-1"></a><a class="docs-heading-anchor-permalink" href="#Regression-Example:-Predicting-a-Continuous-Response" title="Permalink"></a></h2><p>The previous sections focused on discriminant analysis, but <code>CPPLS</code> is equally suited for regression tasks. To illustrate this, we now demonstrate a regression workflow using the same synthetic dataset. Here, we regress <span>$X$</span> against the continuous response <span>$Y_{aux}$</span>, while using the original class labels <span>$Y$</span> as an auxiliary response. This setup mimics scenarios where the main prediction target is continuous, but additional categorical or structured information is available to guide the supervised projection.</p><p>This example highlights several key points:</p><ul><li><strong>Regression in CPPLS</strong> uses the same unified interface as DA, with <code>mode=:regression</code>.</li><li><strong>Auxiliary responses</strong> can help ensure that the extracted latent variables reflect the main regression signal, not confounding structure from correlated categorical variables.</li><li><strong>Observation weighting</strong> is generally less critical in regression with balanced synthetic data, but the option remains available for real-world scenarios with heteroscedasticity or sample importance.</li></ul><p>This approach demonstrates the flexibility of CPPLS for hybrid modeling, where both continuous and categorical responses can be leveraged.</p><pre><code class="language-julia hljs">using CPPLS
+using JLD2
+using CairoMakie
+using Colors
+using GLM
+using DataFrames
+
+# Load example data
+data = load(CPPLS.dataset(&quot;synthetic_cppls_da_dataset.jld2&quot;))
+sample_labels = data[&quot;sample_labels&quot;]
+X        = data[&quot;X&quot;]
+Y_main   = data[&quot;Y_aux&quot;]  # main regression target
+
+classes  = data[&quot;classes&quot;]
+# Use only the matrix part of onehot encoding
+Y_aux_mat, _ = onehot(classes)  # auxiliary response as one-hot matrix
+
+
+# Set up regression model: predict Y_main from X, use Y_aux_mat as auxiliary
+m = CPPLSModel(
+    ncomponents=2,
+    gamma=intervalize(0:0.25:1),
+    mode=:regression,
+    center_X=true,
+    scale_X=true
+)
+
+mf = fit(m, X, Y_main;
+    Yaux=Y_aux_mat,  # Use one-hot encoded class labels as auxiliary response
+    samplelabels=sample_labels
+)
+
+# For regression, visualize predicted Y vs. true Y, with regression line
+# Ensure both are 1D vectors for the first response column
+Y_pred = predict(mf, X, 1)[:, 1, 1]  # predicted values (vector)
+Y_true = Y_main[:, 1]  # true values (vector, first response column)
+
+# Fit regression line using GLM
+df = DataFrame(y_true=Y_true, y_pred=Y_pred)
+lm = fit(LinearModel, @formula(y_pred ~ y_true), df)
+Y_fit = predict(lm)
+
+fig = Figure(size=(900, 450))
+ax = Axis(fig[1, 1],
+    xlabel=&quot;True Yaux (first response)&quot;,
+    ylabel=&quot;Predicted Yaux (first response, first component)&quot;,
+    title=&quot;Regression: Predicted vs. True Yaux (first response)&quot;
+)
+scatter!(ax, Y_true, Y_pred, color=:dodgerblue, markersize=10, label=&quot;Samples&quot;)
+lines!(ax, Y_true, Y_fit, color=:firebrick, linewidth=3, label=&quot;Regression line&quot;)
+axislegend(ax)
+save(&quot;regression_scoreplot.svg&quot;, fig)
+#+# Additional plot: LV1 vs. Y_true
+LV1 = xscores(mf, 1)[:, 1]  # first latent variable (component 1)
+
+fig_lv1 = Figure(size=(900, 450))
+ax_lv1 = Axis(fig_lv1[1, 1],
+    xlabel=&quot;LV1 (first component)&quot;,
+    ylabel=&quot;True Yaux (first response)&quot;,
+    title=&quot;LV1 vs. True Yaux (first response)&quot;
+)
+scatter!(ax_lv1, LV1, Y_true, color=:seagreen, markersize=10, label=&quot;Samples&quot;)
+axislegend(ax_lv1)
+save(&quot;lv1_vs_ytrue.svg&quot;, fig_lv1)</code></pre><p><img src="../regression_scoreplot.svg" alt/></p><p><img src="../lv1_vs_ytrue.svg" alt/></p><p>In this plot, each point represents a sample, with its position determined by the first latent variable (t₁) and the predicted value of <span>$Y_{aux}$</span>. This visualization helps assess how well the main direction of variance in <span>$X$</span> (as captured by t₁) aligns with the regression target. The use of class labels as an auxiliary response ensures that the extracted components are not unduly influenced by class-related structure, but instead focus on the continuous outcome of interest.</p><p>This regression example demonstrates the versatility of CPPLS for both regression and classification, and shows how auxiliary responses can be used to disentangle complex sources of variation in supervised modeling.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../fit/">« Fit</a><a class="docs-footer-nextpage" href="../predict/">Projection and Prediction »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Friday 27 March 2026 12:04">Friday 27 March 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

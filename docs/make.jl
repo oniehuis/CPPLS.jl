@@ -40,6 +40,7 @@ makedocs(
             "CPPLS/theory.md",
             "CPPLS/types.md",
             "CPPLS/fit.md",
+            "CPPLS/fit_examples.md",
             "CPPLS/predict.md",
             "CPPLS/crossvalidation.md",
             "CPPLS/visualization.md"

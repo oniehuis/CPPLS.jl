@@ -48,13 +48,14 @@ permutation.
 
 ## Usage
 
-For fitting and model specification, see [`CPPLS/fit.md`](CPPLS/fit.md). Prediction,
-projection, and class-assignment methods are described in
-[`CPPLS/predict.md`](CPPLS/predict.md). Cross-validation, permutation testing, and
-outlier scanning are documented in [`CPPLS/crossvalidation.md`](CPPLS/crossvalidation.md).
-The main data structures and fitted-model accessors are summarized in
-[`CPPLS/types.md`](CPPLS/types.md), while utility functionality is described under the
-`Utils` section of the manual.
+For fitting and model specification, see [`CPPLS/fit.md`](CPPLS/fit.md). Longer worked
+workflows for discriminant analysis and regression are collected in
+[`CPPLS/fit_examples.md`](CPPLS/fit_examples.md). Prediction, projection, and
+class-assignment methods are described in [`CPPLS/predict.md`](CPPLS/predict.md).
+Cross-validation, permutation testing, and outlier scanning are documented in
+[`CPPLS/crossvalidation.md`](CPPLS/crossvalidation.md). The main data structures and
+fitted-model accessors are summarized in [`CPPLS/types.md`](CPPLS/types.md), while utility
+functionality is described under the `Utils` section of the manual.
 
 ## Disclaimer
 

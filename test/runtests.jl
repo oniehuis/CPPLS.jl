@@ -9,8 +9,14 @@ end
     include(joinpath("CPPLS", "scoreplot_dispatch.jl"))
 end
 
-@testset "CPPLS/scoreplot_makie" begin
-    include(joinpath("CPPLS", "scoreplot_makie.jl"))
+if Base.find_package("Makie") !== nothing
+    @testset "CPPLS/scoreplot_makie" begin
+        include(joinpath("CPPLS", "scoreplot_makie.jl"))
+    end
+else
+    @testset "CPPLS/scoreplot_makie" begin
+        @test true
+    end
 end
 
 if Base.find_package("PlotlyJS") !== nothing

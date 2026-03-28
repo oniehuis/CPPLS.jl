@@ -159,3 +159,22 @@ end
         CPPLS._scoreplot_makie_ref[] = old_makie
     end
 end
+
+@testset "scoreplot(cppls) rejects one-component fits" begin
+    model = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, mode = :discriminant)
+    X = Float64[
+        1 0
+        0 1
+        1 1
+        2 3
+    ]
+    labels = categorical(["red", "blue", "red", "blue"])
+    cpplsfit = CPPLS.fit(model, X, labels)
+
+    @test_throws ArgumentError CPPLS.scoreplot(
+        cpplsfit;
+        backend = :makie,
+        show_legend = false,
+        show_inspector = false,
+    )
+end

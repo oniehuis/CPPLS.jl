@@ -99,71 +99,71 @@ end
 end
 
 @testset "sampleclasses maps response labels" begin
-    # model = CPPLS.CPPLSModel(
-    #     gamma = 0.5,
-    #     ncomponents = 1,
-    #     mode = :discriminant,
-    # )
-    # X = Float64[
-    #     1 0
-    #     0 1
-    #     1 1
-    #     2 3
-    # ]
-    # labels = ["red", "blue", "red", "blue"]
-    # cpplsfit = CPPLS.fit_cppls(model, X, labels)
+    model = CPPLS.CPPLSModel(
+        gamma = 0.5,
+        ncomponents = 1,
+        mode = :discriminant,
+    )
+    X = Float64[
+        1 0
+        0 1
+        1 1
+        2 3
+    ]
+    labels = ["red", "blue", "red", "blue"]
+    cpplsfit = CPPLS.fit(model, X, labels)
 
-    # preds = CPPLS.predict(cpplsfit, X, 1)
-    # expected =
-    #     cpplsfit.responselabels[
-    #         CPPLS.sampleclasses(CPPLS.onehot(cpplsfit, preds)),
-    #     ]
+    preds = CPPLS.predict(cpplsfit, X, 1)
+    expected = CPPLS.responselabels(cpplsfit)[
+        CPPLS.sampleclasses(CPPLS.onehot(cpplsfit, preds)),
+    ]
 
-    # @test CPPLS.sampleclasses(cpplsfit, preds) == expected
-    # @test CPPLS.sampleclasses(cpplsfit, X, 1) == expected
+    @test CPPLS.sampleclasses(cpplsfit, preds) == expected
+    @test CPPLS.sampleclasses(cpplsfit, X, 1) == expected
 end
 
 @testset "sampleclasses rejects regression models" begin
-    # model = CPPLS.CPPLSModel(
-    #     gamma = 0.5,
-    #     ncomponents = 1
-    # )
-    # X = Float64[
-    #     1 0
-    #     0 1
-    #     1 1
-    # ]
-    # y = Float64[1, 0, 1]
-    # cpplsfit = CPPLS.fit_cppls(model, X, y)
+    model = CPPLS.CPPLSModel(
+        gamma = 0.5,
+        ncomponents = 1,
+        mode = :regression,
+    )
+    X = Float64[
+        1 0
+        0 1
+        1 1
+    ]
+    y = Float64[1, 0, 1]
+    cpplsfit = CPPLS.fit(model, X, y)
 
-    # preds = CPPLS.predict(cpplsfit, X, 1)
-    # @test_throws ArgumentError CPPLS.sampleclasses(cpplsfit, preds)
+    preds = CPPLS.predict(cpplsfit, X, 1)
+    @test_throws ArgumentError CPPLS.sampleclasses(cpplsfit, preds)
 end
 
 @testset "project centers inputs before applying R" begin
-    # model = CPPLS.CPPLSModel(
-    #     gamma = 0.5,
-    #     ncomponents = 2,
-    #     mode = :discriminant
-    # )
-    # X_train = Float64[
-    #     1 0
-    #     0 1
-    #     1 1
-    #     2 3
-    # ]
-    # labels = ["red", "blue", "red", "blue"]
-    # model = CPPLS.fit_cppls(model, X_train, labels)
+    model = CPPLS.CPPLSModel(
+        gamma = 0.5,
+        ncomponents = 2,
+        mode = :discriminant,
+    )
+    X_train = Float64[
+        1 0
+        0 1
+        1 1
+        2 3
+    ]
+    labels = ["red", "blue", "red", "blue"]
+    cpplsfit = CPPLS.fit(model, X_train, labels)
 
-    # X_new = Float64[
-    #     0.5 -1.0
-    #     1.0 0.0
-    #     2.0 1.0
-    # ]
+    X_new = Float64[
+        0.5 -1.0
+        1.0 0.0
+        2.0 1.0
+    ]
 
-    # centered = X_new .- xmean(model)
-    # expected_scores = centered * model.R
+    expected_scores = ((X_new .- CPPLS.xmean(cpplsfit)') ./ CPPLS.xstd(cpplsfit)') *
+        CPPLS.projectionmatrix(cpplsfit)
 
-    # scores = CPPLS.project(model, X_new)
-    # @test scores ≈ expected_scores
+    scores = CPPLS.project(cpplsfit, X_new)
+    @test scores ≈ expected_scores
 end

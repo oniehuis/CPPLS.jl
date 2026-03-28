@@ -61,7 +61,6 @@ export scoreplot
 export xmean
 export xstd
 export xscores
-export ymean
 export ystd
 
 # Score plot backend dispatch (actual methods live in the optional dependencies)
@@ -196,6 +195,10 @@ function scoreplot(
     ))
 
     samples = cppls.samplelabels
+    size(cppls.T, 2) >= 2 || throw(ArgumentError(
+        "scoreplot(cppls) requires at least 2 components; got $(size(cppls.T, 2)). " *
+        "Refit with ncomponents >= 2 or call scoreplot(samples, groups, scores) with a custom 2-column score matrix."
+    ))
     scores = cppls.T[:, 1:2]
     if backend === :plotly
       _require_extension_ref[](:PlotlyJSExtension, "PlotlyJS")

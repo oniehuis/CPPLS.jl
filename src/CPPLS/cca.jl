@@ -3,7 +3,7 @@
         m::CPPLSModel,
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
-        Y_prim::AbstractMatrix{<:Real}, 
+        Yprim::AbstractMatrix{<:Real}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
         gamma::Real
     )
@@ -11,7 +11,7 @@
         m::CPPLSModel,
         X_def::AbstractMatrix{<:Real}, 
         Y::AbstractMatrix{<:Real}, 
-        Y_prim::AbstractMatrix{<:Real}, 
+        Yprim::AbstractMatrix{<:Real}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
         gamma::Union{
             <:NTuple{2, <:Real}, 
@@ -31,23 +31,23 @@ function compute_cppls_weights(
     m::CPPLSModel,
     X_def::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
+    Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     response_weights::AbstractVector{<:Real},
     target_weights::AbstractVector{<:Real},
     gamma::Real
 )
 
-    Y_prim_weighted = weight_response_columns(Y_prim, target_weights)
+    Yprim_weighted = weight_response_columns(Yprim, target_weights)
 
     if gamma == 0.5
         # Special-case gamma = 0.5 uses the X'Y shortcut used in the CPPLS formulation.
         W0 = X_def' * weight_response_columns(Y, response_weights)
-        a, b, rho = cca_coeffs_and_corr(X_def * W0, Y_prim_weighted, obs_weights)
+        a, b, rho = cca_coeffs_and_corr(X_def * W0, Yprim_weighted, obs_weights)
         w = vec(W0 * a[:, 1])
         return w, rho^2, a[:, 1], b[:, 1], 0.5, W0, [0.5], [rho^2]
     else
-        return compute_cppls_weights(m, X_def, Y, Y_prim, obs_weights, response_weights,
+        return compute_cppls_weights(m, X_def, Y, Yprim, obs_weights, response_weights,
             target_weights, (gamma, gamma))
     end
 end
@@ -56,7 +56,7 @@ function compute_cppls_weights(
     m::CPPLSModel,
     X_def::AbstractMatrix{<:Real},
     Y::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
+    Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     response_weights::AbstractVector{<:Real},
     target_weights::AbstractVector{<:Real},
@@ -85,9 +85,9 @@ function compute_cppls_weights(
     end
 
     C .*= reshape(response_weights, 1, :)
-    Y_prim_weighted = weight_response_columns(Y_prim, target_weights)
+    Yprim_weighted = weight_response_columns(Yprim, target_weights)
 
-    compute_best_loadings(m, X_def, S_x, C, C_sign, Y_prim_weighted, obs_weights, gamma,
+    compute_best_loadings(m, X_def, S_x, C, C_sign, Yprim_weighted, obs_weights, gamma,
         size(Y, 2))
 end
 
@@ -115,7 +115,7 @@ gamma_search_candidate_count(
         S_x::AbstractMatrix{<:Real}, 
         C::AbstractMatrix{<:Real}, 
         C_sign::AbstractMatrix{<:Real}, 
-        Y_prim::AbstractMatrix{<:Real}, 
+        Yprim::AbstractMatrix{<:Real}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
         gamma_bounds::Union{
             <:NTuple{2, <:Real}, 
@@ -139,7 +139,7 @@ function compute_best_loadings(
     S_x::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
     C_sign::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
+    Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     gamma_bounds::Union{
         <:NTuple{2, <:Real},
@@ -157,7 +157,7 @@ function compute_best_loadings(
         S_x,
         C,
         C_sign,
-        Y_prim,
+        Yprim,
         obs_weights,
         gamma_bounds
     )
@@ -167,19 +167,19 @@ function compute_best_loadings(
         W0 = repeat(w_base, 1, q)
         w = vec(w_base)
         a = fill(NaN, (q, 1))
-        b = fill(NaN, (size(Y_prim, 2), 1))
+        b = fill(NaN, (size(Yprim, 2), 1))
     elseif gamma == 1
         w_base = compute_correlation_weights(C)
         W0 = repeat(w_base, 1, q)
         w = vec(w_base)
         a = fill(NaN, (q, 1))
-        b = fill(NaN, (size(Y_prim, 2), 1))
+        b = fill(NaN, (size(Yprim, 2), 1))
     else
         # General case uses the power-law W0(gamma) and a full CCA.
         W0 = compute_general_weights(S_x, C, gamma, C_sign)
 
         Z = X_def * W0
-        a, b, _ = cca_coeffs_and_corr(Z, Y_prim, obs_weights)
+        a, b, _ = cca_coeffs_and_corr(Z, Yprim, obs_weights)
 
         w = vec((W0 * a[:, 1])')
     end
@@ -201,7 +201,7 @@ end
         S_x::AbstractMatrix{<:Real}, 
         C::AbstractMatrix{<:Real}, 
         C_sign::AbstractMatrix{<:Real}, 
-        Y_prim::AbstractMatrix{<:Real}, 
+        Yprim::AbstractMatrix{<:Real}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
         gamma_bounds::NTuple{2, <:Real}, 
         gamma_rel_tol::Real, 
@@ -213,7 +213,7 @@ end
         S_x::AbstractMatrix{<:Real}, 
         C::AbstractMatrix{<:Real}, 
         C_sign::AbstractMatrix{<:Real}, 
-        Y_prim::AbstractMatrix{<:Real}, 
+        Yprim::AbstractMatrix{<:Real}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}, 
         gamma_bounds::AbstractVector{<:Union{NTuple{2, <:Real}, Real}}, 
         gamma_rel_tol::Real, 
@@ -221,7 +221,7 @@ end
     )
 
 Select the gamma that maximizes the leading canonical correlation between Z = X W0(gamma)
-and Y_prim. The tuple form uses a bounded Brent search, while the vector form evaluates a
+and Yprim. The tuple form uses a bounded Brent search, while the vector form evaluates a
 set of candidate values or bounds and returns the best.
 
 Type stablity tested: 03/25/2026
@@ -232,7 +232,7 @@ function compute_best_gamma(
     S_x::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
     C_sign::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
+    Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     gamma_bounds::NTuple{2, <:Real}
 )
@@ -241,13 +241,13 @@ function compute_best_gamma(
     b = last(gamma_bounds)
 
     if a == b
-        rho2 = -evaluate_canonical_correlation(a, X_def, S_x, C, C_sign, Y_prim,
+        rho2 = -evaluate_canonical_correlation(a, X_def, S_x, C, C_sign, Yprim,
             obs_weights)
         return a, rho2, [Float64(a)], [rho2]
     end
 
     f = gamma -> try
-        evaluate_canonical_correlation(gamma, X_def, S_x, C, C_sign, Y_prim,
+        evaluate_canonical_correlation(gamma, X_def, S_x, C, C_sign, Yprim,
             obs_weights)
     catch error
         if error isa ErrorException && (error.msg == "X has rank 0" || error.msg == "Y has rank 0")
@@ -287,7 +287,7 @@ function compute_best_gamma(
     S_x::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
     C_sign::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
+    Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
     gamma_bounds::AbstractVector{<:Union{NTuple{2, <:Real}, Real}}
 )
@@ -301,16 +301,16 @@ function compute_best_gamma(
         if gamma_bounds[i] isa NTuple{2,<:Real}
             if first(gamma_bounds[i]) ≠ last(gamma_bounds[i])
                 gamma_vals[i], rho2_vals[i] = compute_best_gamma(m, X_def, S_x, C, C_sign,
-                    Y_prim, obs_weights, gamma_bounds[i])
+                    Yprim, obs_weights, gamma_bounds[i])
             else
                 gamma_vals[i] = first(gamma_bounds[i])
                 rho2_vals[i] = -evaluate_canonical_correlation(gamma_vals[i], X_def, S_x,
-                    C, C_sign, Y_prim, obs_weights)
+                    C, C_sign, Yprim, obs_weights)
             end
         else
             gamma_vals[i] = gamma_bounds[i]
             rho2_vals[i] = -evaluate_canonical_correlation(gamma_vals[i], X_def, S_x, C,
-                C_sign, Y_prim, obs_weights)
+                C_sign, Yprim, obs_weights)
         end
     end
 
@@ -324,7 +324,7 @@ end
         S_x::AbstractMatrix{<:Real}, 
         C::AbstractMatrix{<:Real}, 
         C_sign::AbstractMatrix{<:Real}, 
-        Y_prim::AbstractMatrix{<:Real}, 
+        Yprim::AbstractMatrix{<:Real}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}
     )
 
@@ -341,7 +341,7 @@ function evaluate_canonical_correlation(
     S_x::AbstractMatrix{<:Real},
     C::AbstractMatrix{<:Real},
     C_sign::AbstractMatrix{<:Real},
-    Y_prim::AbstractMatrix{<:Real},
+    Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
 )
 
@@ -355,7 +355,7 @@ function evaluate_canonical_correlation(
     end
 
     Z = X_def * W0
-    rho = cca_corr(Z, Y_prim, obs_weights)
+    rho = cca_corr(Z, Yprim, obs_weights)
 
     -rho^2
 end
@@ -497,7 +497,7 @@ with QR, forms the cross-covariance in the orthonormal bases, and extracts canon
 correlations and vectors via SVD.
 
 In CPPLS, this corresponds to the CCA stage that finds directions a and b maximizing the
-correlation between Z a and Y_prim b, after Z has been built as X W0(gamma). Observation
+correlation between Z a and Yprim b, after Z has been built as X W0(gamma). Observation
 weights are incorporated by scaling rows prior to the decomposition.
 
 Type stablity tested: 03/25/2026

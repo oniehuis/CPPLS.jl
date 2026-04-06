@@ -12,19 +12,19 @@ analysis, providing a consistent workflow for a wide range of supervised modelin
     whereas regression typically uses a $Y$ vector or matrix with continuously varying
     values.
 
-    CPPLS is flexible, however: the response matrix $Y$ may contain both one-hot encoded
+    The model is flexible, however: the response matrix $Y$ may contain both one-hot encoded
     columns (for classification or DA) and continuous columns (for regression) at the same
     time. This allows hybrid models in which predictor variables are aligned with multiple
     response variables of different types. In such cases, users must encode the $Y$ matrix
     appropriately and extract the relevant outputs from [`project`](@ref) and
     [`predict`](@ref).
 
-    When primary response columns differ strongly in variance or unit, it may be sensible
+    When primary response columns differ strongly in variance, it may be sensible
     to set `scale_Yprim=true` in [`CPPLSModel`](@ref) so that they are on a comparable
     footing, and then, if needed, to control their relative influence explicitly through
     the `response_weights` and `target_weights` keyword arguments of [`StatsAPI.fit`](@ref).
 
-You can optionally provide observation weights (keyword argument `obs_weights`), response
+Users can optionally provide observation weights (keyword argument `obs_weights`), response
 weights (keyword argument `response_weights`), target weights (keyword argument
 `target_weights`), and auxiliary response information (keyword argument `Yaux`) to
 [`StatsAPI.fit`](@ref). Observation weights control the influence of each sample on the

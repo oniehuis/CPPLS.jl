@@ -6,35 +6,32 @@ components that summarize the predictor matrix $X \in \mathbb{R}^{n \times p}$,
 where $n$ is the number of samples and $p$ the number of predictors, in a way
 that best reflects the structure in a multivariate response matrix
 $Y \in \mathbb{R}^{n \times q}$, where $q$ is the number of response variables.
-The method extends standard PLS in three important ways. First, it
-distinguishes between primary responses that one wishes to predict and optional
-auxiliary responses that guide the extraction of components without becoming
-prediction targets themselves. Second, it incorporates a power parameter
-$\gamma$ that controls the balance between predictor variance and
-predictor–response correlation, giving the user explicit control over how
-strongly the model should emphasize correlation structure. Third, CPPLS can
-operate with a vector of non-negative sample weights, allowing some
-observations to contribute more or less to the fitted model. This is useful
-when classes are unbalanced, when some samples are more reliable, or when
-experimental design considerations suggest that certain samples should carry
-greater influence.
+The central idea is to construct a response-guided supervised space using a power 
+parameter $\gamma$ that balances predictor variance and predictor-response association, 
+and then to use canonical correlation to combine that supervised space into latent 
+components aligned with the response block. The framework is naturally multivariate in
+$Y$, supporting both regression and classification.
 
-Each CPPLS component is extracted in two conceptual stages. First, the
-predictors are projected onto supervised directions, one for each column of
-$Y$, using the $\gamma$-controlled mixture of weighted predictor variance and
-weighted predictor–response correlation. Second, a canonical correlation
-analysis (CCA) determines how these supervised directions should be linearly
-combined into a single latent variable that is optimally aligned with the
-primary responses. Auxiliary responses and observation weights enter the
-computation of supervised directions in the first stage, shaping the latent
-space that is subsequently analyzed by CCA, while the CCA itself is guided
-solely by the primary responses under the same weighting structure.
+This package follows that core structure. In addition, it allows optional auxiliary 
+responses, observation weights, as well as two response-column weighting mechanisms, 
+response weights and target weights.
+
+Each CPPLS component is extracted in two conceptual stages. First, the predictors are 
+projected onto supervised directions, one for each column of $Y$, using the 
+$\gamma$-controlled mixture of weighted predictor variance and weighted predictor–response 
+correlation. Second, a canonical correlation analysis (CCA) determines how these 
+supervised directions should be linearly combined into a single latent variable that is 
+optimally aligned with the primary responses. Auxiliary responses, observation weights, and 
+response weights enter the computation of supervised directions in the first stage, shaping 
+the latent space that is subsequently analyzed by CCA. The second stage performs CCA only 
+against the primary response block; that block may additionally be modified by target 
+weights, and the same observation weighting is used there as well.
 
 ## Preprocessing and Observation Weights
 
-Let $v_i \ge 0$ denote the observation weight of sample $i$. CPPLS uses these
-weights in centering, optional standard-deviation scaling, predictor-response
-correlations, and the later CCA step. The weighted mean of a variable $x$ is
+Let $v_i \ge 0$ denote the observation weight of sample $i$. CPPLS uses these weights in 
+centering, optional standard-deviation scaling, predictor-response correlations, and the 
+later CCA step. The weighted mean of a variable $x$ is
 
 ```math
 \bar{x}_w = \frac{\sum_i v_i x_i}{\sum_i v_i}.
@@ -72,23 +69,22 @@ each column. If both are enabled, predictor $x_j$ becomes
 \tilde x_j = \frac{x_j - \bar{x}_{j,w}}{\operatorname{std}_w(x_j)}.
 ```
 
-If only centering is enabled, only the weighted mean is removed. If only
-scaling is enabled, the weighted standard deviation is computed from the
-uncentered column. Columns with zero or non-finite standard deviation are left
-unscaled by replacing the divisor with `1`.
+If only centering is enabled, only the weighted mean is removed. If only scaling is 
+enabled, the weighted standard deviation is computed from the uncentered column. 
+Columns with zero or non-finite standard deviation are left unscaled by replacing the 
+divisor with `1`.
 
-For the primary response block $Y_{\mathrm{prim}}$, CPPLS may scale columns but
-does not apply a separate preprocessing centering step. Thus
+For the primary response block $Y_{\mathrm{prim}}$, CPPLS may scale columns but does not 
+apply a separate preprocessing centering step. Thus
 
 ```math
 \tilde y_k =
 \frac{y_k}{\operatorname{std}_w(y_k)}
 ```
 
-when response scaling is enabled, and $\tilde y_k = y_k$ otherwise. This is
-not in conflict with the correlation-based theory, because the response
-columns are centered internally later when predictor-response correlations are
-computed.
+when response scaling is enabled, and $\tilde y_k = y_k$ otherwise. This is not in 
+conflict with the correlation-based theory, because the response columns are centered 
+internally later when predictor-response correlations are computed.
 
 Auxiliary responses are concatenated after this preprocessing step,
 
@@ -97,8 +93,7 @@ Y = [\,\tilde Y_{\mathrm{prim}} \;\; Y_{\mathrm{aux}}\,],
 ```
 
 and they are not given separate centering or scaling options. Their influence
-is instead controlled through response-column weights in the supervised
-compression step.
+is instead controlled through response-column weights in the supervised compression step.
 
 ## Supervised Compression
 
@@ -159,8 +154,8 @@ variance-correlation trade-off part of the fitted model itself.
 
 ## Response Weights and Target Weights
 
-Besides observation weights, CPPLS supports two different response-column
-weighting schemes.
+Besides observation weights, this implementation supports two additional
+response-column weighting schemes.
 
 Let $r_k \ge 0$ denote the `response_weights` for the columns of the combined
 response block $Y$, including auxiliary responses when present. These weights
@@ -403,10 +398,11 @@ to the final coefficient matrix $B$. Auxiliary responses affect the fitted
 model indirectly, by shaping the supervised compression and therefore the
 extracted components, but they are not themselves predicted.
 
-In summary, CPPLS combines three complementary forms of supervision: the power
-parameter $\gamma$ that controls the balance between variance and correlation,
-auxiliary responses that provide additional structured guidance for the
-supervised compression, and sample weights that ensure appropriate influence of
-different samples or classes. Together, these features allow CPPLS to build
-stable, interpretable, and discriminative models even in complex,
-high-dimensional, and confounded data settings.
+In summary, the core CPPLS mechanism in this package is the
+$\gamma$-controlled supervised compression followed by CCA. The implementation
+further allows auxiliary responses, sample weights, and package-specific
+response-column weighting through `response_weights` and `target_weights`.
+Together, these controls make it possible to tailor the fitted model to
+complex, high-dimensional, and potentially confounded data settings without
+blurring the distinction between the CPPLS core algorithm and implementation
+extensions.

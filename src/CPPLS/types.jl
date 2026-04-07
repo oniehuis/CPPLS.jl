@@ -263,25 +263,25 @@ function CPPLSFit(
         samplelabels, predictorlabels, responselabels, mode, sampleclasses)
 end
 
-function Base.show(io::IO, model::CPPLSFit)
+function Base.show(io::IO, mf::CPPLSFit)
     print(io, "CPPLSFit(",
-        "mode=", model.mode,
-        ", samples=", size(model.T, 1),
-        ", predictors=", size(model.B, 1),
-        ", responses=", size(model.B, 2),
-        ", components=", size(model.B, 3),
-        ", gamma=", repr(model.gamma),
+        "mode=", mf.mode,
+        ", samples=", size(mf.T, 1),
+        ", predictors=", size(mf.B, 1),
+        ", responses=", size(mf.B, 2),
+        ", components=", size(mf.B, 3),
+        ", gamma=", repr(mf.gamma),
         ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", model::CPPLSFit)
+function Base.show(io::IO, ::MIME"text/plain", mf::CPPLSFit)
     println(io, "CPPLSFit")
-    println(io, "  mode: ", model.mode)
-    println(io, "  samples: ", size(model.T, 1))
-    println(io, "  predictors: ", size(model.B, 1))
-    println(io, "  responses: ", size(model.B, 2))
-    println(io, "  components: ", size(model.B, 3))
-    println(io, "  gamma: ", repr(model.gamma))
+    println(io, "  mode: ", mf.mode)
+    println(io, "  samples: ", size(mf.T, 1))
+    println(io, "  predictors: ", size(mf.B, 1))
+    println(io, "  responses: ", size(mf.B, 2))
+    println(io, "  components: ", size(mf.B, 3))
+    println(io, "  gamma: ", repr(mf.gamma))
 end
 
 """
@@ -426,19 +426,19 @@ struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
     mode::Symbol
 end
 
-function Base.show(io::IO, model::CPPLSFitLight)
+function Base.show(io::IO, mf::CPPLSFitLight)
     print(io, "CPPLSFitLight(",
-        "mode=", model.mode,
-        ", predictors=", size(model.B, 1),
-        ", responses=", size(model.B, 2),
-        ", components=", size(model.B, 3),
+        "mode=", mf.mode,
+        ", predictors=", size(mf.B, 1),
+        ", responses=", size(mf.B, 2),
+        ", components=", size(mf.B, 3),
         ")")
 end
 
-function Base.show(io::IO, ::MIME"text/plain", model::CPPLSFitLight)
+function Base.show(io::IO, ::MIME"text/plain", mf::CPPLSFitLight)
     println(io, "CPPLSFitLight")
-    println(io, "  mode: ", model.mode)
-    println(io, "  predictors: ", size(model.B, 1))
-    println(io, "  responses: ", size(model.B, 2))
-    print(io, "  components: ", size(model.B, 3))
+    println(io, "  mode: ", mf.mode)
+    println(io, "  predictors: ", size(mf.B, 1))
+    println(io, "  responses: ", size(mf.B, 2))
+    print(io, "  components: ", size(mf.B, 3))
 end

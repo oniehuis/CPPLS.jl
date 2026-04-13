@@ -1,9 +1,22 @@
 # CPPLS.jl
 
-CPPLS provides a pure-Julia implementation of Canonical Powered Partial Least Squares
-(CPPLS) for both regression and discriminant analysis. The package is intended for
-high-dimensional and collinear predictor settings in which latent-variable models are used
-for supervised dimension reduction, interpretation, and prediction.
+The CPPLS.jl package implements Canonical Partial Least Squares (CPLS) and its 
+"powered" extension (CPPLS), providing a unified framework for regression and 
+classification. The package is designed for high-dimensional and collinear predictor 
+settings where latent-variable models are used for supervised dimension reduction, 
+interpretation, and prediction. Operating on the predictor matrix X, these methods 
+utilize Canonical Correlation Analysis (CCA) to ensure latent variables are invariant 
+to response scaling and more aggressively focused on predictive information than 
+traditional PLS2 or PLS-DA. This allows the models to handle continuous and categorical 
+responses simultaneously while often requiring significantly fewer components than these 
+standard PLS approaches to achieve superior predictive accuracy. A hallmark of this 
+approach is the ability to include "additional" information in the Y matrix during 
+training—such as experimental design or auxiliary data—to further stabilize and focus 
+the model. Note that a multilinear CPLS approach that operates on tensors is implemented 
+in a separate Julia package named NCPLS. Finally, the "powered" mechanism in CPPLS enables 
+automated variable selection within X by sharpening the focus on the most important 
+predictors.
+
 
 ## Installation
 

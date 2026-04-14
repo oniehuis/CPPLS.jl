@@ -13,19 +13,17 @@ components aligned with the response block. The framework is naturally multivari
 $Y$, supporting both regression and classification.
 
 This package follows that core structure. In addition, it allows optional auxiliary 
-responses, observation weights, as well as two response-column weighting mechanisms, 
-response weights and target weights.
+responses and observation weights.
 
 Each CPPLS component is extracted in two conceptual stages. First, the predictors are 
 projected onto supervised directions, one for each column of $Y$, using the 
 $\gamma$-controlled mixture of weighted predictor variance and weighted predictor–response 
 correlation. Second, a canonical correlation analysis (CCA) determines how these 
 supervised directions should be linearly combined into a single latent variable that is 
-optimally aligned with the primary responses. Auxiliary responses, observation weights, and 
-response weights enter the computation of supervised directions in the first stage, shaping 
-the latent space that is subsequently analyzed by CCA. The second stage performs CCA only 
-against the primary response block; that block may additionally be modified by target 
-weights, and the same observation weighting is used there as well.
+optimally aligned with the primary responses. Auxiliary responses and observation weights
+enter the computation of supervised directions in the first stage, shaping the latent
+space that is subsequently analyzed by CCA. The second stage performs CCA only against
+the primary response block, using the same observation weighting there as well.
 
 ## Preprocessing and Observation Weights
 
@@ -92,8 +90,7 @@ Auxiliary responses are concatenated after this preprocessing step,
 Y = [\,\tilde Y_{\mathrm{prim}} \;\; Y_{\mathrm{aux}}\,],
 ```
 
-and they are not given separate centering or scaling options. Their influence
-is instead controlled through response-column weights in the supervised compression step.
+and they are not given separate centering or scaling options.
 
 ## Supervised Compression
 
@@ -192,13 +189,13 @@ Z(\gamma) = X W_0(\gamma),
 where the matrix $W_0(\gamma)$ depends on $\gamma$ through a power-based
 trade-off between predictor scale, represented by weighted standard
 deviations, and predictor–response association, represented by weighted
-correlations after response-column weighting. CPPLS then performs a weighted
-canonical correlation analysis between $Z(\gamma)$ and the target-weighted
-primary response block $Y_{\mathrm{prim}}^{(t)}$, and records the first
+correlations. CPPLS then performs a weighted canonical correlation analysis
+between $Z(\gamma)$ and the primary response block $Y_{\mathrm{prim}}$, and
+records the first
 (largest) canonical correlation
 
 ```math
-\rho_1(\gamma) = \operatorname{ccorr}_w\!\big(Z(\gamma),\, Y_{\mathrm{prim}}^{(t)}\big) 
+\rho_1(\gamma) = \operatorname{ccorr}_w\!\big(Z(\gamma),\, Y_{\mathrm{prim}}\big) 
 ```
 
 as a score for that value of $\gamma$. The optimal value
@@ -221,12 +218,12 @@ Once the optimal $\gamma$ has been determined, CPPLS recomputes
 ```math
 Z = Z(\gamma_{\mathrm{best}})
 ```
-and performs a full weighted CCA between this matrix and the target-weighted
-primary response block $Y_{\mathrm{prim}}^{(t)}$. The result is a canonical
+and performs a full weighted CCA between this matrix and the
+primary response block $Y_{\mathrm{prim}}$. The result is a canonical
 direction $a$ in the $Z$-space and a corresponding direction $b$ in the
 primary response space. The direction $a$ specifies how to combine the
 supervised directions in $Z$ into one axis that maximally correlates with the
-weighted primary responses. Providing
+primary responses. Providing
 $Y_{\mathrm{aux}}$ changes the supervised directions $W_0$, so the
 intermediate representation $Z = X W_0$ reflects both the primary responses
 and auxiliary structure. The CCA direction $a$ is still chosen only to align

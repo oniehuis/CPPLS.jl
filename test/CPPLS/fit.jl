@@ -168,7 +168,7 @@ end
         responselabels = ["r1"],
     )
 
-    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, mode = :discriminant)
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, analysis_mode=:discriminant)
     @test_throws ArgumentError CPPLS.fit_cppls_core(
         model,
         X,
@@ -183,7 +183,7 @@ end
         sampleclasses = ["classA"]
     )
 
-    @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, mode=:unsupported_mode)
+    @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, analysis_mode=:unsupported_mode)
 end
 
 @testset "fit_cppls with CPPLSModel enforces analysis mode for labels" begin
@@ -195,11 +195,11 @@ end
     ]
     labels = categorical(["classA", "classB", "classA", "classB"])
 
-    spec = CPPLS.CPPLSModel(ncomponents = 2, gamma = 0.5, mode = :discriminant)
+    spec = CPPLS.CPPLSModel(ncomponents = 2, gamma = 0.5, analysis_mode=:discriminant)
     model = CPPLS.fit_cppls(spec, X, labels)
-    @test model.mode === :discriminant
+    @test model.analysis_mode=== :discriminant
 
-    bad_spec = CPPLS.CPPLSModel(ncomponents = 2, gamma = 0.5, mode = :regression)
+    bad_spec = CPPLS.CPPLSModel(ncomponents = 2, gamma = 0.5, analysis_mode=:regression)
     @test_throws ArgumentError CPPLS.fit_cppls(bad_spec, X, labels)
 end
 
@@ -247,16 +247,16 @@ end
     labels = categorical(["red", "blue", "red", "blue"])
     Y, inferred = CPPLS.onehot(labels)
 
-    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
 
     cpplsfit = CPPLS.fit_cppls(model, X, labels)
-    @test cpplsfit.mode === :discriminant
+    @test cpplsfit.analysis_mode=== :discriminant
     @test Set(cpplsfit.responselabels) == Set(inferred)
     @test cpplsfit.sampleclasses == labels
     @test !(cpplsfit.sampleclasses === labels)
     plain_labels = ["red", "blue", "red", "blue"]
     plain_cpplsfit = CPPLS.fit_cppls(model, X, plain_labels)
-    @test plain_cpplsfit.mode === :discriminant
+    @test plain_cpplsfit.analysis_mode=== :discriminant
     @test Set(plain_cpplsfit.responselabels) == Set(unique(plain_labels))
     @test plain_cpplsfit.sampleclasses == plain_labels
     @test !(plain_cpplsfit.sampleclasses === plain_labels)
@@ -275,7 +275,7 @@ end
     mat_model = CPPLS.fit_cppls_core(model, X, reshape(Y_vec, :, 1))
 
     @test vec_model.B ≈ mat_model.B
-    @test vec_model.mode === :regression
+    @test vec_model.analysis_mode=== :regression
 end
 
 @testset "fit_cppls and fit_cppls_light accept Yadd" begin
@@ -332,13 +332,13 @@ end
 
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
     light = CPPLS.fit_cppls_light(model, X, Y)
-    @test light.mode === :regression
-    @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:invalid_mode)
+    @test light.analysis_mode=== :regression
+    @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:invalid_mode)
 
     labels = categorical(["a", "b", "a", "b"])
     Y_one_hot, _ = CPPLS.onehot(labels)
 
-    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
     light_from_labels = CPPLS.fit_cppls_light(model, X, labels)
     manual_discriminant = CPPLS.fit_cppls_light_core(
         model,
@@ -346,15 +346,15 @@ end
         Y_one_hot
     )
 
-    @test light_from_labels.mode === :discriminant
+    @test light_from_labels.analysis_mode=== :discriminant
     @test light_from_labels.B ≈
           manual_discriminant.B
     @test xmean(light_from_labels) ≈ xmean(manual_discriminant)
     plain_labels = ["a", "b", "a", "b"]
-    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
     light_from_plain =
         CPPLS.fit_cppls_light(model, X, plain_labels)
-    @test light_from_plain.mode === :discriminant
+    @test light_from_plain.analysis_mode=== :discriminant
     @test light_from_plain.B ≈
           light_from_labels.B
     @test xmean(light_from_plain) ≈ xmean(light_from_labels)
@@ -383,11 +383,11 @@ end
         Tuple{typeof(model), typeof(X),typeof(cat_labels)},
     )
 
-    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
     cat_light = CPPLS.fit_cppls_light(model, X, cat_labels)
     plain_light = CPPLS.fit_cppls_light(model, X, plain_labels)
 
-    @test cat_light.mode === :discriminant
+    @test cat_light.analysis_mode=== :discriminant
     @test cat_light.B ≈ plain_light.B
     @test xmean(cat_light) ≈ xmean(plain_light)
 end

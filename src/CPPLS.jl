@@ -38,7 +38,7 @@ export gamma
 export gammas
 export intervalize
 export invfreqweights
-export mode
+export analysis_mode
 export ncomponents
 export nestedcv
 export nestedcvperm

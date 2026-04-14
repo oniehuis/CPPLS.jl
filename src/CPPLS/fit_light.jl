@@ -30,7 +30,7 @@ function fit_cppls_light_core(
     end
 
     CPPLSFitLight(d.B, vec(d.X_mean), vec(d.X_std), vec(d.Yprim_std), 
-        m.mode)
+        m.analysis_mode)
 end
 
 
@@ -68,8 +68,8 @@ function fit_cppls_light(
     kwargs...
 ) where {T,R,V,C,U}
     
-    mode(m) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
+    analysis_mode(m) ≡ :discriminant || throw(ArgumentError(
+        "CPPLSModel must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_light_from_sample_classes(m, X, sampleclasses; kwargs...)
 end
@@ -80,8 +80,8 @@ function fit_cppls_light(
     sampleclasses::AbstractVector;
     kwargs...,
 )
-    mode(m) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
+    analysis_mode(m) ≡ :discriminant || throw(ArgumentError(
+        "CPPLSModel must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_light_from_sample_classes(m, X, sampleclasses; kwargs...)
 end

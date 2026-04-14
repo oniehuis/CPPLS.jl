@@ -3,7 +3,7 @@
 
 Model specification passed to `fit`. A `CPPLSModel` stores the user-controlled settings
 for CPPLS fitting, most importantly `ncomponents`, `gamma`, centering and scaling of predictor 
-and response variables, and `mode`.
+and response variables, and `analysis_mode`.
 """
 struct CPPLSModel{T}
     ncomponents::Int
@@ -16,7 +16,7 @@ struct CPPLSModel{T}
     t_squared_norm_tolerance::Float64
     gamma_rel_tol::Float64
     gamma_abs_tol::Float64
-    mode::Symbol
+    analysis_mode::Symbol
 end
 
 """
@@ -31,11 +31,11 @@ end
         t_squared_norm_tolerance::Real=1e-10, 
         gamma_rel_tol::Real=1e-6, 
         gamma_abs_tol::Real=1e-12, 
-        mode::Symbol=:regression
+        analysis_mode::Symbol=:regression
     )
 
 Construct a model specification for `fit`. The most commonly adjusted settings are
-`ncomponents`, `gamma`, and `mode`. `gamma` may be a fixed value, a
+`ncomponents`, `gamma`, and `analysis_mode`. `gamma` may be a fixed value, a
 `(lo, hi)` interval, or a collection of such candidates used during fitting.
 """
 function CPPLSModel(;
@@ -49,7 +49,7 @@ function CPPLSModel(;
     t_squared_norm_tolerance::T4=1e-10,
     gamma_rel_tol::T5=1e-6,
     gamma_abs_tol::T6=1e-12,
-    mode::Symbol=:regression
+    analysis_mode::Symbol=:regression
 ) where {
         T1<:Integer, 
         T2<:Real, 
@@ -60,8 +60,8 @@ function CPPLSModel(;
     }
 
     ncomponents > 0 || throw(ArgumentError("ncomponents must be greater than zero"))
-    mode in (:regression, :discriminant) || throw(ArgumentError(
-            "mode must be :regression or :discriminant, got $mode"))
+    analysis_mode in (:regression, :discriminant) || throw(ArgumentError(
+            "analysis_mode must be :regression or :discriminant, got $analysis_mode"))
 
     CPPLSModel(
         Int(ncomponents),
@@ -74,7 +74,7 @@ function CPPLSModel(;
         Float64(t_squared_norm_tolerance),
         Float64(gamma_rel_tol),
         Float64(gamma_abs_tol),
-        mode
+        analysis_mode
     )
 end
 
@@ -85,7 +85,7 @@ function Base.show(io::IO, spec::CPPLSModel)
         ", center_X=", spec.center_X,
         ", scale_X=", spec.scale_X,
         ", scale_Yprim=", spec.scale_Yprim,
-        ", mode=", spec.mode,
+        ", analysis_mode=", spec.analysis_mode,
         ")")
 end
 
@@ -96,7 +96,7 @@ function Base.show(io::IO, ::MIME"text/plain", spec::CPPLSModel)
     println(io, "  center_X: ", spec.center_X)
     println(io, "  scale_X: ", spec.scale_X)
     println(io, "  scale_Yprim: ", spec.scale_Yprim)
-    print(io, "  mode: ", spec.mode)
+    print(io, "  analysis_mode: ", spec.analysis_mode)
 end
 
 """
@@ -114,17 +114,17 @@ Return the number of components requested in the model.
 ncomponents(model::CPPLSModel) = model.ncomponents
 
 """
-    mode(model::CPPLSModel)
+    analysis_mode(model::CPPLSModel)
 
 Return the analysis mode requested in the model.
 """
-mode(model::CPPLSModel) = model.mode
+analysis_mode(model::CPPLSModel) = model.analysis_mode
 
 """
     AbstractCPPLSFit
 
 Common supertype for fitted CPPLS models that share the fields B, X_bar, Y_bar,
-and mode. 
+and analysis_mode. 
 """
 abstract type AbstractCPPLSFit end
 
@@ -210,7 +210,7 @@ struct CPPLSFit{
     samplelabels::T3
     predictorlabels::T4
     responselabels::T5
-    mode::Symbol
+    analysis_mode::Symbol
     sampleclasses::T6
 end
 
@@ -240,7 +240,7 @@ function CPPLSFit(
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
-    mode::Symbol=:regression,
+    analysis_mode::Symbol=:regression,
     sampleclasses::T6=nothing
 ) where {
         T1<:Real,
@@ -251,21 +251,21 @@ function CPPLSFit(
         T6<:Union{AbstractVector, Nothing}
     }
 
-    mode in (:regression, :discriminant) || throw(ArgumentError(
-            "mode must be :regression or :discriminant, got $mode"))
+    analysis_mode in (:regression, :discriminant) || throw(ArgumentError(
+            "analysis_mode must be :regression or :discriminant, got $analysis_mode"))
 
-    mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
+    analysis_mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
         "sampleclasses are only stored for discriminant analysis models"))
 
     CPPLSFit{T1, T2, T3, T4, T5, T6}(B, T, P, W_comp, U, C, R, Y_hat, 
         F, X_var, X_var_total, gamma, rho, gammas, rhos, zero_mask, a, b, W0, 
         X_mean, X_std, Yprim_std,
-        samplelabels, predictorlabels, responselabels, mode, sampleclasses)
+        samplelabels, predictorlabels, responselabels, analysis_mode, sampleclasses)
 end
 
 function Base.show(io::IO, mf::CPPLSFit)
     print(io, "CPPLSFit(",
-        "mode=", mf.mode,
+        "analysis_mode=", mf.analysis_mode,
         ", samples=", size(mf.T, 1),
         ", predictors=", size(mf.B, 1),
         ", responses=", size(mf.B, 2),
@@ -276,7 +276,7 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", mf::CPPLSFit)
     println(io, "CPPLSFit")
-    println(io, "  mode: ", mf.mode)
+    println(io, "  analysis_mode: ", mf.analysis_mode)
     println(io, "  samples: ", size(mf.T, 1))
     println(io, "  predictors: ", size(mf.B, 1))
     println(io, "  responses: ", size(mf.B, 2))
@@ -285,11 +285,11 @@ function Base.show(io::IO, ::MIME"text/plain", mf::CPPLSFit)
 end
 
 """
-    mode(fit::CPPLSFit)
+    analysis_mode(fit::AbstractCPPLSFit)
 
 Return the analysis mode for the fitted model.
 """
-mode(fit::CPPLSFit) = fit.mode
+analysis_mode(fit::AbstractCPPLSFit) = fit.analysis_mode
 
 """
     fitted(fit::CPPLSFit)
@@ -423,12 +423,12 @@ struct CPPLSFitLight{T<:Real} <: AbstractCPPLSFit
     X_mean::Vector{T}
     X_std::Vector{T}
     Yprim_std::Vector{T}
-    mode::Symbol
+    analysis_mode::Symbol
 end
 
 function Base.show(io::IO, mf::CPPLSFitLight)
     print(io, "CPPLSFitLight(",
-        "mode=", mf.mode,
+        "analysis_mode=", mf.analysis_mode,
         ", predictors=", size(mf.B, 1),
         ", responses=", size(mf.B, 2),
         ", components=", size(mf.B, 3),
@@ -437,7 +437,7 @@ end
 
 function Base.show(io::IO, ::MIME"text/plain", mf::CPPLSFitLight)
     println(io, "CPPLSFitLight")
-    println(io, "  mode: ", mf.mode)
+    println(io, "  analysis_mode: ", mf.analysis_mode)
     println(io, "  predictors: ", size(mf.B, 1))
     println(io, "  responses: ", size(mf.B, 2))
     print(io, "  components: ", size(mf.B, 3))

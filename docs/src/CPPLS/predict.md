@@ -77,7 +77,7 @@ m = CPPLSModel(
     gamma=intervalize(0:0.25:1),
     center_X=true,
     scale_X=true,
-    mode=:discriminant
+    analysis_mode=:discriminant
 )
 
 mf = fit(

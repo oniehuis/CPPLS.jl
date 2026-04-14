@@ -102,7 +102,7 @@ end
     model = CPPLS.CPPLSModel(
         gamma = 0.5,
         ncomponents = 1,
-        mode = :discriminant,
+        analysis_mode=:discriminant,
     )
     X = Float64[
         1 0
@@ -126,7 +126,7 @@ end
     model = CPPLS.CPPLSModel(
         gamma = 0.5,
         ncomponents = 1,
-        mode = :regression,
+        analysis_mode=:regression,
     )
     X = Float64[
         1 0
@@ -144,7 +144,7 @@ end
     model = CPPLS.CPPLSModel(
         gamma = 0.5,
         ncomponents = 2,
-        mode = :discriminant,
+        analysis_mode=:discriminant,
     )
     X_train = Float64[
         1 0

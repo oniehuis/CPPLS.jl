@@ -26,7 +26,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> mf = fit(m, X, classes);
 
@@ -84,7 +84,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> mf = fit(m, X, classes);
 
@@ -125,7 +125,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> mf = fit(m, X, classes);
 
@@ -172,7 +172,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> mf = fit(m, X, classes);
 
@@ -201,7 +201,7 @@ stored `responselabels` ordering.
 
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
-[`mode`](@ref CPPLS.mode)
+[`analysis_mode`](@ref CPPLS.analysis_mode)
 [`sampleclasses`](@ref CPPLS.sampleclasses)
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
@@ -215,7 +215,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> mf = fit(m, X, classes);
 
@@ -231,7 +231,7 @@ function sampleclasses(
     mf::CPPLSFit,
     predictions::AbstractArray{<:Real,3}
 )
-    mode(mf) ≡ :discriminant || throw(ArgumentError(
+    analysis_mode(mf) ≡ :discriminant || throw(ArgumentError(
         "sampleclasses is only defined for discriminant CPPLS models"))
 
     isempty(responselabels(mf)) && throw(ArgumentError(
@@ -264,7 +264,7 @@ julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant);
+julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
 julia> mf = fit(m, X, classes);
 

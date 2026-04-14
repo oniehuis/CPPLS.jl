@@ -161,7 +161,7 @@ end
 end
 
 @testset "scoreplot(cppls) rejects one-component fits" begin
-    model = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, mode = :discriminant)
+    model = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, analysis_mode=:discriminant)
     X = Float64[
         1 0
         0 1

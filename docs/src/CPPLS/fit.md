@@ -6,7 +6,7 @@ analysis, providing a consistent workflow for a wide range of supervised modelin
 
 !!! info
     The distinction between regression and discriminant analysis in CPPLS, as specified by
-    the `mode` keyword in [`CPPLSModel`](@ref), determines which convenience functions are
+    the `analysis_mode` keyword in [`CPPLSModel`](@ref), determines which convenience functions are
     available for downstream analysis. For model fitting itself, the essential difference
     is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response,
     whereas regression typically uses a $Y$ vector or matrix with continuously varying
@@ -49,7 +49,7 @@ For a plain discriminant-analysis fit:
 using CPPLS
 using StatsAPI
 
-m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
 mf = fit(m, X, classes)
 ```
 
@@ -59,7 +59,7 @@ For a plain regression fit:
 using CPPLS
 using StatsAPI
 
-m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:regression)
+m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:regression)
 mf = fit(m, X, Y)
 ```
 
@@ -69,7 +69,7 @@ To add class balancing and additional supervision in DA:
 using CPPLS
 using StatsAPI
 
-m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:discriminant)
+m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
 mf = fit(
     m,
     X,

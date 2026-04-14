@@ -73,7 +73,7 @@ end
 basic_spec = CPPLSModel(
 	ncomponents=2,
 	gamma=0.5,
-	mode=:discriminant
+	analysis_mode=:discriminant
 )
 
 basic_model = fit(
@@ -101,7 +101,7 @@ plot_classes_holdout = ["projected $class" for class in classes_holdout]
 advanced_spec = CPPLSModel(
 	ncomponents=2,
 	gamma=intervalize(0:0.25:1),
-	mode=:discriminant
+	analysis_mode=:discriminant
 )
 
 advanced_model = fit(

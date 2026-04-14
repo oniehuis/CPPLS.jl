@@ -148,7 +148,7 @@
         @test cppls.samplelabels === samplelabels
         @test cppls.predictorlabels === predictorlabels
         @test cppls.responselabels === responselabels
-        @test cppls.mode === :regression
+        @test cppls.analysis_mode=== :regression
         @test cppls.sampleclasses === nothing
         @test size(cppls.B) ==
               (n_predictors, n_responses, ncomponents)
@@ -189,7 +189,7 @@
         @test isempty(cppls_default.samplelabels)
         @test isempty(cppls_default.predictorlabels)
         @test isempty(cppls_default.responselabels)
-        @test cppls_default.mode === :regression
+        @test cppls_default.analysis_mode=== :regression
         @test cppls_default.sampleclasses === nothing
 
         cppls_da = CPPLS.CPPLSFit(
@@ -221,7 +221,7 @@
             :discriminant,
             sampleclasses,
         )
-        @test cppls_da.mode === :discriminant
+        @test cppls_da.analysis_mode=== :discriminant
         @test cppls_da.sampleclasses === sampleclasses
     end
 end
@@ -257,12 +257,12 @@ end
         @test light_model.X_std === X_std
         @test light_model.Yprim_std === Yprim_std
         @test xmean(light_model) === X_mean
-        @test light_model.mode === :regression
+        @test light_model.analysis_mode=== :regression
         @test size(light_model.B) ==
               (n_predictors, n_responses, ncomponents)
         @test size(xmean(light_model)) == (n_predictors,)
         light_da = CPPLSFitLight(B, X_mean, X_std, Yprim_std, :discriminant)
-        @test light_da.mode === :discriminant
+        @test light_da.analysis_mode=== :discriminant
     end
 end
 
@@ -271,7 +271,7 @@ end
     @test spec.ncomponents == 2
     @test spec.gamma == 0.5
     @test spec.center_X === true
-    @test spec.mode === :regression
+    @test spec.analysis_mode=== :regression
 
     tuned = CPPLS.CPPLSModel(
         ncomponents = 3,
@@ -282,27 +282,27 @@ end
         t_squared_norm_tolerance = 1e-7,
         gamma_rel_tol = 1e-5,
         gamma_abs_tol = 1e-9,
-        mode = :discriminant,
+        analysis_mode=:discriminant,
     )
     @test tuned.ncomponents == 3
     @test tuned.gamma == (0.2, 0.8)
     @test tuned.center_X === false
-    @test tuned.mode === :discriminant
+    @test tuned.analysis_mode=== :discriminant
 
     @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents = 0)
-    @test_throws ArgumentError CPPLS.CPPLSModel(mode = :unsupported)
+    @test_throws ArgumentError CPPLS.CPPLSModel(analysis_mode=:unsupported)
 end
 
 @testset "custom show methods summarize CPPLS types" begin
-    spec = CPPLS.CPPLSModel(ncomponents = 3, gamma = (0.2, 0.8), mode = :discriminant)
+    spec = CPPLS.CPPLSModel(ncomponents = 3, gamma = (0.2, 0.8), analysis_mode=:discriminant)
     spec_inline = sprint(show, spec)
     spec_plain = sprint(io -> show(io, MIME"text/plain"(), spec))
     @test occursin("CPPLSModel(", spec_inline)
     @test occursin("ncomponents=3", spec_inline)
-    @test occursin("mode=discriminant", spec_inline)
+    @test occursin("analysis_mode=discriminant", spec_inline)
     @test occursin("CPPLSModel", spec_plain)
     @test occursin("ncomponents: 3", spec_plain)
-    @test occursin("mode: discriminant", spec_plain)
+    @test occursin("analysis_mode: discriminant", spec_plain)
 
     B = reshape(Float64.(1:8), 2, 2, 2)
     T_scores = reshape(Float64.(1:6), 3, 2)
@@ -352,14 +352,14 @@ end
     model_inline = sprint(show, model)
     model_plain = sprint(io -> show(io, MIME"text/plain"(), model))
     @test occursin("CPPLSFit(", model_inline)
-    @test occursin("mode=regression", model_inline)
+    @test occursin("analysis_mode=regression", model_inline)
     @test occursin("gamma=[0.5, 0.5]", model_inline)
     @test occursin("samples=3", model_inline)
     @test occursin("predictors=2", model_inline)
     @test occursin("responses=2", model_inline)
     @test occursin("components=2", model_inline)
     @test occursin("CPPLSFit", model_plain)
-    @test occursin("mode: regression", model_plain)
+    @test occursin("analysis_mode: regression", model_plain)
     @test occursin("gamma: [0.5, 0.5]", model_plain)
     @test occursin("samples: 3", model_plain)
 
@@ -371,10 +371,10 @@ end
     light_inline = sprint(show, light)
     light_plain = sprint(io -> show(io, MIME"text/plain"(), light))
     @test occursin("CPPLSFitLight(", light_inline)
-    @test occursin("mode=discriminant", light_inline)
+    @test occursin("analysis_mode=discriminant", light_inline)
     @test occursin("predictors=2", light_inline)
     @test occursin("responses=2", light_inline)
     @test occursin("components=2", light_inline)
     @test occursin("CPPLSFitLight", light_plain)
-    @test occursin("mode: discriminant", light_plain)
+    @test occursin("analysis_mode: discriminant", light_plain)
 end

@@ -11,9 +11,9 @@ cross-validation. It is an internal optimization and is typically not accessed d
 users.
 
 The package provides getters for fields that are commonly useful in downstream
-work. For [`CPPLSModel`](@ref), the getters are [`gamma`](@ref), [`mode`](@ref), 
+work. For [`CPPLSModel`](@ref), the getters are [`gamma`](@ref), [`analysis_mode`](@ref), 
 and [`ncomponents`](@ref). For [`CPPLSFit`](@ref), the getters are [`coef`](@ref), 
-[`mode`](@ref), [`fitted`](@ref), [`gamma`](@ref), [`gammas`](@ref), [`rhos`](@ref),
+[`analysis_mode`](@ref), [`fitted`](@ref), [`gamma`](@ref), [`gammas`](@ref), [`rhos`](@ref),
 [`predictorlabels`](@ref), [`responselabels`](@ref), [`residuals`](@ref),
 [`sampleclasses`](@ref), [`samplelabels`](@ref), and [`xscores`](@ref).
 
@@ -26,7 +26,7 @@ notation, for example `spec.X_loading_weight_tolerance`.
 ```@docs
 CPPLS.CPPLSModel
 CPPLS.gamma(::CPPLSModel)
-CPPLS.mode(::CPPLSModel)
+CPPLS.analysis_mode(::CPPLSModel)
 CPPLS.ncomponents(::CPPLSModel)
 ```
 
@@ -45,7 +45,7 @@ CPPLS.CPPLSFit
 StatsAPI.fitted(::CPPLSFit)
 CPPLS.gamma(::CPPLSFit)
 CPPLS.gammas(::CPPLSFit)
-CPPLS.mode(::CPPLSFit)
+CPPLS.analysis_mode(::AbstractCPPLSFit)
 CPPLS.predictorlabels(::CPPLSFit)
 CPPLS.projectionmatrix(::CPPLSFit)
 StatsAPI.residuals(::CPPLSFit)

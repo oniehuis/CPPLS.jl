@@ -25,7 +25,7 @@ optional weights, additional responses, and label metadata.
 When `Yprim` is provided, it is treated as the primary response block. When
 `sampleclasses` is provided, the labels are converted to a one-hot response matrix,
 class names are inferred as response labels, and the fit is forced to discriminant
-analysis; `m.mode` must be `:discriminant` or an ArgumentError is thrown.
+analysis; `m.analysis_mode` must be `:discriminant` or an ArgumentError is thrown.
 
 The `gamma` setting in `model` may be a fixed scalar, a `(lo, hi)` tuple, or a vector
 mixing scalars and tuples. Non-scalar settings trigger per-component selection by
@@ -71,32 +71,32 @@ julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
 julia> labels, X, classes, Yadd = load(file, "sample_labels", "X", "classes", "Y_add");
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
+julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.01:0.01:1.0
   center_X: true
   scale_X: false
   scale_Yprim: false
-  mode: discriminant
+  analysis_mode: discriminant
 
 julia> cpplsfit = fit(m, X, classes; samplelabels=labels);
 
 julia> size(CPPLS.xscores(cpplsfit))
 (100, 2)
 
-julia> m = CPPLSModel(ncomponents=2, gamma=0.75, mode=:discriminant)
+julia> m = CPPLSModel(ncomponents=2, gamma=0.75, analysis_mode=:discriminant)
 CPPLSModel
   ncomponents: 2
   gamma: 0.75
   center_X: true
   scale_X: false
   scale_Yprim: false
-  mode: discriminant
+  analysis_mode: discriminant
 
 julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Yadd=Yadd)
 CPPLSFit
-  mode: discriminant
+  analysis_mode: discriminant
   samples: 100
   predictors: 14
   responses: 2
@@ -162,7 +162,7 @@ function fit_cppls_core(
     T6<:Union{AbstractVector, Nothing}
 }
     # Validate that sampleclasses are only provided for discriminant analysis.
-    m.mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
+    m.analysis_mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
         "sampleclasses can only be provided for discriminant analysis"))
 
     # Get predictor count.
@@ -183,7 +183,7 @@ function fit_cppls_core(
     responselabels = validate_label_length(responselabels, d.ncol_Y, "responselabels")
 
     # For discriminant analysis, responselabels must be provided to name the classes.
-    if m.mode ≡ :discriminant && isempty(responselabels)
+    if m.analysis_mode ≡ :discriminant && isempty(responselabels)
         throw(ArgumentError(
             "responselabels must list class names for discriminant analysis"))
     end
@@ -239,7 +239,7 @@ function fit_cppls_core(
         predictorlabels=predictorlabels, 
         responselabels=responselabels,
         sampleclasses=sampleclasses,
-        mode=m.mode
+        analysis_mode=m.analysis_mode
     )
 end
 
@@ -288,7 +288,7 @@ function fit_cppls(
 }
     Yprim_matrix = reshape(Yprim, :, 1)
 
-    # Hier wurde mode = :regression an fit_cppls_core übergeben. Relevant?
+    # Hier wurde analysis_mode=:regression an fit_cppls_core übergeben. Relevant?
 
     fit_cppls_core(
         m, 
@@ -309,8 +309,8 @@ function fit_cppls(
     kwargs...
 ) where {T,R,V,C,U}
 
-    m.mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
+    m.analysis_mode ≡ :discriminant || throw(ArgumentError(
+        "CPPLSModel must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_from_sample_classes(m, X, sampleclasses; kwargs...)
 end
@@ -321,8 +321,8 @@ function fit_cppls(
     sampleclasses::AbstractVector;
     kwargs...
 )
-    m.mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSModel must use mode=:discriminant when fitting from sampleclasses."))
+    m.analysis_mode ≡ :discriminant || throw(ArgumentError(
+        "CPPLSModel must use analysis_mode=:discriminant when fitting from sampleclasses."))
     
     fit_cppls_from_sample_classes(m, X, sampleclasses; kwargs...)
 end

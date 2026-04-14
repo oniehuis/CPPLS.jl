@@ -105,7 +105,7 @@ information is considered.
 m = CPPLSModel(
     ncomponents=2,
     gamma=0.5,
-    mode=:discriminant,
+    analysis_mode=:discriminant,
     center_X=true,
     scale_X=true
 )
@@ -305,7 +305,7 @@ then use interval-based optimization to obtain a practical two-component fit.
 weighted_yadd_grid_m = CPPLSModel(
     ncomponents=1,
     gamma=0:0.01:1,
-    mode=:discriminant,
+    analysis_mode=:discriminant,
     center_X=true,
     scale_X=true
 )
@@ -354,7 +354,7 @@ winner.
 weighted_yadd_interval_m = CPPLSModel(
     ncomponents=1,
     gamma=intervalize(0:0.25:1),
-    mode=:discriminant,
+    analysis_mode=:discriminant,
     center_X=true,
     scale_X=true
 )
@@ -414,7 +414,7 @@ selection are all aligned with the same objective.
 weighted_yadd_best_m = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.25:1),
-    mode=:discriminant,
+    analysis_mode=:discriminant,
     center_X=true,
     scale_X=true
 )
@@ -473,7 +473,7 @@ structured information is available to guide the supervised projection.
 
 This example highlights several key points:
 
-- **Regression in CPPLS** uses the same unified interface as DA, with `mode=:regression`.
+- **Regression in CPPLS** uses the same unified interface as DA, with `analysis_mode=:regression`.
 - **Additional responses** can help ensure that the extracted latent variables reflect the
   main regression signal, not confounding structure from correlated categorical variables.
 - **Observation weighting** is generally less critical in regression with balanced
@@ -506,7 +506,7 @@ Yadd_mat, _ = onehot(classes)  # additional response as one-hot matrix
 m = CPPLSModel(
     ncomponents=2,
     gamma=intervalize(0:0.25:1),
-    mode=:regression,
+    analysis_mode=:regression,
     center_X=true,
     scale_X=true
 )

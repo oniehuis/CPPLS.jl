@@ -4,16 +4,12 @@
         X::AbstractMatrix{<:Real}, 
         Yprim::AbstractMatrix{<:Real}, 
         Yaux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}, 
-        obs_weights::Union{AbstractVector{<:Real}, Nothing},
-        response_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
-        target_weights::Union{AbstractVector{<:Real}, Nothing}=nothing
+        obs_weights::Union{AbstractVector{<:Real}, Nothing}
     ) -> Tuple{Matrix{Float64}, Vector{Float64}, Vector{Float64}}
 
 Prepare input data for CPPLS by converting to `Float64`, validating dimensions, applying
 optional centering and scaling, constructing the combined response matrix, and
-allocating working arrays needed by the fit routine. `response_weights` and
-`target_weights` are validated and converted here, but their mathematical effect is
-applied later during supervised-weight construction and CCA alignment.
+allocating working arrays needed by the fit routine.
 
 Type stablity tested: 03/26/2026
 """
@@ -22,9 +18,7 @@ function preprocess(
     X::AbstractMatrix{<:Real},
     Yprim::AbstractMatrix{<:Real},
     Yaux::Union{LinearAlgebra.AbstractVecOrMat, Nothing},
-    obs_weights::Union{AbstractVector{<:Real}, Nothing},
-    response_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
-    target_weights::Union{AbstractVector{<:Real}, Nothing}=nothing
+    obs_weights::Union{AbstractVector{<:Real}, Nothing}
 )
     nrow_X, ncol_X = size(X)
     nrow_Y, ncol_Y = size(Yprim)
@@ -39,8 +33,6 @@ function preprocess(
     Yprim, _, Yprim_std = centerscale(float64(Yprim), false, m.scale_Yprim, obs_weights)
 
     Y = isnothing(Yaux) ? Yprim : hcat(Yprim, float64(Yaux))
-    response_weights = prepare_response_weights(response_weights, size(Y, 2), "response_weights")
-    target_weights = prepare_response_weights(target_weights, size(Yprim, 2), "target_weights")
 
     X_def     = copy(X)
     B         = Array{Float64}(undef, (ncol_X, ncol_Y, ncomponents(m)))
@@ -57,8 +49,6 @@ function preprocess(
         # Preprocessed primary responses
         Yprim=Yprim,
         Yprim_std=Yprim_std, 
-        response_weights=response_weights,
-        target_weights=target_weights,
       
         # Preprocessed combined (Yprim and Yaux) responses
         Y=Y, 
@@ -75,29 +65,6 @@ function preprocess(
         W_comp=W_comp, 
         zero_mask=zero_mask
     )
-end
-
-function prepare_response_weights(
-    weights::Union{AbstractVector{<:Real}, Nothing},
-    expected::Integer,
-    name::AbstractString
-)
-    if isnothing(weights)
-        return ones(Float64, expected)
-    end
-
-    length(weights) == expected || throw(DimensionMismatch(
-        "Length of $name must be $expected, got $(length(weights))"))
-
-    weights_float = float64(weights)
-    all(isfinite, weights_float) || throw(ArgumentError(
-        "$name must contain only finite values"))
-    any(w -> w < 0, weights_float) && throw(ArgumentError(
-        "$name must be non-negative"))
-    sum(weights_float) > 0 || throw(ArgumentError(
-        "$name must sum to a positive value"))
-
-    weights_float
 end
 
 # Helper functions

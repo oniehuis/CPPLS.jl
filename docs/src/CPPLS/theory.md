@@ -152,53 +152,6 @@ representation of $X$ that is best aligned with $Y$. This reduces the need for
 separate scaling decisions as a preprocessing step while making the
 variance-correlation trade-off part of the fitted model itself.
 
-## Response Weights and Target Weights
-
-Besides observation weights, this implementation supports two additional
-response-column weighting schemes.
-
-Let $r_k \ge 0$ denote the `response_weights` for the columns of the combined
-response block $Y$, including auxiliary responses when present. These weights
-are injected into the supervised compression step by weighting each response
-column before the supervised directions are formed. In matrix form,
-
-```math
-Y^{(r)} = Y D_r,
-\qquad
-D_r = \operatorname{diag}(r_1,\dots,r_q).
-```
-
-Equivalently, one may view this as weighting the predictor-response
-correlation matrix columnwise:
-
-```math
-C^{(r)}_{jk} = r_k\, \operatorname{corr}_w(x_j,y_k).
-```
-
-The supervised weight matrix $W_0(\gamma)$ is then built from predictor scale
-and these weighted correlations. This is the stage at which both primary and
-auxiliary response columns are allowed to have more or less influence on the
-construction of the supervised space.
-
-Now let $t_\ell \ge 0$ denote the `target_weights` for the primary-response
-columns only. These weights do not alter the construction of $W_0(\gamma)$.
-Instead, they are injected into the CCA alignment step through
-
-```math
-Y_{\mathrm{prim}}^{(t)} = \tilde Y_{\mathrm{prim}} D_t,
-\qquad
-D_t = \operatorname{diag}(t_1,\dots,t_{q_{\mathrm{prim}}}).
-```
-
-CCA is therefore performed between $Z(\gamma)$ and
-$Y_{\mathrm{prim}}^{(t)}$, not between $Z(\gamma)$ and the unweighted primary
-response block. Consequently, `target_weights` control how strongly each
-primary response contributes when candidate values of $\gamma$ are scored and
-when the final canonical direction is chosen.
-
-In short, `response_weights` influence the supervised compression stage,
-whereas `target_weights` influence the CCA alignment stage.
-
 Each column of $W_0(\gamma)$ admits a direct geometric interpretation. For
 each response variable $y_k$, CPPLS constructs a direction in the original
 predictor space that emphasizes predictors with large weighted variance and
@@ -400,9 +353,7 @@ extracted components, but they are not themselves predicted.
 
 In summary, the core CPPLS mechanism in this package is the
 $\gamma$-controlled supervised compression followed by CCA. The implementation
-further allows auxiliary responses, sample weights, and package-specific
-response-column weighting through `response_weights` and `target_weights`.
-Together, these controls make it possible to tailor the fitted model to
+further allows auxiliary responses and sample weights. Together, these controls make it possible to tailor the fitted model to
 complex, high-dimensional, and potentially confounded data settings without
 blurring the distinction between the CPPLS core algorithm and implementation
 extensions.

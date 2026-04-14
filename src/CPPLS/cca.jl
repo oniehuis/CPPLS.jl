@@ -33,22 +33,17 @@ function compute_cppls_weights(
     Y::AbstractMatrix{<:Real},
     Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
-    response_weights::AbstractVector{<:Real},
-    target_weights::AbstractVector{<:Real},
     gamma::Real
 )
 
-    Yprim_weighted = weight_response_columns(Yprim, target_weights)
-
     if gamma == 0.5
         # Special-case gamma = 0.5 uses the X'Y shortcut used in the CPPLS formulation.
-        W0 = X_def' * weight_response_columns(Y, response_weights)
-        a, b, rho = cca_coeffs_and_corr(X_def * W0, Yprim_weighted, obs_weights)
+        W0 = X_def' * Y
+        a, b, rho = cca_coeffs_and_corr(X_def * W0, Yprim, obs_weights)
         w = vec(W0 * a[:, 1])
         return w, rho^2, a[:, 1], b[:, 1], 0.5, W0, [0.5], [rho^2]
     else
-        return compute_cppls_weights(m, X_def, Y, Yprim, obs_weights, response_weights,
-            target_weights, (gamma, gamma))
+        return compute_cppls_weights(m, X_def, Y, Yprim, obs_weights, (gamma, gamma))
     end
 end
 
@@ -58,8 +53,6 @@ function compute_cppls_weights(
     Y::AbstractMatrix{<:Real},
     Yprim::AbstractMatrix{<:Real},
     obs_weights::Union{AbstractVector{<:Real}, Nothing},
-    response_weights::AbstractVector{<:Real},
-    target_weights::AbstractVector{<:Real},
     gamma::Union{<:NTuple{2, <:Real},
                  <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
     }
@@ -84,10 +77,7 @@ function compute_cppls_weights(
         S_x .= 0
     end
 
-    C .*= reshape(response_weights, 1, :)
-    Yprim_weighted = weight_response_columns(Yprim, target_weights)
-
-    compute_best_loadings(m, X_def, S_x, C, C_sign, Yprim_weighted, obs_weights, gamma,
+    compute_best_loadings(m, X_def, S_x, C, C_sign, Yprim, obs_weights, gamma,
         size(Y, 2))
 end
 
@@ -185,13 +175,6 @@ function compute_best_loadings(
     end
 
     w, rho2, a[:, 1], b[:, 1], gamma, W0, gammas, rhos
-end
-
-@inline function weight_response_columns(
-    Y::AbstractMatrix{<:Real},
-    weights::AbstractVector{<:Real}
-)
-    Y .* reshape(weights, 1, :)
 end
 
 """

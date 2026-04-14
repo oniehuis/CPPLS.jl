@@ -53,7 +53,7 @@ Y_aux_raw     = data["Y_aux"]
 
 # Keep the auxiliary response on its original scale. In CPPLS, auxiliary variables enter
 # through predictor-response correlations, so ordinary centering or scaling of Y_aux is
-# not the main mechanism for controlling its influence; use response_weights instead.
+# not the main mechanism for controlling its influence.
 Y_aux = Y_aux_raw
 
 nothing # hide

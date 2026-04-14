@@ -41,16 +41,10 @@ are treated as closed intervals: both endpoints are evaluated explicitly, and th
 choice is the best among the two endpoints and the interior Brent minimizer.
 
 Keyword arguments accepted by `fit` include `obs_weights` for per-sample weighting,
-`Yaux` for auxiliary response columns, `response_weights` for weighting the columns of
-the combined response block used to construct the supervised projection, and
-`target_weights` for weighting the primary-response columns in the later CCA alignment
-step. Optional `samplelabels`, `predictorlabels`, `responselabels`, and `sampleclasses`
-metadata are also accepted for diagnostics and plotting. `Yaux` must have the same
-number of rows as `X` and is concatenated to `Yprim` internally to build the supervised
-projection, while prediction targets always remain the primary responses. If omitted,
-both weight vectors default to ones. `response_weights` must have length
-`size(Yprim, 2) + size(Yaux, 2)` when `Yaux` is provided and `size(Yprim, 2)` otherwise;
-`target_weights` must have length `size(Yprim, 2)`.
+`Yaux` for auxiliary response columns, and optional `samplelabels`, `predictorlabels`,
+`responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Yaux` must
+have the same number of rows as `X` and is concatenated to `Yprim` internally to build
+the supervised projection, while prediction targets always remain the primary responses.
 
 The return value is a `CPPLSFit` containing scores, loadings, regression coefficients,
 and the metadata needed for downstream prediction and diagnostics. Use `CPPLS.fit` or
@@ -147,10 +141,7 @@ end
     )
 
 Low-level CPPLS fitting routine used by `fit`. Prefer `fit` with a CPPLSModel for the
-public entry point and full parameter documentation. `response_weights` controls how
-strongly each primary or auxiliary response column shapes the supervised projection,
-whereas `target_weights` controls how strongly each primary response column contributes
-to the CCA alignment step. Both default to vectors of ones.
+public entry point and full parameter documentation.
 """
 function fit_cppls_core(
     m::CPPLSModel,
@@ -158,21 +149,17 @@ function fit_cppls_core(
     Yprim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
     Yaux::T2=nothing,
-    response_weights::T3=nothing,
-    target_weights::T4=nothing,
-    samplelabels::T5=String[],
-    predictorlabels::T6=String[],
-    responselabels::T7=String[],
-    sampleclasses::T8=nothing
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
+    sampleclasses::T6=nothing
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T3<:Union{AbstractVector{<:Real}, Nothing},
-    T4<:Union{AbstractVector{<:Real}, Nothing},
+    T3<:AbstractVector,
+    T4<:AbstractVector,
     T5<:AbstractVector,
-    T6<:AbstractVector,
-    T7<:AbstractVector,
-    T8<:Union{AbstractVector, Nothing}
+    T6<:Union{AbstractVector, Nothing}
 }
     # Validate that sampleclasses are only provided for discriminant analysis.
     m.mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
@@ -182,7 +169,7 @@ function fit_cppls_core(
     n_predictors = size(X, 2)
 
     # Preprocess data: center/scale, optionally with weights, and concatenate Yaux.
-    d = preprocess(m, X, Yprim, Yaux, obs_weights, response_weights, target_weights)
+    d = preprocess(m, X, Yprim, Yaux, obs_weights)
 
     # Validate label lengths and generate default sample labels if needed.
     samplelabels = validate_label_length(samplelabels, d.nrow_X, "samplelabels")
@@ -222,7 +209,7 @@ function fit_cppls_core(
     for i = 1:m.ncomponents
         wᵢ, rho[i], a[:, i], b[:, i], gamma_vals[i], W0ᵢ, gammas[:, i],
         rhos[:, i] = compute_cppls_weights(m, d.X_def, d.Y, d.Yprim, obs_weights,
-            d.response_weights, d.target_weights, m.gamma)
+            m.gamma)
         
         W0[:, :, i] = W0ᵢ
         Z[:, :, i] = d.X_def * W0ᵢ
@@ -262,27 +249,21 @@ function fit_cppls(
     Yprim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
     Yaux::T2=nothing,
-    response_weights::T3=nothing,
-    target_weights::T4=nothing,
-    samplelabels::T5=String[],
-    predictorlabels::T6=String[],
-    responselabels::T7=String[],
-    sampleclasses::T8=nothing
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
+    sampleclasses::T6=nothing
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T3<:Union{AbstractVector{<:Real}, Nothing},
-    T4<:Union{AbstractVector{<:Real}, Nothing},
+    T3<:AbstractVector,
+    T4<:AbstractVector,
     T5<:AbstractVector,
-    T6<:AbstractVector,
-    T7<:AbstractVector,
-    T8<:Union{AbstractVector, Nothing}  
+    T6<:Union{AbstractVector, Nothing}  
 }
     fit_cppls_core(m, X, Yprim;
         obs_weights=obs_weights, 
         Yaux=Yaux, 
-        response_weights=response_weights,
-        target_weights=target_weights,
         samplelabels=samplelabels,
         predictorlabels=predictorlabels, 
         responselabels=responselabels,
@@ -295,19 +276,15 @@ function fit_cppls(
     Yprim::AbstractVector{<:Real};
     obs_weights::T1=nothing,
     Yaux::T2=nothing,
-    response_weights::T3=nothing,
-    target_weights::T4=nothing,
-    samplelabels::T5=String[],
-    predictorlabels::T6=String[],
-    responselabels::T7=String[],
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat, Nothing},
-    T3<:Union{AbstractVector{<:Real}, Nothing},
-    T4<:Union{AbstractVector{<:Real}, Nothing},
-    T5<:AbstractVector,
-    T6<:AbstractVector,
-    T7<:AbstractVector
+    T3<:AbstractVector,
+    T4<:AbstractVector,
+    T5<:AbstractVector
 }
     Yprim_matrix = reshape(Yprim, :, 1)
 
@@ -319,8 +296,6 @@ function fit_cppls(
         Yprim_matrix; 
         obs_weights=obs_weights, 
         Yaux=Yaux,
-        response_weights=response_weights,
-        target_weights=target_weights,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
         responselabels=responselabels
@@ -371,19 +346,15 @@ function fit_cppls_from_sample_classes(
     sampleclasses;
     obs_weights::T1=nothing,
     Yaux::T2=nothing,
-    response_weights::T3=nothing,
-    target_weights::T4=nothing,
-    samplelabels::T5=String[],
-    predictorlabels::T6=String[],
-    responselabels::T7=String[]
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[]
 ) where {
     T1<:Union{AbstractVector{<:Real}, Nothing},
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T3<:Union{AbstractVector{<:Real}, Nothing},
-    T4<:Union{AbstractVector{<:Real}, Nothing},
-    T5<:AbstractVector,
-    T6<:AbstractVector,
-    T7<:AbstractVector
+    T3<:AbstractVector,
+    T4<:AbstractVector,
+    T5<:AbstractVector
 }
     isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
         " when passing sample classes; response labels are inferred automatically."))
@@ -393,8 +364,6 @@ function fit_cppls_from_sample_classes(
     fit_cppls_core(m, X, Yprim; 
         obs_weights=obs_weights, 
         Yaux=Yaux,
-        response_weights=response_weights,
-        target_weights=target_weights,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
         responselabels=classes,

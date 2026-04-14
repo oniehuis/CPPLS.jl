@@ -83,8 +83,6 @@ end
     X = rand(5, 3)
     Y = rand(5, 2)
     Y = hcat(Y, rand(5, 1))
-    response_weights = ones(size(Y, 2))
-    target_weights = ones(size(Y, 2))
 
     m = CPPLSModel(gamma_rel_tol=1e-6, gamma_abs_tol=1e-12)
      # Test scalar gamma
@@ -94,8 +92,6 @@ end
         Y,
         Y,
         nothing,
-        response_weights,
-        target_weights,
         0.5
     )
     @test length(weights) == 8
@@ -108,8 +104,6 @@ end
         Y,
         Y,
         nothing,
-        response_weights,
-        target_weights,
         (0.1, 0.9)
     )
     @test length(weights_bounds) == 8
@@ -136,8 +130,6 @@ end
         Y_rank_zero_candidate,
         Y_rank_zero_candidate,
         nothing,
-        ones(size(Y_rank_zero_candidate, 2)),
-        ones(size(Y_rank_zero_candidate, 2)),
         (0.1, 0.9)
     )) == 8
 
@@ -147,8 +139,6 @@ end
         Y,
         Y,
         nothing,
-        response_weights,
-        target_weights,
         0.3
     )
     tuple_gamma = CPPLS.compute_cppls_weights(
@@ -157,8 +147,6 @@ end
         Y,
         Y,
         nothing,
-        response_weights,
-        target_weights,
         (0.3, 0.3)
     )
     @test all(isapprox.(scalar_gamma[1], tuple_gamma[1]))
@@ -174,8 +162,6 @@ end
             Y,
             Y,
             nothing,
-            response_weights,
-            target_weights,
             (1.0, 1.0),
         )
     @test gamma_one == 1.0
@@ -209,8 +195,6 @@ end
         Y,
         Y,
         nothing,
-        ones(size(Y, 2)),
-        ones(size(Y, 2)),
         (0.0, 0.0)
     )
     @test gamma == 0.0
@@ -224,8 +208,6 @@ end
         Y,
         Y,
         nothing,
-        ones(size(Y, 2)),
-        ones(size(Y, 2)),
         (0.0, 0.0)
     )
 end

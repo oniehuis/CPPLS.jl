@@ -21,25 +21,21 @@ analysis, providing a consistent workflow for a wide range of supervised modelin
 
     When primary response columns differ strongly in variance, it may be sensible
     to set `scale_Yprim=true` in [`CPPLSModel`](@ref) so that they are on a comparable
-    footing, and then, if needed, to control their relative influence explicitly through
-    the `response_weights` and `target_weights` keyword arguments of [`StatsAPI.fit`](@ref).
+    footing.
 
-Users can optionally provide observation weights (keyword argument `obs_weights`), response
-weights (keyword argument `response_weights`), target weights (keyword argument
-`target_weights`), and auxiliary response information (keyword argument `Yaux`) to
-[`StatsAPI.fit`](@ref). Observation weights control the influence of each sample on the
-model and are especially useful in discriminant analysis when classes are imbalanced.
-Response weights control the influence of each response column, both primary and auxiliary,
-on the supervised compression step. Target weights control the influence of each primary
-response column in the canonical-correlation step. Auxiliary responses guide the supervised
-projection without becoming prediction targets themselves. Together with the `gamma`
-parameter, which balances predictor scale and predictor-response association, these options
-allow the user to tailor a CPPLS model to the structure of the dataset. Other choices, such
-as the number of components, may also be important depending on the application.
+Users can optionally provide observation weights (keyword argument `obs_weights`) and
+auxiliary response information (keyword argument `Yaux`) to [`StatsAPI.fit`](@ref).
+Observation weights control the influence of each sample on the model and are especially
+useful in discriminant analysis when classes are imbalanced. Auxiliary responses guide the
+supervised projection without becoming prediction targets themselves. Together with the
+`gamma` parameter, which balances predictor scale and predictor-response association,
+these options allow the user to tailor a CPPLS model to the structure of the dataset.
+Other choices, such as the number of components, may also be important depending on the
+application.
 
-If you plan to use observation weights, response weights, target weights, or auxiliary
-responses, these choices should be made before selecting `gamma`, because all of them can
-affect the supervised objective and therefore the most appropriate value of `gamma`.
+If you plan to use observation weights or auxiliary responses, these choices should be made
+before selecting `gamma`, because both can affect the supervised objective and therefore
+the most appropriate value of `gamma`.
 
 ## Quick Start
 
@@ -86,7 +82,7 @@ mf = fit(
 For complete worked examples, including score plots, gamma selection, and a regression
 workflow with auxiliary responses, see [Fit Examples](fit_examples.md).
 
-## Centering, Scaling, and Response Weighting
+## Centering and Scaling
 
 CPPLS provides convenience options for centering and scaling, but these options are
 intentionally asymmetric across $X$, `Yprim`, and `Yaux`, because these matrices do not
@@ -124,9 +120,7 @@ raw covariances. Because correlation is invariant to affine rescaling apart from
 ordinary centering and scaling of `Yaux` do not provide meaningful control over how
 strongly auxiliary responses influence the model. What matters is the pattern of an
 auxiliary variable across samples, not its numerical unit. For this reason, centering and
-scaling options for `Yaux` are not exposed. If a primary or auxiliary response should have
-more or less influence on the model, this should be controlled through `response_weights`
-and `target_weights` rather than through preprocessing scale changes.
+scaling options for `Yaux` are not exposed.
 
 ## API
 

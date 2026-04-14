@@ -117,12 +117,6 @@ end
     @test size(B) == (size(X, 2), size(Y_prim, 2), 2)
     @test n_samples == size(X, 1)
     @test n_targets == size(Y_prim, 2)
-    @test d.response_weights == ones(size(Y_prim, 2) + size(Y_aux, 2))
-    @test d.target_weights == ones(size(Y_prim, 2))
-
-    d_weighted = CPPLS.preprocess(model, X, Y_prim, Y_aux, weights, [1, 2, 3, 4], [3, 4])
-    @test d_weighted.response_weights == [1.0, 2.0, 3.0, 4.0]
-    @test d_weighted.target_weights == [3.0, 4.0]
 
     @test_throws DimensionMismatch CPPLS.preprocess(
         model,
@@ -138,8 +132,4 @@ end
         nothing,
         [1, 2, 3]
     )
-    @test_throws DimensionMismatch CPPLS.preprocess(model, X, Y_prim, Y_aux, weights, [1, 2], nothing)
-    @test_throws DimensionMismatch CPPLS.preprocess(model, X, Y_prim, Y_aux, weights, nothing, [1, 2, 3])
-    @test_throws ArgumentError CPPLS.preprocess(model, X, Y_prim, Y_aux, weights, [-1, 1, 1, 1], nothing)
-    @test_throws ArgumentError CPPLS.preprocess(model, X, Y_prim, Y_aux, weights, nothing, [0, 0])
 end

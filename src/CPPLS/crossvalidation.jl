@@ -1104,8 +1104,6 @@ Keyword arguments
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
     sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Yaux`, and
     `Y_auxiliary`, are subset automatically to the current training split.
-    Response-column metadata such as `response_weights` and `target_weights` are passed
-    through unchanged.
 - `obs_weight_fn`: optional callback for fold-local observation weights. It receives
     `X_train` and `Y_train` for the current training split, and may also inspect
     `sample_indices`, `fit_kwargs`, and `spec` through keyword arguments. It must return
@@ -1560,8 +1558,7 @@ Keyword arguments
     sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, `Yaux`, and
     `Y_auxiliary`, are subset automatically to the current training split. If
     `responselabels` are not supplied, they are inferred from the number of columns in
-    `Y`. Response-column metadata such as `response_weights` and `target_weights` are
-    passed through unchanged.
+    `Y`.
 - `obs_weight_fn`: callback for fold-local observation weights. By default this is
     `default_da_obs_weight_fn`, which applies `invfreqweights(sampleclasses(Y_train))`
     inside each outer or inner training split, matching `cvda` and `permda`. It is

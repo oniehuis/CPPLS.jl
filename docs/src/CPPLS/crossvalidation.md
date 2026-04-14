@@ -132,6 +132,7 @@ section.
 ```@example crossvalidation
 using CPPLS
 using JLD2
+using CategoricalArrays
 using Random
 using Statistics
 using CairoMakie
@@ -143,6 +144,8 @@ samplelabels, X, classes, Yadd = load(
     "classes",
     "Y_add"
 )
+
+classes = categorical(classes)
 
 m = CPPLSModel(
     ncomponents=2,

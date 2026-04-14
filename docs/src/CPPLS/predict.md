@@ -40,6 +40,7 @@ section.
 ```@example project
 using CPPLS
 using JLD2
+using CategoricalArrays
 using CairoMakie
 
 # Get custom colors
@@ -52,6 +53,8 @@ samplelabels, X, classes, Yadd = load(
     "classes",
     "Y_add"
 )
+
+classes = categorical(classes)
 
 holdout_idx = [findlast(==("minor"), classes), findlast(==("major"), classes)]
 train_idx = setdiff(collect(axes(X, 1)), holdout_idx)

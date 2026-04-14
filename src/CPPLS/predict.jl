@@ -22,9 +22,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using JLD2; using Random;
+julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> classes = CategoricalArray(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -80,9 +82,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using JLD2; using Random;
+julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> classes = CategoricalArray(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -121,9 +125,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using JLD2; using Random;
+julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> classes = CategoricalArray(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -168,9 +174,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using JLD2; using Random;
+julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> classes = CategoricalArray(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -211,9 +219,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using JLD2; using Random;
+julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> classes = CategoricalArray(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -260,9 +270,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using JLD2; using Random;
+julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
+
+julia> classes = CategoricalArray(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 

@@ -6,54 +6,66 @@
     )
     fit(m::CPPLSModel,
         X::AbstractMatrix{<:Real},
+        Yprim::AbstractVector{<:Real};
+        kwargs...
+    )
+    fit(m::CPPLSModel,
+        X::AbstractMatrix{<:Real},
         sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
         kwargs...
     ) where {T,R,V,C,U}
-    fit(m::CPPLSModel,
-        X::AbstractMatrix{<:Real},
-        sampleclasses::AbstractVector;
-        kwargs...
-    )
 
-Fit a CPPLS model using the StatsAPI entry point and an explicit CPPLSModel. The model
+Fit a CPPLS model using the StatsAPI entry point and an explicit `CPPLSModel`. The model
 specification supplies the number of components, the gamma configuration, centering, the
 analysis mode, and all numerical tolerances, while the call to `fit` supplies data,
 optional weights, additional responses, and label metadata.
 
-When `Yprim` is provided, it is treated as the primary response block. When
-`sampleclasses` is provided, the labels are converted to a one-hot response matrix,
-class names are inferred as response labels, and the fit is forced to discriminant
-analysis; `m.analysis_mode` must be `:discriminant` or an ArgumentError is thrown.
+The interpretation of the third argument depends on its type. When the third argument is
+an `AbstractMatrix{<:Real}`, it is treated as the primary response block and used as-is;
+the matrix may contain continuous responses, one-hot encoded class indicators, or other
+custom encodings chosen by the user. When the third argument is an
+`AbstractVector{<:Real}`, it is interpreted as a univariate numeric response and is
+internally reshaped to a one-column matrix. When the third argument is an
+`AbstractCategoricalArray`, it is interpreted as a vector of class labels; the labels are
+converted internally to a one-hot response matrix, class names are inferred as response
+labels, and the fit is performed in discriminant mode. In that case,
+`m.analysis_mode` must be `:discriminant`, otherwise an `ArgumentError` is thrown.
 
 The `gamma` setting in `model` may be a fixed scalar, a `(lo, hi)` tuple, or a vector
 mixing scalars and tuples. Non-scalar settings trigger per-component selection by
 choosing the value that yields the largest leading canonical correlation between the
 supervised projection and the primary responses, and the resulting gamma values are
-stored in the fitted model. The per-candidate gamma and squared-canonical-correlation
+stored in the fitted model. The per-candidate gamma and squared canonical correlation
 values examined during that search are also stored in the fitted model as matrices for
 downstream diagnostics and plotting. A range such as `0:0.01:1` is treated as a grid of
 fixed gamma values. To convert such a range into adjacent search intervals, use
-`intervalize(0:0.01:1)`, which yields `[(0.0, 0.01), (0.01, 0.02), ...]`. If you want
-interval-wise Brent searches, pass `intervalize(...)` to `gamma`. Tuple intervals
-are treated as closed intervals: both endpoints are evaluated explicitly, and the final
+`intervalize(0:0.01:1)`, which yields `[(0.0, 0.01), (0.01, 0.02), ...]`. If interval-wise
+Brent searches are desired, pass `intervalize(...)` to `gamma`. Tuple intervals are
+treated as closed intervals: both endpoints are evaluated explicitly, and the final
 choice is the best among the two endpoints and the interior Brent minimizer.
 
 Keyword arguments accepted by `fit` include `obs_weights` for per-sample weighting,
 `Yadd` for additional response columns, and optional `samplelabels`, `predictorlabels`,
 `responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Yadd` must
-have the same number of rows as `X` and is concatenated to `Yprim` internally to build
+have the same number of rows as `X` and is concatenated internally to `Yprim` to build
 the supervised projection, while prediction targets always remain the primary responses.
+When `Yprim` is supplied as a matrix, `sampleclasses` may be used to store sample-level
+class metadata on the fitted object without changing the response block used for fitting.
+When class labels are passed positionally as an `AbstractCategoricalArray`, they define
+the supervised response and are also stored as metadata. When `Yprim` is supplied as a
+numeric vector, the fit is treated as univariate numeric-response fitting.
 
 The return value is a `CPPLSFit` containing scores, loadings, regression coefficients,
-and the metadata needed for downstream prediction and diagnostics. Use `CPPLS.fit` or
-`StatsAPI.fit` when disambiguation is required in your namespace.
+gamma-selection diagnostics, and the metadata needed for downstream prediction and
+diagnostics. Use `CPPLS.fit` or `StatsAPI.fit` when disambiguation is required in your
+namespace.
 
 See also
-[`CPPLSFit`](@ref CPPLS.CPPLSFit), 
-[`CPPLSModel`](@ref CPPLS.CPPLSModel), 
-[`coef`](@ref CPPLS.coef(::AbstractCPPLSFit)), 
-[`fitted`](@ref CPPLS.fitted(::CPPLSFit)), 
-[`gamma`](@ref CPPLS.gamma(::CPPLSFit)), 
+[`CPPLSFit`](@ref CPPLS.CPPLSFit),
+[`CPPLSModel`](@ref CPPLS.CPPLSModel),
+[`coef`](@ref CPPLS.coef(::AbstractCPPLSFit)),
+[`fitted`](@ref CPPLS.fitted(::CPPLSFit)),
+[`gamma`](@ref CPPLS.gamma(::CPPLSFit)),
 [`intervalize`](@ref),
 [`invfreqweights`](@ref invfreqweights(::AbstractVector)),
 [`predictorlabels`](@ref predictorlabels(::CPPLSFit)),
@@ -65,9 +77,13 @@ See also
 
 # Examples
 ```jldoctest
-julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
+julia> using CategoricalArrays; using JLD2;
+
+julia> file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
 julia> labels, X, classes, Yadd = load(file, "sample_labels", "X", "classes", "Y_add");
+
+julia> classes = categorical(classes);  # make categorical
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, analysis_mode=:discriminant)
 CPPLSModel
@@ -114,6 +130,15 @@ end
 function fit(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
+    Yprim::AbstractVector{<:Real};
+    kwargs...
+)
+    fit_cppls(m, X, Yprim; kwargs...)
+end
+
+function fit(
+    m::CPPLSModel,
+    X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...
 ) where {T,R,V,C,U}
@@ -121,13 +146,116 @@ function fit(
     fit_cppls(m, X, sampleclasses; kwargs...)
 end
 
-function fit(
+function fit_cppls(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    sampleclasses::AbstractVector;
-    kwargs...
-)
-    fit_cppls(m, X, sampleclasses; kwargs...)
+    Yprim::AbstractMatrix{<:Real};
+    obs_weights::T1=nothing,
+    Yadd::T2=nothing,
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
+    sampleclasses::T6=nothing
+) where {
+    T1<:Union{AbstractVector{<:Real}, Nothing},
+    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
+    T3<:AbstractVector,
+    T4<:AbstractVector,
+    T5<:AbstractVector,
+    T6<:Union{AbstractVector, Nothing}  
+}
+    fit_cppls_core(m, X, Yprim;
+        obs_weights=obs_weights, 
+        Yadd=Yadd, 
+        samplelabels=samplelabels,
+        predictorlabels=predictorlabels, 
+        responselabels=responselabels,
+        sampleclasses=sampleclasses)
+end
+
+function fit_cppls(
+    m::CPPLSModel,
+    X::AbstractMatrix{<:Real},
+    Yprim::AbstractVector{<:Real};
+    obs_weights::T1=nothing,
+    Yadd::T2=nothing,
+    samplelabels::T3=String[],
+    predictorlabels::T4=String[],
+    responselabels::T5=String[],
+    sampleclasses::T6=nothing
+) where {
+    T1<:Union{AbstractVector{<:Real}, Nothing},
+    T2<:Union{LinearAlgebra.AbstractVecOrMat, Nothing},
+    T3<:AbstractVector,
+    T4<:AbstractVector,
+    T5<:AbstractVector,
+    T6<:Union{AbstractVector, Nothing}
+}
+
+    if m.analysis_mode ≡ :discriminant
+        throw(ArgumentError(
+            "`Yprim::AbstractVector{<:Real}` is interpreted as a univariate numeric " * 
+            "response and is not valid for `analysis_mode=:discriminant`. " *
+            "Pass class labels as an `AbstractCategoricalArray`, or pass an explicitly " * 
+            "encoded response matrix."
+        ))
+    end
+
+    isnothing(sampleclasses) || throw(ArgumentError(
+        "`sampleclasses` cannot be provided when `Yprim` is a numeric vector. " *
+        "Use an `AbstractCategoricalArray` as the third argument for discriminant " * 
+        "analysis instead."
+    ))
+
+    Yprim_matrix = reshape(Yprim, :, 1)
+
+    fit_cppls_core(
+        m, 
+        X, 
+        Yprim_matrix; 
+        obs_weights=obs_weights, 
+        Yadd=Yadd,
+        samplelabels=samplelabels, 
+        predictorlabels=predictorlabels, 
+        responselabels=responselabels
+    )
+end
+
+function fit_cppls(
+    m::CPPLSModel,
+    X::AbstractMatrix{<:Real},
+    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
+    Yadd::T1=nothing,
+    obs_weights::T2=nothing,
+    samplelabels::T3=String[],
+    responselabels::T4=String[],
+    predictorlabels::T5=String[]
+) where {
+    T, R, V, C, U,
+    T1<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
+    T2<:Union{AbstractVector{<:Real}, Nothing},
+    T3<:AbstractVector,
+    T4<:AbstractVector,
+    T5<:AbstractVector
+}
+
+    isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
+        " when passing sample classes; response labels are inferred automatically."))
+
+    m.analysis_mode ≡ :discriminant || throw(ArgumentError(
+        "CPPLSModel must use analysis_mode=:discriminant when passing class labels as " * 
+        "an `AbstractCategoricalArray`"))
+    
+    Yprim, classes = onehot(sampleclasses)
+
+    fit_cppls_core(m, X, Yprim; 
+        obs_weights=obs_weights, 
+        Yadd=Yadd,
+        samplelabels=samplelabels, 
+        predictorlabels=predictorlabels, 
+        responselabels=classes,
+        sampleclasses=copy(sampleclasses)
+    )
 end
 
 """
@@ -238,134 +366,6 @@ function fit_cppls_core(
         responselabels=responselabels,
         sampleclasses=sampleclasses,
         analysis_mode=m.analysis_mode
-    )
-end
-
-function fit_cppls(
-    m::CPPLSModel,
-    X::AbstractMatrix{<:Real},
-    Yprim::AbstractMatrix{<:Real};
-    obs_weights::T1=nothing,
-    Yadd::T2=nothing,
-    samplelabels::T3=String[],
-    predictorlabels::T4=String[],
-    responselabels::T5=String[],
-    sampleclasses::T6=nothing
-) where {
-    T1<:Union{AbstractVector{<:Real}, Nothing},
-    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T3<:AbstractVector,
-    T4<:AbstractVector,
-    T5<:AbstractVector,
-    T6<:Union{AbstractVector, Nothing}  
-}
-    fit_cppls_core(m, X, Yprim;
-        obs_weights=obs_weights, 
-        Yadd=Yadd, 
-        samplelabels=samplelabels,
-        predictorlabels=predictorlabels, 
-        responselabels=responselabels,
-        sampleclasses=sampleclasses)
-end
-
-function fit_cppls(
-    m::CPPLSModel,
-    X::AbstractMatrix{<:Real},
-    Yprim::AbstractVector{<:Real};
-    obs_weights::T1=nothing,
-    Yadd::T2=nothing,
-    samplelabels::T3=String[],
-    predictorlabels::T4=String[],
-    responselabels::T5=String[],
-) where {
-    T1<:Union{AbstractVector{<:Real}, Nothing},
-    T2<:Union{LinearAlgebra.AbstractVecOrMat, Nothing},
-    T3<:AbstractVector,
-    T4<:AbstractVector,
-    T5<:AbstractVector
-}
-    Yprim_matrix = reshape(Yprim, :, 1)
-
-    # Hier wurde analysis_mode=:regression an fit_cppls_core übergeben. Relevant?
-
-    fit_cppls_core(
-        m, 
-        X, 
-        Yprim_matrix; 
-        obs_weights=obs_weights, 
-        Yadd=Yadd,
-        samplelabels=samplelabels, 
-        predictorlabels=predictorlabels, 
-        responselabels=responselabels
-    )
-end
-
-function fit_cppls(
-    m::CPPLSModel,
-    X::AbstractMatrix{<:Real},
-    sampleclasses::AbstractCategoricalArray{T,1,R,V,C,U};
-    kwargs...
-) where {T,R,V,C,U}
-
-    m.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSModel must use analysis_mode=:discriminant when fitting from sampleclasses."))
-    
-    fit_cppls_from_sample_classes(m, X, sampleclasses; kwargs...)
-end
-
-function fit_cppls(
-    m::CPPLSModel,
-    X::AbstractMatrix{<:Real},
-    sampleclasses::AbstractVector;
-    kwargs...
-)
-    m.analysis_mode ≡ :discriminant || throw(ArgumentError(
-        "CPPLSModel must use analysis_mode=:discriminant when fitting from sampleclasses."))
-    
-    fit_cppls_from_sample_classes(m, X, sampleclasses; kwargs...)
-end
-
-"""
-    fit_cppls_from_sample_classes(
-        m::CPPLSModel,
-        X::AbstractMatrix{<:Real},
-        sampleclasses,
-        ncomponents::Int=2;
-        kwargs...
-    )
-
-Internal helper that converts class labels to a one-hot response matrix before fitting
-and is primarily used by the label-based `fit_cppls` wrappers. Prefer `fit` for user
-documentation and public entry points.
-"""
-function fit_cppls_from_sample_classes(
-    m::CPPLSModel,
-    X::AbstractMatrix{<:Real},
-    sampleclasses;
-    obs_weights::T1=nothing,
-    Yadd::T2=nothing,
-    samplelabels::T3=String[],
-    predictorlabels::T4=String[],
-    responselabels::T5=String[]
-) where {
-    T1<:Union{AbstractVector{<:Real}, Nothing},
-    T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing},
-    T3<:AbstractVector,
-    T4<:AbstractVector,
-    T5<:AbstractVector
-}
-    isempty(responselabels) || throw(ArgumentError("`responselabels` cannot be provided" *
-        " when passing sample classes; response labels are inferred automatically."))
-
-    Yprim, classes = onehot(sampleclasses)
-
-    fit_cppls_core(m, X, Yprim; 
-        obs_weights=obs_weights, 
-        Yadd=Yadd,
-        samplelabels=samplelabels, 
-        predictorlabels=predictorlabels, 
-        responselabels=classes,
-        sampleclasses=copy(sampleclasses)
     )
 end
 

@@ -33,6 +33,7 @@ section.
 ```@example fit_da
 using CPPLS
 using JLD2
+using CategoricalArrays
 using MultivariateStats
 using Statistics
 using CairoMakie
@@ -48,7 +49,7 @@ data = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"))
 # Extract data of interest
 sample_labels = data["sample_labels"]
 X             = data["X"]
-classes       = data["classes"]
+classes       = categorical(data["classes"])
 Yadd_raw      = data["Y_add"]
 
 # Keep the additional response on its original scale. In CPPLS, additional variables enter

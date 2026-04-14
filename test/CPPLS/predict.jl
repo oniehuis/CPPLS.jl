@@ -110,7 +110,7 @@ end
         1 1
         2 3
     ]
-    labels = ["red", "blue", "red", "blue"]
+    labels = categorical(["red", "blue", "red", "blue"])
     cpplsfit = CPPLS.fit(model, X, labels)
 
     preds = CPPLS.predict(cpplsfit, X, 1)
@@ -152,7 +152,7 @@ end
         1 1
         2 3
     ]
-    labels = ["red", "blue", "red", "blue"]
+    labels = categorical(["red", "blue", "red", "blue"])
     cpplsfit = CPPLS.fit(model, X_train, labels)
 
     X_new = Float64[

@@ -254,7 +254,7 @@ end
     @test Set(cpplsfit.responselabels) == Set(inferred)
     @test cpplsfit.sampleclasses == labels
     @test !(cpplsfit.sampleclasses === labels)
-    plain_labels = ["red", "blue", "red", "blue"]
+    plain_labels = categorical(["red", "blue", "red", "blue"])
     plain_cpplsfit = CPPLS.fit_cppls(model, X, plain_labels)
     @test plain_cpplsfit.analysis_mode=== :discriminant
     @test Set(plain_cpplsfit.responselabels) == Set(unique(plain_labels))

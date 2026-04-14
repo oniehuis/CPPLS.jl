@@ -66,8 +66,11 @@ mf = fit(m, X, Y)
 To add class balancing and additional supervision in DA:
 
 ```julia
+using CategoricalArrays
 using CPPLS
 using StatsAPI
+
+classes = categorical(classes)
 
 m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
 mf = fit(

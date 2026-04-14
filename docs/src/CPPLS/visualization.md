@@ -27,6 +27,7 @@ backend imports and the color definitions used to keep the examples visually con
 ```@example visualization
 using CPPLS
 using JLD2
+using CategoricalArrays
 using CairoMakie
 using PlotlyJS
 using Statistics
@@ -38,6 +39,8 @@ samplelabels, X, classes, Yadd = load(
 	"classes",
 	"Y_add"
 )
+
+classes = categorical(classes)
 
 # Use Makie's Wong palette so the class colors stay consistent across examples.
 wong = Makie.wong_colors()

@@ -20,7 +20,7 @@ using JLD2
 Fit a CPPLS model using the StatsAPI entry point and an explicit CPPLSModel. The model
 specification supplies the number of components, the gamma configuration, centering, the
 analysis mode, and all numerical tolerances, while the call to `fit` supplies data,
-optional weights, auxiliary responses, and label metadata.
+optional weights, additional responses, and label metadata.
 
 When `Yprim` is provided, it is treated as the primary response block. When
 `sampleclasses` is provided, the labels are converted to a one-hot response matrix,
@@ -41,8 +41,8 @@ are treated as closed intervals: both endpoints are evaluated explicitly, and th
 choice is the best among the two endpoints and the interior Brent minimizer.
 
 Keyword arguments accepted by `fit` include `obs_weights` for per-sample weighting,
-`Yaux` for auxiliary response columns, and optional `samplelabels`, `predictorlabels`,
-`responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Yaux` must
+`Yadd` for additional response columns, and optional `samplelabels`, `predictorlabels`,
+`responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Yadd` must
 have the same number of rows as `X` and is concatenated to `Yprim` internally to build
 the supervised projection, while prediction targets always remain the primary responses.
 
@@ -69,7 +69,7 @@ See also
 ```jldoctest
 julia> using JLD2; file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
-julia> labels, X, classes, Yaux = load(file, "sample_labels", "X", "classes", "Y_aux");
+julia> labels, X, classes, Yadd = load(file, "sample_labels", "X", "classes", "Y_add");
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.01:0.01:1.00, mode=:discriminant)
 CPPLSModel
@@ -94,7 +94,7 @@ CPPLSModel
   scale_Yprim: false
   mode: discriminant
 
-julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Yaux=Yaux)
+julia> cpplsfit = fit(m, X, classes; obs_weights=invfreqweights(classes), Yadd=Yadd)
 CPPLSFit
   mode: discriminant
   samples: 100
@@ -148,7 +148,7 @@ function fit_cppls_core(
     X::AbstractMatrix{<:Real},
     Yprim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
-    Yaux::T2=nothing,
+    Yadd::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
@@ -168,8 +168,8 @@ function fit_cppls_core(
     # Get predictor count.
     n_predictors = size(X, 2)
 
-    # Preprocess data: center/scale, optionally with weights, and concatenate Yaux.
-    d = preprocess(m, X, Yprim, Yaux, obs_weights)
+    # Preprocess data: center/scale, optionally with weights, and concatenate Yadd.
+    d = preprocess(m, X, Yprim, Yadd, obs_weights)
 
     # Validate label lengths and generate default sample labels if needed.
     samplelabels = validate_label_length(samplelabels, d.nrow_X, "samplelabels")
@@ -248,7 +248,7 @@ function fit_cppls(
     X::AbstractMatrix{<:Real},
     Yprim::AbstractMatrix{<:Real};
     obs_weights::T1=nothing,
-    Yaux::T2=nothing,
+    Yadd::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
@@ -263,7 +263,7 @@ function fit_cppls(
 }
     fit_cppls_core(m, X, Yprim;
         obs_weights=obs_weights, 
-        Yaux=Yaux, 
+        Yadd=Yadd, 
         samplelabels=samplelabels,
         predictorlabels=predictorlabels, 
         responselabels=responselabels,
@@ -275,7 +275,7 @@ function fit_cppls(
     X::AbstractMatrix{<:Real},
     Yprim::AbstractVector{<:Real};
     obs_weights::T1=nothing,
-    Yaux::T2=nothing,
+    Yadd::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[],
@@ -295,7 +295,7 @@ function fit_cppls(
         X, 
         Yprim_matrix; 
         obs_weights=obs_weights, 
-        Yaux=Yaux,
+        Yadd=Yadd,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
         responselabels=responselabels
@@ -345,7 +345,7 @@ function fit_cppls_from_sample_classes(
     X::AbstractMatrix{<:Real},
     sampleclasses;
     obs_weights::T1=nothing,
-    Yaux::T2=nothing,
+    Yadd::T2=nothing,
     samplelabels::T3=String[],
     predictorlabels::T4=String[],
     responselabels::T5=String[]
@@ -363,7 +363,7 @@ function fit_cppls_from_sample_classes(
 
     fit_cppls_core(m, X, Yprim; 
         obs_weights=obs_weights, 
-        Yaux=Yaux,
+        Yadd=Yadd,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
         responselabels=classes,

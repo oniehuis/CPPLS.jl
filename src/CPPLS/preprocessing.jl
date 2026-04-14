@@ -3,7 +3,7 @@
         m::CPPLSModel,
         X::AbstractMatrix{<:Real}, 
         Yprim::AbstractMatrix{<:Real}, 
-        Yaux::Union{LinearAlgebra.AbstractVecOrMat, Nothing}, 
+        Yadd::Union{LinearAlgebra.AbstractVecOrMat, Nothing}, 
         obs_weights::Union{AbstractVector{<:Real}, Nothing}
     ) -> Tuple{Matrix{Float64}, Vector{Float64}, Vector{Float64}}
 
@@ -17,7 +17,7 @@ function preprocess(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
     Yprim::AbstractMatrix{<:Real},
-    Yaux::Union{LinearAlgebra.AbstractVecOrMat, Nothing},
+    Yadd::Union{LinearAlgebra.AbstractVecOrMat, Nothing},
     obs_weights::Union{AbstractVector{<:Real}, Nothing}
 )
     nrow_X, ncol_X = size(X)
@@ -32,7 +32,7 @@ function preprocess(
 
     Yprim, _, Yprim_std = centerscale(float64(Yprim), false, m.scale_Yprim, obs_weights)
 
-    Y = isnothing(Yaux) ? Yprim : hcat(Yprim, float64(Yaux))
+    Y = isnothing(Yadd) ? Yprim : hcat(Yprim, float64(Yadd))
 
     X_def     = copy(X)
     B         = Array{Float64}(undef, (ncol_X, ncol_Y, ncomponents(m)))
@@ -50,7 +50,7 @@ function preprocess(
         Yprim=Yprim,
         Yprim_std=Yprim_std, 
       
-        # Preprocessed combined (Yprim and Yaux) responses
+        # Preprocessed combined (Yprim and Yadd) responses
         Y=Y, 
       
         # Dimensions

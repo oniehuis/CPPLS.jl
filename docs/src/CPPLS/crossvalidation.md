@@ -136,12 +136,12 @@ using Random
 using Statistics
 using CairoMakie
 
-samplelabels, X, classes, Y_aux = load(
+samplelabels, X, classes, Yadd = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
     "sample_labels",
     "X",
     "classes",
-    "Y_aux"
+    "Y_add"
 )
 
 m = CPPLSModel(
@@ -153,7 +153,7 @@ m = CPPLSModel(
 )
 
 fit_kwargs = (
-    Yaux=Y_aux,
+    Yadd=Yadd,
     samplelabels=samplelabels
 )
 
@@ -260,7 +260,7 @@ outlier_scan = outlierscan(
     X,
     classes;
     spec=m,
-    fit_kwargs=(; Yaux=Y_aux, samplelabels=samplelabels),
+    fit_kwargs=(; Yadd=Yadd, samplelabels=samplelabels),
     num_outer_folds=5,
     num_outer_folds_repeats=100,
     num_inner_folds=4,
@@ -302,7 +302,7 @@ outlier_view_model = fit(
     X,
     classes;
     obs_weights=class_weights,
-    Yaux=Y_aux,
+    Yadd=Yadd,
     samplelabels=samplelabels
 )
 

@@ -118,8 +118,8 @@ Compute the supervised weight vector w and related CCA quantities after selectin
 best gamma, mirroring the CPPLS step where W0(gamma) defines Z and CCA yields the
 canonical direction used to form the component. The return values include w, the squared
 canonical correlation, canonical coefficient vectors, the selected gamma, and W0. q is the 
-total number of response columns (primary + auxiliary) used to construct the supervised 
-projection space.
+total number of response columns (primary + additional) used to construct the supervised 
+projection space. Additional response columns are included here when present.
 
 Type stablity tested: 03/25/2026
 """

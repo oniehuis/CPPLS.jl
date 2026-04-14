@@ -12,7 +12,7 @@ and then to use canonical correlation to combine that supervised space into late
 components aligned with the response block. The framework is naturally multivariate in
 $Y$, supporting both regression and classification.
 
-This package follows that core structure. In addition, it allows optional auxiliary 
+This package follows that core structure. In addition, it allows optional additional 
 responses and observation weights.
 
 Each CPPLS component is extracted in two conceptual stages. First, the predictors are 
@@ -20,7 +20,7 @@ projected onto supervised directions, one for each column of $Y$, using the
 $\gamma$-controlled mixture of weighted predictor variance and weighted predictor–response 
 correlation. Second, a canonical correlation analysis (CCA) determines how these 
 supervised directions should be linearly combined into a single latent variable that is 
-optimally aligned with the primary responses. Auxiliary responses and observation weights
+optimally aligned with the primary responses. Additional responses and observation weights
 enter the computation of supervised directions in the first stage, shaping the latent
 space that is subsequently analyzed by CCA. The second stage performs CCA only against
 the primary response block, using the same observation weighting there as well.
@@ -57,7 +57,7 @@ correlation are
 {\sqrt{\operatorname{Var}_w(x)\operatorname{Var}_w(y)}} .
 ```
 
-The implementation preprocesses predictors, primary responses, and auxiliary
+The implementation preprocesses predictors, primary responses, and additional
 responses asymmetrically because they enter the algorithm differently.
 
 For the predictor block $X$, CPPLS optionally centers and optionally scales
@@ -84,10 +84,10 @@ when response scaling is enabled, and $\tilde y_k = y_k$ otherwise. This is not 
 conflict with the correlation-based theory, because the response columns are centered 
 internally later when predictor-response correlations are computed.
 
-Auxiliary responses are concatenated after this preprocessing step,
+Additional responses are concatenated after this preprocessing step,
 
 ```math
-Y = [\,\tilde Y_{\mathrm{prim}} \;\; Y_{\mathrm{aux}}\,],
+Y = [\,\tilde Y_{\mathrm{prim}} \;\; Y_{\mathrm{add}}\,],
 ```
 
 and they are not given separate centering or scaling options.
@@ -114,7 +114,7 @@ W_0(\gamma) \in \mathbb{R}^{p \times q},
 ```
 
 where $p$ is the number of predictors and $q$ is the number of response
-columns used to construct the supervised space, including auxiliary ones. It
+columns used to construct the supervised space, including additional ones. It
 can be written as a product of a diagonal scale matrix and a correlation
 matrix,
 
@@ -164,7 +164,7 @@ Z(\gamma) = X W_0(\gamma),
 
 maps each sample from the original $p$-dimensional predictor space into a
 $q$-dimensional supervised space, where each coordinate summarizes the sample
-along a direction tailored to one column of $Y$. Auxiliary response variables
+along a direction tailored to one column of $Y$. Additional response variables
 contribute additional supervised directions and thereby enrich this
 intermediate representation. In this sense, $W_0(\gamma)$ defines a
 supervised low-dimensional coordinate system for the predictors. Every entry
@@ -224,12 +224,12 @@ direction $a$ in the $Z$-space and a corresponding direction $b$ in the
 primary response space. The direction $a$ specifies how to combine the
 supervised directions in $Z$ into one axis that maximally correlates with the
 primary responses. Providing
-$Y_{\mathrm{aux}}$ changes the supervised directions $W_0$, so the
+$Y_{\mathrm{add}}$ changes the supervised directions $W_0$, so the
 intermediate representation $Z = X W_0$ reflects both the primary responses
-and auxiliary structure. The CCA direction $a$ is still chosen only to align
-$Z$ with $Y_{\mathrm{prim}}^{(t)}$, but it is chosen inside a supervised space
+and additional structure. The CCA direction $a$ is still chosen only to align
+$Z$ with $Y_{\mathrm{prim}}$, but it is chosen inside a supervised space
 that already accounts for systematic variation captured by
-$Y_{\mathrm{aux}}$. In practice, this means auxiliary variables can steer the
+$Y_{\mathrm{add}}$. In practice, this means additional variables can steer the
 construction of the latent space without becoming prediction targets
 themselves.
 
@@ -259,7 +259,7 @@ predictor changes, on average, as one moves along $t$. The weighted Y-loading
 c = \frac{Y^\top W t}{t^\top W t}
 ```
 likewise contains linear coefficients describing how each response variable,
-including auxiliary responses when present, varies with the component under
+including additional responses when present, varies with the component under
 the weighting structure.
 
 Deflation removes the part of $X$ explained by this component:
@@ -276,7 +276,7 @@ discriminant analysis, for example, the first component may capture most of
 the class separation, while later components may describe residual within-class
 structure or additional sources of systematic variation.
 
-## Sample Weights and Auxiliary Responses
+## Sample Weights and Additional Responses
 
 Sample weighting becomes particularly important in discriminant analysis
 (CPPLS-DA) when classes are unbalanced, when some samples are more reliable
@@ -290,7 +290,7 @@ and smaller weights to the majority class, the effective contribution of each
 class can be balanced. The resulting components better reflect between-class
 structure instead of mostly tracking the most common samples.
 
-Weights can also compensate for auxiliary structure that is unevenly
+Weights can also compensate for additional structure that is unevenly
 distributed across classes. If collection time, instrument batch, or another
 nuisance factor is associated more strongly with one class than another, that
 imbalance can distort the estimated correlations used to build $W_0(\gamma)$.
@@ -300,13 +300,13 @@ samples known to be noisy or unreliable can be down-weighted, while
 representative or carefully controlled samples can be up-weighted, improving
 the robustness of the extracted components.
 
-Auxiliary responses address the problem of structured variation in $X$ that is
+Additional responses address the problem of structured variation in $X$ that is
 not itself the primary target but can still influence the extracted
 components. Instead of changing how much influence each sample has, they tell
 CPPLS which additional structured variation should be represented when
 constructing the supervised space. If a nuisance factor such as collection
 date, instrument batch, or processing condition explains part of the variation
-in $X$, adding it as a column in $Y_{\mathrm{aux}}$ gives CPPLS a dedicated
+in $X$, adding it as a column in $Y_{\mathrm{add}}$ gives CPPLS a dedicated
 supervised direction for that factor. The primary responses are still the only
 targets used when selecting the final canonical direction and when building the
 prediction model, but that direction is now chosen in a latent space that has
@@ -314,7 +314,7 @@ already organized part of the nuisance variation explicitly. This reduces the
 risk that nuisance structure is absorbed into the primary component simply
 because it happens to correlate with the target labels in the observed sample.
 
-A concrete example illustrates the benefit of combining auxiliary responses and
+A concrete example illustrates the benefit of combining additional responses and
 sample weighting. Suppose two insect species are analyzed by GC-MS to
 characterize their cuticular hydrocarbons. The primary task is to discriminate
 species, but chemical profiles also change with season, and the two species
@@ -322,11 +322,11 @@ may not be collected uniformly throughout the year. In this situation, the
 largest variation in $X$ may reflect seasonal drift rather than species. If
 season is omitted from the response structure, peaks that vary with collection
 date may appear spuriously associated with species because the sampling times
-differ. Including collection date or season as an auxiliary response gives
+differ. Including collection date or season as an additional response gives
 CPPLS a supervised direction that represents this temporal effect explicitly.
 If the sampling is also imbalanced, class-balanced weights can prevent one
 species or one part of the season from dominating the covariance estimates used
-to build the components. Together, auxiliary responses and sample weights help
+to build the components. Together, additional responses and sample weights help
 separate the biological signal of interest from structured sampling effects,
 producing a more stable and interpretable model.
 
@@ -344,13 +344,13 @@ where $W_{\mathrm{comp}}$ contains the component weight vectors, $P$ the
 corresponding X-loadings, and $C_{\mathrm{primary}}$ the primary Y-loadings.
 
 Only the primary response block contributes to $C_{\mathrm{primary}}$ and thus
-to the final coefficient matrix $B$. Auxiliary responses affect the fitted
+to the final coefficient matrix $B$. Additional responses affect the fitted
 model indirectly, by shaping the supervised compression and therefore the
 extracted components, but they are not themselves predicted.
 
 In summary, the core CPPLS mechanism in this package is the
 $\gamma$-controlled supervised compression followed by CCA. The implementation
-further allows auxiliary responses and sample weights. Together, these controls make it possible to tailor the fitted model to
+further allows additional responses and sample weights. Together, these controls make it possible to tailor the fitted model to
 complex, high-dimensional, and potentially confounded data settings without
 blurring the distinction between the CPPLS core algorithm and implementation
 extensions.

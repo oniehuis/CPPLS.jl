@@ -11,7 +11,7 @@ traditional PLS2 or PLS-DA. This allows the models to handle continuous and cate
 responses simultaneously while often requiring significantly fewer components than these 
 standard PLS approaches to achieve superior predictive accuracy. A hallmark of this 
 approach is the ability to include "additional" information in the Y matrix during 
-training—such as experimental design or auxiliary data—to further stabilize and focus 
+training—such as experimental design or additional data—to further stabilize and focus 
 the model. Note that a multilinear CPLS approach that operates on tensors is implemented 
 in a separate Julia package named NCPLS. Finally, the "powered" mechanism in CPPLS enables 
 automated variable selection within X by sharpening the focus on the most important 

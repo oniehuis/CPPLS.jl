@@ -151,6 +151,20 @@ end
     @test resolved.obs_weights ≈ [0.5, 0.5]
 end
 
+@testset "subset_fit_kwargs subsets Yadd by training rows" begin
+    fit_kwargs = (
+        obs_weights = [1.0, 2.0, 3.0, 4.0],
+        samplelabels = ["a", "b", "c", "d"],
+        Yadd = reshape(collect(1.0:8.0), 4, 2),
+    )
+
+    subset = CPPLS.subset_fit_kwargs(fit_kwargs, [1, 3], 4)
+
+    @test subset.obs_weights == [1.0, 3.0]
+    @test subset.samplelabels == ["a", "c"]
+    @test subset.Yadd == [1.0 5.0; 3.0 7.0]
+end
+
 @testset "nestedcv returns scores and component choices" begin
     spec = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, mode = :discriminant)
     cfg = CPPLS.cv_classification()

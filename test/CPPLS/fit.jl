@@ -278,6 +278,43 @@ end
     @test vec_model.mode === :regression
 end
 
+@testset "fit_cppls and fit_cppls_light accept Yadd" begin
+    X = Float64[
+        1 0 2
+        0 1 2
+        1 1 1
+        2 3 0
+        3 2 1
+    ]
+    Y = Float64[
+        1 0
+        0 1
+        1 1
+        0 1
+        1 0
+    ]
+    Yadd = Float64[
+        0.1
+        0.2
+        0.3
+        0.4
+        0.5
+    ]
+
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
+
+    full = CPPLS.fit_cppls(model, X, Y; Yadd=Yadd)
+    light = CPPLS.fit_cppls_light(model, X, Y; Yadd=Yadd)
+    light_core = CPPLS.fit_cppls_light_core(model, X, Y; Yadd=Yadd)
+
+    @test full isa CPPLS.CPPLSFit
+    @test size(full.W0) == (size(X, 2), size(Y, 2) + size(Yadd, 2), 2)
+    @test light.B ≈ light_core.B
+    @test light.X_mean ≈ light_core.X_mean
+    @test light.X_std ≈ light_core.X_std
+    @test light.Yprim_std ≈ light_core.Yprim_std
+end
+
 @testset "fit_cppls_light wrappers enforce analysis mode" begin
     X = Float64[
         1 0

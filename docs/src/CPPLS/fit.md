@@ -24,16 +24,16 @@ analysis, providing a consistent workflow for a wide range of supervised modelin
     footing.
 
 Users can optionally provide observation weights (keyword argument `obs_weights`) and
-auxiliary response information (keyword argument `Yaux`) to [`StatsAPI.fit`](@ref).
+additional response information (keyword argument `Yadd`) to [`StatsAPI.fit`](@ref).
 Observation weights control the influence of each sample on the model and are especially
-useful in discriminant analysis when classes are imbalanced. Auxiliary responses guide the
+useful in discriminant analysis when classes are imbalanced. Additional responses guide the
 supervised projection without becoming prediction targets themselves. Together with the
 `gamma` parameter, which balances predictor scale and predictor-response association,
 these options allow the user to tailor a CPPLS model to the structure of the dataset.
 Other choices, such as the number of components, may also be important depending on the
 application.
 
-If you plan to use observation weights or auxiliary responses, these choices should be made
+If you plan to use observation weights or additional responses, these choices should be made
 before selecting `gamma`, because both can affect the supervised objective and therefore
 the most appropriate value of `gamma`.
 
@@ -63,7 +63,7 @@ m = CPPLSModel(ncomponents=2, gamma=0.5, mode=:regression)
 mf = fit(m, X, Y)
 ```
 
-To add class balancing and auxiliary supervision in DA:
+To add class balancing and additional supervision in DA:
 
 ```julia
 using CPPLS
@@ -75,17 +75,17 @@ mf = fit(
     X,
     classes;
     obs_weights=invfreqweights(classes),
-    Yaux=Y_aux
+    Yadd=Yadd
 )
 ```
 
 For complete worked examples, including score plots, gamma selection, and a regression
-workflow with auxiliary responses, see [Fit Examples](fit_examples.md).
+workflow with additional responses, see [Fit Examples](fit_examples.md).
 
 ## Centering and Scaling
 
 CPPLS provides convenience options for centering and scaling, but these options are
-intentionally asymmetric across $X$, `Yprim`, and `Yaux`, because these matrices do not
+intentionally asymmetric across $X$, `Yprim`, and `Yadd`, because these matrices do not
 enter the algorithm in the same way.
 
 For the predictor matrix $X$, centering is usually the most important preprocessing step.
@@ -113,14 +113,14 @@ response columns internally. A separate centering option for `Yprim` would there
 redundant and would give the impression of additional control without materially changing
 the supervised projection.
 
-The auxiliary response block `Yaux` is treated differently again. Auxiliary variables guide
+The additional response block `Yadd` is treated differently again. Additional variables guide
 the construction of the supervised space, but they are not prediction targets. In the CPPLS
 implementation used here, they enter through predictor-response correlations rather than
 raw covariances. Because correlation is invariant to affine rescaling apart from sign,
-ordinary centering and scaling of `Yaux` do not provide meaningful control over how
-strongly auxiliary responses influence the model. What matters is the pattern of an
-auxiliary variable across samples, not its numerical unit. For this reason, centering and
-scaling options for `Yaux` are not exposed.
+ordinary centering and scaling of `Yadd` do not provide meaningful control over how
+strongly additional responses influence the model. What matters is the pattern of an
+additional variable across samples, not its numerical unit. For this reason, centering and
+scaling options for `Yadd` are not exposed.
 
 ## API
 

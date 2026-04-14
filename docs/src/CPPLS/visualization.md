@@ -11,7 +11,7 @@ user-defined class order and marker styles.
 
 We reuse the synthetic discriminant-analysis dataset introduced on the [Fit](@ref)
 page. To keep the focus on visualization, the examples below use models that have
-already been specified with observation weights and, where relevant, auxiliary
+already been specified with observation weights and, where relevant, additional
 responses.
 
 The packages loaded below play different roles: `CPPLS` provides the modeling,
@@ -31,12 +31,12 @@ using CairoMakie
 using PlotlyJS
 using Statistics
 
-samplelabels, X, classes, Y_aux = load(
+samplelabels, X, classes, Yadd = load(
 	CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
 	"sample_labels",
 	"X",
 	"classes",
-	"Y_aux"
+	"Y_add"
 )
 
 # Use Makie's Wong palette so the class colors stay consistent across examples.
@@ -81,7 +81,7 @@ basic_model = fit(
 	X,
 	classes;
 	obs_weights=invfreqweights(classes),
-	Yaux=Y_aux,
+	Yadd=Yadd,
 	samplelabels=samplelabels
 )
 
@@ -90,7 +90,7 @@ train_idx = setdiff(collect(axes(X, 1)), holdout_idx)
 
 X_train = X[train_idx, :]
 classes_train = classes[train_idx]
-Y_aux_train = Y_aux[train_idx, :]
+Yadd_train = Yadd[train_idx, :]
 labels_train = samplelabels[train_idx]
 
 X_holdout = X[holdout_idx, :]
@@ -109,7 +109,7 @@ advanced_model = fit(
 	X_train,
 	classes_train;
 	obs_weights=invfreqweights(classes_train),
-	Yaux=Y_aux_train,
+	Yadd=Yadd_train,
 	samplelabels=labels_train
 )
 

@@ -85,12 +85,12 @@ end
 @testset "preprocess validates shapes and returns deflated matrices" begin
     X = Float32[1 2; 3 4; 5 6; 7 8]
     Y_prim = Float32[1 0; 0 1; 1 0; 0 1]
-    Y_aux = Float32[0.1 0.2; 0.2 0.3; 0.3 0.4; 0.4 0.5]
+    Y_add = Float32[0.1 0.2; 0.2 0.3; 0.3 0.4; 0.4 0.5]
     weights = Float32[1, 2, 1, 2]
 
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)  
 
-    d = CPPLS.preprocess(model, X, Y_prim, Y_aux, weights)
+    d = CPPLS.preprocess(model, X, Y_prim, Y_add, weights)
 
     X_prep      = d.X
     Y_prim_prep = d.Yprim
@@ -107,7 +107,7 @@ end
 
     @test X_prep isa Matrix{Float64}
     @test Y_prim_prep isa Matrix{Float64}
-    # @test Y_all == hcat(Y_prim_prep, Float64.(Y_aux))
+    # @test Y_all == hcat(Y_prim_prep, Float64.(Y_add))
     @test length(X_mean) == size(X, 2)
     @test size(X_def) == size(X_prep)
     @test size(W_comp) == (size(X, 2), 2)

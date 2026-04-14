@@ -45,12 +45,12 @@ using CairoMakie
 # Get custom colors
 orange, blue = Makie.wong_colors()[2], Makie.wong_colors()[1]
 
-samplelabels, X, classes, Y_aux = load(
+samplelabels, X, classes, Yadd = load(
     CPPLS.dataset("synthetic_cppls_da_dataset.jld2"),
     "sample_labels",
     "X",
     "classes",
-    "Y_aux"
+    "Y_add"
 )
 
 holdout_idx = [findlast(==("minor"), classes), findlast(==("major"), classes)]
@@ -58,7 +58,7 @@ train_idx = setdiff(collect(axes(X, 1)), holdout_idx)
 
 X_train = X[train_idx, :]
 classes_train = classes[train_idx]
-Y_aux_train = Y_aux[train_idx, :]
+Yadd_train = Yadd[train_idx, :]
 labels_train = samplelabels[train_idx]
 
 X_holdout = X[holdout_idx, :]
@@ -85,7 +85,7 @@ mf = fit(
     X_train,
     classes_train;
     obs_weights=invfreqweights(classes_train),
-    Yaux=Y_aux_train,
+    Yadd=Yadd_train,
     samplelabels=labels_train
 )
 nothing # hide

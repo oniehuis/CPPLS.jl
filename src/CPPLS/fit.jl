@@ -1,5 +1,3 @@
-using JLD2
-
 """
     fit(m::CPPLSModel,
         X::AbstractMatrix{<:Real},

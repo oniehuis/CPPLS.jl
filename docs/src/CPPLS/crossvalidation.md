@@ -108,9 +108,9 @@ page. The goal here is to estimate predictive performance with nested cross-vali
 compare that performance against a permutation-based null distribution, and then inspect
 which samples are most often misclassified across repeated outer folds.
 
-To keep the documentation example reasonably fast, we use a fixed `gamma=0.5` and allow at
-most two latent variables. For a real analysis, those settings should be chosen more 
-carefully.
+To keep the documentation example reasonably fast, we use a fixed `gamma=0.5` and set
+`ncomponents=2`, which means the convenience wrappers search component counts from
+`1:2`. For a real analysis, those settings should be chosen more carefully.
 
 In this example, we use the higher-level discriminant-analysis wrappers [`cvda`](@ref)
 and [`permda`](@ref). These functions apply the standard DA defaults automatically:
@@ -132,7 +132,6 @@ section.
 ```@example crossvalidation
 using CPPLS
 using JLD2
-using CategoricalArrays
 using Random
 using Statistics
 using CairoMakie
@@ -169,7 +168,6 @@ scores, best_components = cvda(
     num_outer_folds_repeats=5,
     num_inner_folds=4,
     num_inner_folds_repeats=4,
-    max_components=2,
     rng=MersenneTwister(12345),
     verbose=false
 )
@@ -199,7 +197,6 @@ permutation_scores = permda(
     num_outer_folds_repeats=5,
     num_inner_folds=4,
     num_inner_folds_repeats=4,
-    max_components=2,
     rng=MersenneTwister(54321),
     verbose=false,
 )
@@ -268,7 +265,6 @@ outlier_scan = outlierscan(
     num_outer_folds_repeats=100,
     num_inner_folds=4,
     num_inner_folds_repeats=4,
-    max_components=2,
     rng=MersenneTwister(54321),
     verbose=false,
 )

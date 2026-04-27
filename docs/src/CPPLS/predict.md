@@ -9,12 +9,12 @@ After fitting a CPPLS model with [`fit`](@ref), you can apply it in two main way
 For discriminant models, CPPLS provides helper functions to convert raw prediction arrays 
 into class assignments.
 [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})) and
-[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
+[`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
 perform these conversions when you already have the output of [`predict`](@ref). 
 For convenience, 
 [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) 
 and
-[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
+[`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
 take predictor data, call [`predict`](@ref) internally, and return one-hot encoded class
 predictions and predicted class labels directly, respectively.
 
@@ -40,7 +40,6 @@ section.
 ```@example project
 using CPPLS
 using JLD2
-using CategoricalArrays
 using CairoMakie
 
 # Get custom colors
@@ -139,7 +138,7 @@ Let us now see what the model predicts:
 
 ```@example project
 heldout_predictions = predict(mf, X_holdout)
-sampleclasses(mf, heldout_predictions)
+predictclasses(mf, heldout_predictions)
 ```
 
 As we can see, the predicted labels match the classes from which the samples were
@@ -147,19 +146,19 @@ drawn. In this example, `heldout_predictions` is a three-dimensional array whose
 third dimension indexes the number of components used in the prediction.
 
 Instead of calling [`predict`](@ref) and
-[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
+[`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
 successively, we could have used the convenience wrapper
-[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)).
+[`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)).
 
 More generally, the convenience methods
 [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) and
-[`sampleclasses`](@ref CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
+[`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer))
 take predictor data and internally call [`predict`](@ref), returning class assignments directly.
 This is often more convenient in discriminant-analysis workflows than working with the
 full prediction tensor.
 
 ```@example project
-sampleclasses(mf, X_holdout)
+predictclasses(mf, X_holdout)
 ```
 
 ## API
@@ -169,6 +168,6 @@ CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})
 CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 CPPLS.predict
 CPPLS.project
-CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})
-CPPLS.sampleclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
+CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})
+CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 ```

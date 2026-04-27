@@ -25,11 +25,10 @@ an `AbstractMatrix{<:Real}`, it is treated as the primary response block and use
 the matrix may contain continuous responses, one-hot encoded class indicators, or other
 custom encodings chosen by the user. When the third argument is an
 `AbstractVector{<:Real}`, it is interpreted as a univariate numeric response and is
-internally reshaped to a one-column matrix. When the third argument is an
-`AbstractCategoricalArray`, it is interpreted as a vector of class labels; the labels are
-converted internally to a one-hot response matrix, class names are inferred as response
-labels, and the fit is performed in discriminant mode. In that case,
-`m.analysis_mode` must be `:discriminant`, otherwise an `ArgumentError` is thrown.
+internally reshaped to a one-column matrix. A pure class-label discriminant analysis
+should pass labels as an `AbstractCategoricalArray`; those labels are converted
+internally to a one-hot response matrix, class names are inferred as response labels, and
+`m.analysis_mode` must be `:discriminant`.
 
 The `gamma` setting in `model` may be a fixed scalar, a `(lo, hi)` tuple, or a vector
 mixing scalars and tuples. Non-scalar settings trigger per-component selection by
@@ -49,11 +48,14 @@ Keyword arguments accepted by `fit` include `obs_weights` for per-sample weighti
 `responselabels`, and `sampleclasses` metadata for diagnostics and plotting. `Yadd` must
 have the same number of rows as `X` and is concatenated internally to `Yprim` to build
 the supervised projection, while prediction targets always remain the primary responses.
-When `Yprim` is supplied as a matrix, `sampleclasses` may be used to store sample-level
-class metadata on the fitted object without changing the response block used for fitting.
-When class labels are passed positionally as an `AbstractCategoricalArray`, they define
-the supervised response and are also stored as metadata. When `Yprim` is supplied as a
-numeric vector, the fit is treated as univariate numeric-response fitting.
+When `Yprim` is supplied as a numeric matrix or vector, `sampleclasses` may be used as
+sample-level grouping metadata without changing the response block used for fitting.
+When `sampleclasses` and `responselabels` match a one-hot class block in a custom
+response matrix, that block is validated and used by class-prediction helpers. If none of
+the unique `sampleclasses` occur in `responselabels`, no class block is inferred; if only
+some occur, `fit` throws an error. When class labels are passed positionally as an
+`AbstractCategoricalArray`, they define the supervised response and are also stored as
+metadata.
 
 The return value is a `CPPLSFit` containing scores, loadings, regression coefficients,
 gamma-selection diagnostics, and the metadata needed for downstream prediction and
@@ -77,7 +79,7 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CategoricalArrays; using JLD2;
+julia> using JLD2;
 
 julia> file = CPPLS.dataset("synthetic_cppls_da_dataset.jld2");
 
@@ -194,18 +196,12 @@ function fit_cppls(
 
     if m.analysis_mode ≡ :discriminant
         throw(ArgumentError(
-            "`Yprim::AbstractVector{<:Real}` is interpreted as a univariate numeric " * 
+            "`Yprim::AbstractVector{<:Real}` is interpreted as a univariate numeric " *
             "response and is not valid for `analysis_mode=:discriminant`. " *
-            "Pass class labels as an `AbstractCategoricalArray`, or pass an explicitly " * 
+            "Pass class labels as an `AbstractCategoricalArray`, or pass an explicitly " *
             "encoded response matrix."
         ))
     end
-
-    isnothing(sampleclasses) || throw(ArgumentError(
-        "`sampleclasses` cannot be provided when `Yprim` is a numeric vector. " *
-        "Use an `AbstractCategoricalArray` as the third argument for discriminant " * 
-        "analysis instead."
-    ))
 
     Yprim_matrix = reshape(Yprim, :, 1)
 
@@ -217,7 +213,8 @@ function fit_cppls(
         Yadd=Yadd,
         samplelabels=samplelabels, 
         predictorlabels=predictorlabels, 
-        responselabels=responselabels
+        responselabels=responselabels,
+        sampleclasses=sampleclasses
     )
 end
 
@@ -287,10 +284,6 @@ function fit_cppls_core(
     T5<:AbstractVector,
     T6<:Union{AbstractVector, Nothing}
 }
-    # Validate that sampleclasses are only provided for discriminant analysis.
-    m.analysis_mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
-        "sampleclasses can only be provided for discriminant analysis"))
-
     # Get predictor count.
     n_predictors = size(X, 2)
 
@@ -302,11 +295,21 @@ function fit_cppls_core(
     samplelabels = default_sample_labels(samplelabels, d.nrow_X)
     
     # Validate predictor label length (none or exact X column count).
-    predictorlabels = 
-        validate_label_length(predictorlabels, n_predictors, "predictorlabels")
+    predictorlabels = normalize_string_labels(
+        predictorlabels,
+        n_predictors,
+        "predictorlabels",
+    )
     
     # Validate response label length (none or exact Yprim column count).
-    responselabels = validate_label_length(responselabels, d.ncol_Y, "responselabels")
+    responselabels = normalize_string_labels(
+        responselabels,
+        d.ncol_Y,
+        "responselabels",
+    )
+
+    sampleclasses = normalize_sampleclasses(sampleclasses, d.nrow_X)
+    validate_class_response_metadata(Yprim, sampleclasses, responselabels)
 
     # For discriminant analysis, responselabels must be provided to name the classes.
     if m.analysis_mode ≡ :discriminant && isempty(responselabels)
@@ -401,7 +404,101 @@ Return `labels` when provided, otherwise generate default row-index labels `"1"`
 Type stablity tested: 03/24/2026
 """
 function default_sample_labels(labels::AbstractVector, n_samples::Integer)
-    isempty(labels) ? string.(1:n_samples) : String[labels...]
+    isempty(labels) ? string.(1:n_samples) : string.(labels)
+end
+
+function normalize_string_labels(
+    labels::AbstractVector,
+    expected::Integer,
+    name::AbstractString,
+)
+    validate_label_length(labels, expected, name)
+    isempty(labels) ? String[] : string.(labels)
+end
+
+function normalize_sampleclasses(
+    sampleclasses::Union{AbstractVector, Nothing},
+    n_samples::Integer,
+)
+    isnothing(sampleclasses) && return nothing
+    length(sampleclasses) == n_samples || throw(ArgumentError(
+        "`sampleclasses` must have length $n_samples, got $(length(sampleclasses))"))
+    collect(sampleclasses)
+end
+
+function decode_one_hot_indices(one_hot_matrix::AbstractMatrix{<:Real})
+    all(value -> (value == 0) || (value == 1), one_hot_matrix) || throw(ArgumentError(
+        "one_hot_matrix must contain only 0/1 entries"))
+
+    row_sums = vec(sum(one_hot_matrix; dims=2))
+    all(==(1), row_sums) || throw(ArgumentError(
+        "each row of one_hot_matrix must contain exactly one 1"))
+
+    [argmax(row) for row in eachrow(one_hot_matrix)]
+end
+
+function is_one_hot_matrix(Y::AbstractMatrix{<:Real})
+    all(value -> isapprox(value, 0; atol=1e-12) || isapprox(value, 1; atol=1e-12), Y) ||
+        return false
+    row_sums = vec(sum(Y; dims=2))
+    all(sum_i -> isapprox(sum_i, 1; atol=1e-12), row_sums)
+end
+
+function class_response_columns(
+    sampleclasses::Union{AbstractVector, Nothing},
+    responselabels::AbstractVector{<:AbstractString},
+)
+    isnothing(sampleclasses) && return nothing
+    isempty(responselabels) && return nothing
+
+    classlabels = unique(string.(sampleclasses))
+    matched = [label for label in classlabels if label in responselabels]
+    isempty(matched) && return nothing
+
+    length(matched) == length(classlabels) || throw(ArgumentError(
+        "All unique `sampleclasses` must be represented in `responselabels`, or none of " *
+        "them. Missing labels: $(join(repr.(setdiff(classlabels, responselabels)), ", "))."))
+
+    cols = Int[]
+    for label in classlabels
+        positions = findall(==(label), responselabels)
+        length(positions) == 1 || throw(ArgumentError(
+            "Each class label inferred from `sampleclasses` must occur exactly once in " *
+            "`responselabels`. Problematic label: $(repr(label))."))
+        push!(cols, only(positions))
+    end
+
+    cols
+end
+
+function validate_class_response_metadata(
+    Yprim::AbstractMatrix{<:Real},
+    sampleclasses::Union{AbstractVector, Nothing},
+    responselabels::AbstractVector{<:AbstractString},
+)
+    classcols = class_response_columns(sampleclasses, responselabels)
+    isnothing(classcols) && return nothing
+
+    classlabels = unique(string.(sampleclasses))
+    classblock = Yprim[:, classcols]
+    predicted_indices = try
+        decode_one_hot_indices(classblock)
+    catch err
+        if err isa ArgumentError
+            throw(ArgumentError(
+                "The response columns matched by `sampleclasses` in `responselabels` " *
+                "must form a one-hot block. " * sprint(showerror, err)))
+        end
+        rethrow()
+    end
+
+    expected_labels = string.(sampleclasses)
+    decoded_labels = classlabels[predicted_indices]
+    decoded_labels == expected_labels || throw(ArgumentError(
+        "The response columns matched by `sampleclasses` in `responselabels` must agree " *
+        "row-wise with `sampleclasses`."))
+
+    nothing
 end
 
 """

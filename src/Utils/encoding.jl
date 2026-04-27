@@ -74,7 +74,7 @@ function onehot(labels::AbstractVector)
 end
 
 """
-    sampleclasses(one_hot_matrix::AbstractMatrix{<:Integer})
+    sampleclasses(one_hot_matrix::AbstractMatrix{<:Real})
 
 Decode one-hot rows back into label indices by returning the column index selected in
 each row. An `ArgumentError` is thrown if `one_hot_matrix` contains values other than
@@ -88,20 +88,12 @@ See also
 
 # Examples
 ```jldoctest
-julia> sampleclasses([1 0 0; 0 1 0; 0 0 1])
+julia> sampleclasses([1.0 0.0 0.0; 0.0 1.0 0.0; 0.0 0.0 1.0])
 3-element Vector{Int64}:
  1
  2
  3
 ```
 """
-function sampleclasses(one_hot_matrix::AbstractMatrix{<:Integer})
-    all(value -> value == 0 || value == 1, one_hot_matrix) || throw(ArgumentError(
-        "one_hot_matrix must contain only 0/1 entries"))
-
-    row_sums = vec(sum(one_hot_matrix, dims=2))
-    all(==(1), row_sums) || throw(ArgumentError(
-        "each row of one_hot_matrix must contain exactly one 1"))
-
-    [argmax(row) for row in eachrow(one_hot_matrix)]
-end
+sampleclasses(one_hot_matrix::AbstractMatrix{<:Real}) =
+    decode_one_hot_indices(one_hot_matrix)

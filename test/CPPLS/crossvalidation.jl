@@ -240,7 +240,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(666),
             verbose = false,
         )
@@ -259,7 +258,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(666),
             verbose = false,
         )
@@ -267,6 +265,7 @@ end
 
     @test scores_vec == scores
     @test components_vec == components
+    @test_throws MethodError CPPLS.cvreg(CROSSVAL_X, CROSSVAL_Y_REG; spec = spec, max_components = 1)
     @test_throws MethodError CPPLS.cvreg(CROSSVAL_X, CROSSVAL_Y_REG; spec = spec, score_fn = identity)
     @test_throws ArgumentError CPPLS.cvreg(
         CROSSVAL_X,
@@ -288,7 +287,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(777),
             verbose = false,
         )
@@ -296,6 +294,12 @@ end
 
     @test length(permutation_scores) == 2
     @test all(isfinite, permutation_scores)
+    @test_throws MethodError CPPLS.permreg(
+        CROSSVAL_X,
+        CROSSVAL_Y_REG;
+        spec = spec,
+        max_components = 1,
+    )
     @test_throws MethodError CPPLS.permreg(CROSSVAL_X, CROSSVAL_Y_REG; spec = spec, predict_fn = identity)
     @test_throws ArgumentError CPPLS.permreg(
         CROSSVAL_X,
@@ -306,7 +310,8 @@ end
 
 @testset "cvda applies DA defaults and limits control" begin
     spec = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, analysis_mode=:discriminant)
-    classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+    plain_classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+    classes = categorical(plain_classes)
 
     scores, components = suppress_info() do
         CPPLS.cvda(
@@ -317,7 +322,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(444),
             verbose = false,
         )
@@ -338,7 +342,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(444),
             verbose = false,
         )
@@ -347,6 +350,7 @@ end
     @test scores_matrix == scores
     @test components_matrix == components
 
+    @test_throws MethodError CPPLS.cvda(CROSSVAL_X, CROSSVAL_Y; spec = spec, max_components = 1)
     @test_throws MethodError CPPLS.cvda(
         CROSSVAL_X,
         classes;
@@ -364,12 +368,14 @@ end
         classes;
         spec = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, analysis_mode=:regression),
     )
+    @test_throws ArgumentError CPPLS.cvda(CROSSVAL_X, plain_classes; spec = spec)
     @test_throws ArgumentError CPPLS.cvda(CROSSVAL_X, collect(1:size(CROSSVAL_X, 1)); spec = spec)
 end
 
 @testset "permda applies DA defaults and limits control" begin
     spec = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, analysis_mode=:discriminant)
-    classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+    plain_classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+    classes = categorical(plain_classes)
 
     permutation_scores = suppress_info() do
         CPPLS.permda(
@@ -381,7 +387,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(555),
             verbose = false,
         )
@@ -390,6 +395,7 @@ end
     @test length(permutation_scores) == 2
     @test all(0.0 ≤ acc ≤ 1.0 for acc in permutation_scores)
 
+    @test_throws MethodError CPPLS.permda(CROSSVAL_X, CROSSVAL_Y; spec = spec, max_components = 1)
     @test_throws MethodError CPPLS.permda(
         CROSSVAL_X,
         classes;
@@ -407,6 +413,7 @@ end
         classes;
         spec = CPPLS.CPPLSModel(ncomponents = 1, gamma = 0.5, analysis_mode=:regression),
     )
+    @test_throws ArgumentError CPPLS.permda(CROSSVAL_X, plain_classes; spec = spec)
     @test_throws ArgumentError CPPLS.permda(CROSSVAL_X, collect(1:size(CROSSVAL_X, 1)); spec = spec)
 end
 
@@ -422,7 +429,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(111),
             verbose = false,
         )
@@ -447,7 +453,6 @@ end
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
-            max_components = 1,
             rng = CPPLS.MersenneTwister(111),
             verbose = false,
         )
@@ -455,4 +460,18 @@ end
 
     @test length(out_unweighted.n_tested) == size(CROSSVAL_X, 1)
     @test all(out_unweighted.n_flagged .≤ out_unweighted.n_tested)
+
+    @test_throws MethodError CPPLS.outlierscan(
+        CROSSVAL_X,
+        CROSSVAL_Y;
+        spec = spec,
+        max_components = 1,
+    )
+
+    plain_classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+    @test_throws ArgumentError CPPLS.outlierscan(
+        CROSSVAL_X,
+        plain_classes;
+        spec = spec,
+    )
 end

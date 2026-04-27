@@ -22,11 +22,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
+julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> classes = CategoricalArray(classes);
+julia> classes = categorical(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -82,11 +82,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
+julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> classes = CategoricalArray(classes);
+julia> classes = categorical(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -125,11 +125,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
+julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> classes = CategoricalArray(classes);
+julia> classes = categorical(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -147,6 +147,9 @@ function onehot(
   mf::AbstractCPPLSFit, 
   predictions::AbstractArray{<:Real, 3}
 )
+    size(predictions, 3) > 0 || throw(ArgumentError(
+        "predictions must contain at least one component slice"))
+
     n_classes = size(predictions, 2)
 
     Y_pred_final = sum(predictions, dims=3)[:, :, 1]
@@ -156,8 +159,37 @@ function onehot(
     onehot(predicted_class_indices, n_classes)
 end
 
+function class_response_columns(mf::CPPLSFit)
+    cols = class_response_columns(sampleclasses(mf), responselabels(mf))
+    if !isnothing(cols)
+        return cols
+    end
+
+    Ytrain = fitted(mf) + residuals(mf)
+    is_one_hot_matrix(Ytrain) && return collect(1:size(Ytrain, 2))
+
+    throw(ArgumentError(
+        "This fitted model does not define class-response columns. Pass categorical " *
+        "labels to `fit`, or provide `sampleclasses` plus matching `responselabels` " *
+        "for the class-indicator part of a custom response matrix."
+    ))
+end
+
+function onehot(
+    mf::CPPLSFit,
+    predictions::AbstractArray{<:Real, 3}
+)
+    size(predictions, 3) > 0 || throw(ArgumentError(
+        "predictions must contain at least one component slice"))
+
+    classcols = class_response_columns(mf)
+    predicted_scores = @views sum(predictions[:, classcols, :]; dims=3)[:, :, 1]
+    predicted_class_indices = argmax.(eachrow(predicted_scores))
+    onehot(predicted_class_indices, length(classcols))
+end
+
 """
-    sampleclasses(
+    predictclasses(
         mf::CPPLSFit,
         X::AbstractMatrix{<:Real},
         ncomponents::Integer=size(coefall(mf), 3)
@@ -174,11 +206,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
+julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> classes = CategoricalArray(classes);
+julia> classes = categorical(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -186,20 +218,20 @@ julia> mf = fit(m, X, classes);
 
 julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia> sampleclasses(mf, Xnew) == ["major", "minor"]
+julia> predictclasses(mf, Xnew) == ["major", "minor"]
 true
 ```
 """
-function sampleclasses(
+function predictclasses(
     mf::CPPLSFit,
     X::AbstractMatrix{<:Real},
     ncomponents::Integer=size(coefall(mf), 3)
 )
-    sampleclasses(mf, predict(mf, X, ncomponents))
+    predictclasses(mf, predict(mf, X, ncomponents))
 end
 
 """
-    sampleclasses(
+    predictclasses(
         mf::CPPLSFit,
         predictions::AbstractArray{<:Real, 3}
     ) -> AbstractVector
@@ -210,7 +242,7 @@ stored `responselabels` ordering.
 See also
 [`CPPLSFit`](@ref CPPLS.CPPLSFit),
 [`analysis_mode`](@ref CPPLS.analysis_mode)
-[`sampleclasses`](@ref CPPLS.sampleclasses)
+[`predictclasses`](@ref CPPLS.predictclasses)
 [`predict`](@ref CPPLS.predict), 
 [`onehot`](@ref CPPLS.onehot), 
 [`onehot`](@ref CPPLS.onehot), 
@@ -219,11 +251,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
+julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> classes = CategoricalArray(classes);
+julia> classes = categorical(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 
@@ -233,27 +265,23 @@ julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> raw = predict(mf, Xnew);
 
-julia> sampleclasses(mf, raw) == ["major", "minor"]
+julia> predictclasses(mf, raw) == ["major", "minor"]
 true
 ```
 """
-function sampleclasses(
+function predictclasses(
     mf::CPPLSFit,
     predictions::AbstractArray{<:Real,3}
 )
     analysis_mode(mf) ≡ :discriminant || throw(ArgumentError(
-        "sampleclasses is only defined for discriminant CPPLS models"))
+        "predictclasses is only defined for discriminant CPPLS models"))
 
     isempty(responselabels(mf)) && throw(ArgumentError(
         "responselabels must be provided to map predictions to class labels"))
 
-    n_classes = size(predictions, 2)
-    length(responselabels(mf)) == n_classes || throw(DimensionMismatch(
-        "responselabels must have length $n_classes, " * 
-        "got $(length(responselabels(mf)))"))
-
-    class_indices = sampleclasses(onehot(mf, predictions))
-    responselabels(mf)[class_indices]
+    classcols = class_response_columns(mf)
+    classlabels = responselabels(mf)[classcols]
+    classlabels[sampleclasses(onehot(mf, predictions))]
 end
 
 """
@@ -270,11 +298,11 @@ See also
 
 # Examples
 ```jldoctest
-julia> using CPPLS; using CategoricalArrays; using JLD2; using Random;
+julia> using CPPLS; using JLD2; using Random;
 
 julia> X, classes = load(CPPLS.dataset("synthetic_cppls_da_dataset.jld2"), "X", "classes");
 
-julia> classes = CategoricalArray(classes);
+julia> classes = categorical(classes);
 
 julia> m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant);
 

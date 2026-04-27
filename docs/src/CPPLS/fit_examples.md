@@ -33,7 +33,6 @@ section.
 ```@example fit_da
 using CPPLS
 using JLD2
-using CategoricalArrays
 using MultivariateStats
 using Statistics
 using CairoMakie

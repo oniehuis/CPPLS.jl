@@ -8,8 +8,8 @@ using Statistics
 using StatsBase
 using CategoricalArrays
 
-using Reexport: @reexport
-@reexport using CategoricalArrays
+using CategoricalArrays: categorical, CategoricalArray, CategoricalVector, levels
+export categorical, CategoricalArray, CategoricalVector, levels
 
 include("CPPLS/types.jl")
 include("CPPLS/preprocessing.jl")
@@ -46,6 +46,7 @@ export outlierscan
 export permda
 export permreg
 export predict
+export predictclasses
 export predictorlabels
 export project
 export projectionmatrix
@@ -190,7 +191,7 @@ function scoreplot(
     groups = cppls.sampleclasses
     isnothing(groups) && throw(ArgumentError(
         "scoreplot(cppls) requires sampleclasses in the fitted model. " *
-        "Use discriminant fits from class labels or call scoreplot(samples, groups, scores) directly."
+        "Pass `sampleclasses=` to `fit` or call scoreplot(samples, groups, scores) directly."
     ))
 
     samples = cppls.samplelabels

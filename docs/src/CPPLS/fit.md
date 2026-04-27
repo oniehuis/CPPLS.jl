@@ -7,10 +7,9 @@ analysis, providing a consistent workflow for a wide range of supervised modelin
 !!! info
     The distinction between regression and discriminant analysis in CPPLS, as specified by
     the `analysis_mode` keyword in [`CPPLSModel`](@ref), determines which convenience functions are
-    available for downstream analysis. For model fitting itself, the essential difference
-    is that discriminant analysis (DA) uses a one-hot encoded $Y$ matrix as the response,
-    whereas regression typically uses a $Y$ vector or matrix with continuously varying
-    values.
+    available for downstream analysis. For ordinary class-label DA, pass the class labels
+    as a categorical vector. CPPLS converts those labels internally to a one-hot response
+    matrix.
 
     The model is flexible, however: the response matrix $Y$ may contain both one-hot encoded
     columns (for classification or DA) and continuous columns (for regression) at the same
@@ -40,8 +39,15 @@ the most appropriate value of `gamma`.
 ## Quick Start
 
 The same `fit` entry point is used for both discriminant analysis and regression. The
-main difference is the structure of `Yprim`: in DA it is a one-hot representation of the
-classes, whereas in regression it is a continuous vector or matrix.
+interpretation of the third positional argument is determined by its type:
+
+1. `fit(m, X, y::AbstractVector{<:Real})` fits univariate regression.
+2. `fit(m, X, Y::AbstractMatrix{<:Real})` fits a user-defined response block.
+3. `fit(m, X, labels::AbstractCategoricalArray)` fits discriminant analysis by converting
+   the labels internally to a one-hot response matrix.
+
+Plain string or symbol vectors are not treated as class labels. Wrap class labels in
+`categorical(...)` for a pure DA fit.
 
 For a plain discriminant-analysis fit:
 
@@ -49,6 +55,7 @@ For a plain discriminant-analysis fit:
 using CPPLS
 using StatsAPI
 
+classes = categorical(classes)
 m = CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
 mf = fit(m, X, classes)
 ```
@@ -66,7 +73,6 @@ mf = fit(m, X, Y)
 To add class balancing and additional supervision in DA:
 
 ```julia
-using CategoricalArrays
 using CPPLS
 using StatsAPI
 
@@ -84,6 +90,10 @@ mf = fit(
 
 For complete worked examples, including score plots, gamma selection, and a regression
 workflow with additional responses, see [Fit Examples](fit_examples.md).
+
+For hybrid response matrices such as `[class indicators | continuous traits]`, pass
+`sampleclasses` and matching `responselabels` so CPPLS can identify and validate the
+class-indicator block used by class-prediction helpers.
 
 ## Centering and Scaling
 

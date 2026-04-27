@@ -98,7 +98,7 @@ end
     @test result == expected
 end
 
-@testset "sampleclasses maps response labels" begin
+@testset "predictclasses maps response labels" begin
     model = CPPLS.CPPLSModel(
         gamma = 0.5,
         ncomponents = 1,
@@ -114,15 +114,17 @@ end
     cpplsfit = CPPLS.fit(model, X, labels)
 
     preds = CPPLS.predict(cpplsfit, X, 1)
-    expected = CPPLS.responselabels(cpplsfit)[
+    classlabels = CPPLS.responselabels(cpplsfit)[CPPLS.class_response_columns(cpplsfit)]
+    expected = classlabels[
         CPPLS.sampleclasses(CPPLS.onehot(cpplsfit, preds)),
     ]
 
-    @test CPPLS.sampleclasses(cpplsfit, preds) == expected
-    @test CPPLS.sampleclasses(cpplsfit, X, 1) == expected
+    @test CPPLS.predictclasses(cpplsfit, preds) == expected
+    @test CPPLS.predictclasses(cpplsfit, X, 1) == expected
+    @test_throws MethodError CPPLS.sampleclasses(cpplsfit, preds)
 end
 
-@testset "sampleclasses rejects regression models" begin
+@testset "predictclasses rejects regression models" begin
     model = CPPLS.CPPLSModel(
         gamma = 0.5,
         ncomponents = 1,
@@ -137,7 +139,7 @@ end
     cpplsfit = CPPLS.fit(model, X, y)
 
     preds = CPPLS.predict(cpplsfit, X, 1)
-    @test_throws ArgumentError CPPLS.sampleclasses(cpplsfit, preds)
+    @test_throws ArgumentError CPPLS.predictclasses(cpplsfit, preds)
 end
 
 @testset "project centers inputs before applying R" begin

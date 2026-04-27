@@ -254,9 +254,6 @@ function CPPLSFit(
     analysis_mode in (:regression, :discriminant) || throw(ArgumentError(
             "analysis_mode must be :regression or :discriminant, got $analysis_mode"))
 
-    analysis_mode ≡ :discriminant || isnothing(sampleclasses) || throw(ArgumentError(
-        "sampleclasses are only stored for discriminant analysis models"))
-
     CPPLSFit{T1, T2, T3, T4, T5, T6}(B, T, P, W_comp, U, C, R, Y_hat, 
         F, X_var, X_var_total, gamma, rho, gammas, rhos, zero_mask, a, b, W0, 
         X_mean, X_std, Yprim_std,
@@ -360,8 +357,8 @@ responselabels(fit::CPPLSFit) = fit.responselabels
 """
     sampleclasses(fit::CPPLSFit)
 
-Return the per-sample class labels stored for discriminant analysis models, or `nothing`
-for regression fits.
+Return the per-sample class labels or grouping metadata stored on the fitted model, or
+`nothing` when no sample classes were supplied.
 """
 sampleclasses(fit::CPPLSFit) = fit.sampleclasses
 

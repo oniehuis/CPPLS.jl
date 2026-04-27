@@ -57,6 +57,12 @@ function fit_cppls_light(
     T1<:Union{AbstractVector{<:Real}, Nothing}, 
     T2<:Union{LinearAlgebra.AbstractVecOrMat{<:Real}, Nothing}
 }
+    analysis_mode(m) ≡ :discriminant && throw(ArgumentError(
+        "`Y_prim::AbstractVector{<:Real}` is interpreted as a univariate numeric " *
+        "response and is not valid for `analysis_mode=:discriminant`. Pass class " *
+        "labels as an `AbstractCategoricalArray`, or pass an explicitly encoded " *
+        "response matrix."))
+
     Y_matrix = reshape(Y_prim, :, 1)
     fit_cppls_light_core(m, X, Y_matrix; obs_weights=obs_weights, Yadd=Yadd)
 end
@@ -80,16 +86,15 @@ function fit_cppls_light(
     sampleclasses::AbstractVector;
     kwargs...,
 )
-    analysis_mode(m) ≡ :discriminant || throw(ArgumentError(
-        "CPPLSModel must use analysis_mode=:discriminant when fitting from sampleclasses."))
-    
-    fit_cppls_light_from_sample_classes(m, X, sampleclasses; kwargs...)
+    throw(ArgumentError(
+        "fit_cppls_light expects a categorical vector of class labels. Wrap the labels " *
+        "in `categorical(...)`, or pass a one-hot response matrix to the matrix method."))
 end
 
 function fit_cppls_light_from_sample_classes(
     m::CPPLSModel,
     X::AbstractMatrix{<:Real},
-    sampleclasses;
+    sampleclasses::AbstractCategoricalArray;
     obs_weights::T1=nothing,
     Yadd::T2=nothing
 ) where {

@@ -1,6 +1,15 @@
 using CategoricalArrays
 using StatsAPI
 
+@testset "CPPLS exports selected CategoricalArrays API" begin
+    exported = names(CPPLS)
+    @test :categorical in exported
+    @test :CategoricalArray in exported
+    @test :CategoricalVector in exported
+    @test :levels in exported
+    @test !(:CategoricalValue in exported)
+end
+
 @testset "fit_cppls builds diagnostic-rich model" begin
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, center_X=true)
 
@@ -141,7 +150,7 @@ end
     )
 
     @test model.samplelabels == samplelabels
-    @test model.predictorlabels == predictorlabels
+    @test model.predictorlabels == string.(predictorlabels)
     @test model.responselabels == responselabels
 
     model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
@@ -176,11 +185,18 @@ end
     )
 
     model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5)
+    metadata_model = CPPLS.fit_cppls_core(
+        model,
+        X,
+        Y;
+        sampleclasses = ["classA", "classB", "classA"],
+    )
+    @test metadata_model.sampleclasses == ["classA", "classB", "classA"]
     @test_throws ArgumentError CPPLS.fit_cppls_core(
         model,
         X,
         Y;
-        sampleclasses = ["classA"]
+        sampleclasses = ["classA"],
     )
 
     @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, analysis_mode=:unsupported_mode)
@@ -251,13 +267,13 @@ end
 
     cpplsfit = CPPLS.fit_cppls(model, X, labels)
     @test cpplsfit.analysis_mode=== :discriminant
-    @test Set(cpplsfit.responselabels) == Set(inferred)
+    @test Set(cpplsfit.responselabels) == Set(string.(inferred))
     @test cpplsfit.sampleclasses == labels
     @test !(cpplsfit.sampleclasses === labels)
     plain_labels = categorical(["red", "blue", "red", "blue"])
     plain_cpplsfit = CPPLS.fit_cppls(model, X, plain_labels)
     @test plain_cpplsfit.analysis_mode=== :discriminant
-    @test Set(plain_cpplsfit.responselabels) == Set(unique(plain_labels))
+    @test Set(plain_cpplsfit.responselabels) == Set(string.(unique(plain_labels)))
     @test plain_cpplsfit.sampleclasses == plain_labels
     @test !(plain_cpplsfit.sampleclasses === plain_labels)
     @test plain_cpplsfit.B ≈ cpplsfit.B
@@ -268,6 +284,7 @@ end
         labels;
         responselabels = ["other"],
     )
+    @test_throws MethodError CPPLS.fit_cppls(model, X, ["red", "blue", "red", "blue"])
 
     Y_vec = Float64[1, 0, 1, 0]
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
@@ -276,6 +293,68 @@ end
 
     @test vec_model.B ≈ mat_model.B
     @test vec_model.analysis_mode=== :regression
+
+    grouped_vec_model = CPPLS.fit_cppls(
+        model,
+        X,
+        Y_vec;
+        sampleclasses = [:A, :B, :A, :B],
+    )
+    @test grouped_vec_model.sampleclasses == [:A, :B, :A, :B]
+    @test_throws ArgumentError CPPLS.fit_cppls(
+        model,
+        X,
+        Y_vec;
+        sampleclasses = [:A, :B, :A],
+    )
+end
+
+@testset "fit_cppls validates class metadata against custom response blocks" begin
+    model = CPPLS.CPPLSModel(ncomponents=1, gamma=0.5, analysis_mode=:discriminant)
+    X = Float64[
+        1 2
+        2 1
+        3 4
+        4 3
+    ]
+    sampleclasses = ["A", "B", "A", "B"]
+    Yclass, _ = CPPLS.onehot(sampleclasses)
+    Ymixed = hcat(Yclass, reshape([10.0, 20.0, 30.0, 40.0], :, 1))
+
+    mf = CPPLS.fit(
+        model,
+        X,
+        Ymixed;
+        sampleclasses = sampleclasses,
+        responselabels = ["A", "B", "trait"],
+    )
+
+    @test CPPLS.sampleclasses(mf) == sampleclasses
+    @test CPPLS.responselabels(mf) == ["A", "B", "trait"]
+
+    predictions = zeros(Float64, 4, 3, 1)
+    predictions[:, 1:2, 1] .= Yclass
+    predictions[:, 3, 1] .= 100.0
+    @test CPPLS.predictclasses(mf, predictions) == sampleclasses
+    @test_throws MethodError CPPLS.sampleclasses(mf, predictions)
+
+    @test_throws ArgumentError CPPLS.fit(
+        model,
+        X,
+        Ymixed;
+        sampleclasses = sampleclasses,
+        responselabels = ["A", "trait", "other"],
+    )
+
+    Ybad = copy(Ymixed)
+    Ybad[1, 1:2] .= [0.5, 0.5]
+    @test_throws ArgumentError CPPLS.fit(
+        model,
+        X,
+        Ybad;
+        sampleclasses = sampleclasses,
+        responselabels = ["A", "B", "trait"],
+    )
 end
 
 @testset "fit_cppls and fit_cppls_light accept Yadd" begin
@@ -352,12 +431,7 @@ end
     @test xmean(light_from_labels) ≈ xmean(manual_discriminant)
     plain_labels = ["a", "b", "a", "b"]
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
-    light_from_plain =
-        CPPLS.fit_cppls_light(model, X, plain_labels)
-    @test light_from_plain.analysis_mode=== :discriminant
-    @test light_from_plain.B ≈
-          light_from_labels.B
-    @test xmean(light_from_plain) ≈ xmean(light_from_labels)
+    @test_throws ArgumentError CPPLS.fit_cppls_light(model, X, plain_labels)
     Y_vec = Float64[1, 0, 1, 0]
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5)
     light_vec = CPPLS.fit_cppls_light(model, X, Y_vec)
@@ -365,6 +439,8 @@ end
         CPPLS.fit_cppls_light_core(model, X, reshape(Y_vec, :, 1))
 
     @test light_vec.B ≈ light_vec_manual.B
+    model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
+    @test_throws ArgumentError CPPLS.fit_cppls_light(model, X, Y_vec)
 end
 
 @testset "fit_cppls_light categorical dispatch method" begin
@@ -385,11 +461,9 @@ end
 
     model = CPPLS.CPPLSModel(ncomponents=2, gamma=0.5, analysis_mode=:discriminant)
     cat_light = CPPLS.fit_cppls_light(model, X, cat_labels)
-    plain_light = CPPLS.fit_cppls_light(model, X, plain_labels)
 
     @test cat_light.analysis_mode=== :discriminant
-    @test cat_light.B ≈ plain_light.B
-    @test xmean(cat_light) ≈ xmean(plain_light)
+    @test_throws ArgumentError CPPLS.fit_cppls_light(model, X, plain_labels)
 end
 
 @testset "process_component! normalizes weights and deflates predictors" begin

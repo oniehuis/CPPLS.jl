@@ -222,7 +222,6 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -234,8 +233,8 @@ the regression callbacks returned by `CPPLS.cv_regression()`.
 
 The positional arguments `X` and `Y`, and the keyword arguments `spec`, `fit_kwargs`,
 `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
-`num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`, and
-`verbose` have the same meaning as in `nestedcv`.
+`num_inner_folds_repeats`, `reshuffle_outer_folds`, `rng`, and `verbose` have the same
+meaning as in `nestedcv`. Component counts are selected from `1:spec.ncomponents`.
 
 Arguments
 - `X`: predictor matrix with one row per sample.
@@ -245,8 +244,8 @@ Keyword arguments
 - `spec`: CPPLS specification. `spec.analysis_mode` must be `:regression`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`.
 - `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
-    `num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`,
-    `verbose`: forwarded to `nestedcv`.
+    `num_inner_folds_repeats`, `reshuffle_outer_folds`, `rng`, `verbose`: forwarded to
+    `nestedcv`.
 
 Returns
 - `outer_fold_scores`: one regression score per outer repeat.
@@ -278,7 +277,6 @@ julia> scores, best_k = cvreg(
            num_outer_folds_repeats=2,
            num_inner_folds=2,
            num_inner_folds_repeats=2,
-           max_components=1,
            rng=MersenneTwister(1),
            verbose=false,
        );
@@ -299,7 +297,6 @@ function cvreg(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -307,8 +304,7 @@ function cvreg(
     T1<:Integer,
     T2<:Integer,
     T3<:Integer,
-    T4<:Integer,
-    T5<:Integer
+    T4<:Integer
 }
     spec.analysis_mode ≡ :regression || throw(ArgumentError(
         "cvreg expects spec.analysis_mode=:regression"))
@@ -327,7 +323,7 @@ function cvreg(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
+        max_components=spec.ncomponents,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
         verbose=verbose,
@@ -352,7 +348,6 @@ function cvreg(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -360,8 +355,7 @@ function cvreg(
     T1<:Integer,
     T2<:Integer,
     T3<:Integer,
-    T4<:Integer,
-    T5<:Integer
+    T4<:Integer
 }
     cvreg(
         X,
@@ -372,7 +366,6 @@ function cvreg(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
         verbose=verbose,
@@ -390,7 +383,6 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -402,8 +394,8 @@ callbacks as `cvreg`, but places that workflow inside `nestedcvperm`.
 
 The positional arguments `X` and `Y`, and the shared keyword arguments `spec`,
 `fit_kwargs`, `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
-`num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`, and
-`verbose` have the same meaning as in `cvreg`.
+`num_inner_folds_repeats`, `reshuffle_outer_folds`, `rng`, and `verbose` have the same
+meaning as in `cvreg`. Component counts are selected from `1:spec.ncomponents`.
 
 Arguments
 - `X`: predictor matrix with one row per sample.
@@ -445,7 +437,6 @@ julia> permutation_scores = permreg(
            num_outer_folds_repeats=2,
            num_inner_folds=2,
            num_inner_folds_repeats=2,
-           max_components=1,
            rng=MersenneTwister(1),
            verbose=false,
        );
@@ -464,7 +455,6 @@ function permreg(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -473,8 +463,7 @@ function permreg(
     T2<:Integer,
     T3<:Integer,
     T4<:Integer,
-    T5<:Integer,
-    T6<:Integer
+    T5<:Integer
 }
     spec.analysis_mode ≡ :regression || throw(ArgumentError(
         "permreg expects spec.analysis_mode=:regression"))
@@ -494,7 +483,7 @@ function permreg(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
+        max_components=spec.ncomponents,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
         verbose=verbose,
@@ -520,7 +509,6 @@ function permreg(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -529,8 +517,7 @@ function permreg(
     T2<:Integer,
     T3<:Integer,
     T4<:Integer,
-    T5<:Integer,
-    T6<:Integer
+    T5<:Integer
 }
     permreg(
         X,
@@ -542,7 +529,6 @@ function permreg(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
         verbose=verbose,
@@ -560,7 +546,6 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -590,8 +575,9 @@ Keyword arguments
 - `weighted`: passed to `CPPLS.cv_classification(; weighted=weighted)` to control whether
     the outer and inner scores use inverse-frequency class weighting.
 - `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
-    `num_inner_folds_repeats`, `max_components`, `reshuffle_outer_folds`, `rng`,
-    `verbose`: forwarded to `nestedcv`.
+    `num_inner_folds_repeats`, `reshuffle_outer_folds`, `rng`, `verbose`: forwarded to
+    `nestedcv`.
+- Component counts are selected from `1:spec.ncomponents`.
 
 Returns
 - `outer_fold_scores`: one DA score per outer repeat.
@@ -610,7 +596,7 @@ julia> using Random;
 julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
             2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];
 
-julia> classes = repeat(["A", "B"], inner=6);
+julia> classes = categorical(repeat(["A", "B"], inner=6));
 
 julia> Y, responselabels = onehot(classes);
 
@@ -625,7 +611,6 @@ julia> scores, best_k = cvda(
            num_outer_folds_repeats=3,
            num_inner_folds=2,
            num_inner_folds_repeats=2,
-           max_components=1,
            rng=MersenneTwister(1),
            verbose=false,
        );
@@ -647,7 +632,6 @@ function cvda(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -655,8 +639,7 @@ function cvda(
     T1<:Integer,
     T2<:Integer,
     T3<:Integer,
-    T4<:Integer,
-    T5<:Integer
+    T4<:Integer
 }
     spec.analysis_mode ≡ :discriminant || throw(ArgumentError(
         "cvda expects spec.analysis_mode=:discriminant"))
@@ -677,7 +660,7 @@ function cvda(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
+        max_components=spec.ncomponents,
         strata=strata,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
@@ -706,7 +689,6 @@ function cvda(
     num_outer_folds_repeats::T2=num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -719,8 +701,7 @@ function cvda(
     T1<:Integer,
     T2<:Integer,
     T3<:Integer,
-    T4<:Integer,
-    T5<:Integer
+    T4<:Integer
 }
 
     Y, responselabels = onehot(sampleclasses)
@@ -736,7 +717,6 @@ function cvda(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
         verbose=verbose,
@@ -750,51 +730,17 @@ end
         kwargs...
     )
 
-Convert non-numeric class labels to one-hot form and forward to `cvda`. Numeric vectors
-are rejected because they are ambiguous with regression targets.
+Reject plain class-label vectors. Wrap labels in `categorical(...)` so pure DA label
+workflows are explicit, or pass a one-hot response matrix to the matrix method.
 """
 function cvda(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
-    spec::CPPLSModel,
-    fit_kwargs::NamedTuple=(;),
-    weighted::Bool=true,
-    num_outer_folds::T1=8,
-    num_outer_folds_repeats::T2=num_outer_folds,
-    num_inner_folds::T3=7,
-    num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=spec.ncomponents,
-    reshuffle_outer_folds::Bool=false,
-    rng::AbstractRNG=Random.GLOBAL_RNG,
-    verbose::Bool=true,
-) where {
-    T1<:Integer,
-    T2<:Integer,
-    T3<:Integer,
-    T4<:Integer,
-    T5<:Integer
-}
-    eltype(sampleclasses) <: Real && throw(ArgumentError(
-        "cvda expects categorical sampleclasses or one-hot Y."))
-
-    Y, responselabels = onehot(sampleclasses)
-    fit_kwargs = with_response_labels(fit_kwargs, responselabels)
-
-    cvda(
-        X,
-        Y;
-        spec=spec,
-        fit_kwargs=fit_kwargs,
-        weighted=weighted,
-        num_outer_folds=num_outer_folds,
-        num_outer_folds_repeats=num_outer_folds_repeats,
-        num_inner_folds=num_inner_folds,
-        num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
-        reshuffle_outer_folds=reshuffle_outer_folds,
-        rng=rng,
-        verbose=verbose,
-    )
+    kwargs...,
+)
+    throw(ArgumentError(
+        "cvda expects a categorical vector of class labels. Wrap the labels in " *
+        "`categorical(...)`, or pass a one-hot response matrix to the matrix method."))
 end
 
 """
@@ -809,7 +755,6 @@ end
         num_outer_folds_repeats::Integer=num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=false,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true,
@@ -823,8 +768,9 @@ same class-based stratification as `cvda`, but places that workflow inside
 
 The positional arguments `X` and `Y`, and the shared keyword arguments `spec`,
 `fit_kwargs`, `weighted`, `num_outer_folds`, `num_outer_folds_repeats`,
-`num_inner_folds`, `num_inner_folds_repeats`, `max_components`,
-`reshuffle_outer_folds`, `rng`, and `verbose` have the same meaning as in `cvda`.
+`num_inner_folds`, `num_inner_folds_repeats`, `reshuffle_outer_folds`, `rng`, and
+`verbose` have the same meaning as in `cvda`. Component counts are selected from
+`1:spec.ncomponents`.
 
 Arguments
 - `X`: predictor matrix with one row per sample.
@@ -855,7 +801,7 @@ julia> using Random;
 julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
             2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];
 
-julia> classes = repeat(["A", "B"], inner=6);
+julia> classes = categorical(repeat(["A", "B"], inner=6));
 
 julia> spec = CPPLSModel(ncomponents=1, gamma=0.5, analysis_mode=:discriminant);
 
@@ -868,7 +814,6 @@ julia> permutation_scores = permda(
            num_outer_folds_repeats=3,
            num_inner_folds=2,
            num_inner_folds_repeats=2,
-           max_components=1,
            rng=MersenneTwister(1),
            verbose=false,
        );
@@ -891,7 +836,6 @@ function permda(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -900,8 +844,7 @@ function permda(
     T2<:Integer,
     T3<:Integer,
     T4<:Integer,
-    T5<:Integer,
-    T6<:Integer
+    T5<:Integer
 }
     spec.analysis_mode ≡ :discriminant || throw(ArgumentError(
         "permda expects spec.analysis_mode=:discriminant"))
@@ -923,7 +866,7 @@ function permda(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
+        max_components=spec.ncomponents,
         strata=strata,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
@@ -953,7 +896,6 @@ function permda(
     num_outer_folds_repeats::T3=num_outer_folds,
     num_inner_folds::T4=7,
     num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.ncomponents,
     reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true,
@@ -967,8 +909,7 @@ function permda(
     T2<:Integer,
     T3<:Integer,
     T4<:Integer,
-    T5<:Integer,
-    T6<:Integer
+    T5<:Integer
 }
     Y, responselabels = onehot(sampleclasses)
     fit_kwargs = with_response_labels(fit_kwargs, responselabels)
@@ -984,7 +925,6 @@ function permda(
         num_outer_folds_repeats=num_outer_folds_repeats,
         num_inner_folds=num_inner_folds,
         num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
         reshuffle_outer_folds=reshuffle_outer_folds,
         rng=rng,
         verbose=verbose,
@@ -998,55 +938,17 @@ end
         kwargs...
     )
 
-Convert non-numeric class labels to one-hot form and forward to `permda`. Numeric
-vectors are rejected because they are ambiguous with regression targets.
+Reject plain class-label vectors. Wrap labels in `categorical(...)` so pure DA label
+workflows are explicit, or pass a one-hot response matrix to the matrix method.
 """
 function permda(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
-    spec::CPPLSModel,
-    fit_kwargs::NamedTuple=(;),
-    weighted::Bool=true,
-    num_permutations::T1=999,
-    num_outer_folds::T2=8,
-    num_outer_folds_repeats::T3=num_outer_folds,
-    num_inner_folds::T4=7,
-    num_inner_folds_repeats::T5=num_inner_folds,
-    max_components::T6=spec.ncomponents,
-    reshuffle_outer_folds::Bool=false,
-    rng::AbstractRNG=Random.GLOBAL_RNG,
-    verbose::Bool=true,
-) where {
-    T1<:Integer,
-    T2<:Integer,
-    T3<:Integer,
-    T4<:Integer,
-    T5<:Integer,
-    T6<:Integer
-
-}
-    eltype(sampleclasses) <: Real && throw(ArgumentError(
-        "permda expects categorical sampleclasses or one-hot Y."))
-
-    Y, responselabels = onehot(sampleclasses)
-    fit_kwargs = with_response_labels(fit_kwargs, responselabels)
-
-    permda(
-        X,
-        Y;
-        spec=spec,
-        fit_kwargs=fit_kwargs,
-        weighted=weighted,
-        num_permutations=num_permutations,
-        num_outer_folds=num_outer_folds,
-        num_outer_folds_repeats=num_outer_folds_repeats,
-        num_inner_folds=num_inner_folds,
-        num_inner_folds_repeats=num_inner_folds_repeats,
-        max_components=max_components,
-        reshuffle_outer_folds=reshuffle_outer_folds,
-        rng=rng,
-        verbose=verbose,
-    )
+    kwargs...,
+)
+    throw(ArgumentError(
+        "permda expects a categorical vector of class labels. Wrap the labels in " *
+        "`categorical(...)`, or pass a one-hot response matrix to the matrix method."))
 end
 
 ############################################################################################
@@ -1176,23 +1078,9 @@ julia> using Random;
 julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
             2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];
 
-julia> classes = repeat(["A", "B"], inner=6)
-12-element Vector{String}:
- "A"
- "A"
- "A"
- "A"
- "A"
- "A"
- "B"
- "B"
- "B"
- "B"
- "B"
- "B"
+julia> classes = categorical(repeat(["A", "B"], inner=6));
 
-julia> Y, responselabels = onehot(classes)
-([1 0; 1 0; … ; 0 1; 0 1], ["A", "B"])
+julia> Y, responselabels = onehot(classes);
 
 julia> cb = CPPLS.cv_classification();
 
@@ -1339,7 +1227,7 @@ end
         Y::AbstractMatrix{<:Real};
         spec::CPPLSModel,
         fit_kwargs::NamedTuple=(;),
-        obs_weight_fn::Union{Function, Nothing}=nothing,
+        obs_weight_fn::Union{Function, Nothing}=default_da_obs_weight_fn,
         score_fn::Function,
         predict_fn::Function,
         select_fn::Function,
@@ -1401,20 +1289,7 @@ julia> using Random;
 julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
             2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];
 
-julia> classes = repeat(["A", "B"], inner=6)
-12-element Vector{String}:
- "A"
- "A"
- "A"
- "A"
- "A"
- "A"
- "B"
- "B"
- "B"
- "B"
- "B"
- "B"
+julia> classes = categorical(repeat(["A", "B"], inner=6));
 
 julia> Y, responselabels = onehot(classes);
 
@@ -1524,7 +1399,6 @@ end
         num_outer_folds_repeats::Integer=10 * num_outer_folds,
         num_inner_folds::Integer=7,
         num_inner_folds_repeats::Integer=num_inner_folds,
-        max_components::Integer=spec.ncomponents,
         reshuffle_outer_folds::Bool=true,
         rng::AbstractRNG=Random.GLOBAL_RNG,
         verbose::Bool=true
@@ -1552,8 +1426,7 @@ Arguments
 
 Keyword arguments
 - `spec`: CPPLS model specification used for every fit. During inner optimization, the
-    routine evaluates component counts `1:max_components` by replacing `spec.ncomponents`
-    on temporary copies of `spec`.
+    routine evaluates component counts `1:spec.ncomponents`.
 - `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
     sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, and `Yadd`,
     are subset automatically to the current training split. If
@@ -1575,9 +1448,6 @@ Keyword arguments
     number of latent variables.
 - `num_inner_folds_repeats`: number of inner folds evaluated per outer split. This
     cannot exceed `num_inner_folds`.
-- `max_components`: largest latent-variable count considered in the inner loop. This
-    search limit is independent of `spec.ncomponents`; if it is larger, temporary copies
-    of `spec` are used with the required component count.
 - `reshuffle_outer_folds`: if `true`, regenerate the outer folds on each repeat; if
     `false`, build one outer partition and reuse its folds. Since outlier scanning is
     usually meant to probe sample stability across many different holdout sets, the
@@ -1609,7 +1479,7 @@ julia> using Random;
 julia> X = [0.0 0.0; 0.1 0.2; 0.2 0.1; 0.3 0.2; 0.2 0.4; 0.4 0.3;
             2.0 2.0; 2.1 2.2; 2.2 2.1; 2.3 2.2; 2.2 2.4; 2.4 2.3];
 
-julia> classes = repeat(["A", "B"], inner=6);
+julia> classes = categorical(repeat(["A", "B"], inner=6));
 
 julia> Y, responselabels = onehot(classes);
 
@@ -1624,7 +1494,6 @@ julia> out = outlierscan(
            num_outer_folds_repeats=3,
            num_inner_folds=2,
            num_inner_folds_repeats=2,
-           max_components=1,
            rng=MersenneTwister(1),
            verbose=false,
        );
@@ -1649,7 +1518,6 @@ function outlierscan(
     num_outer_folds_repeats::T2=10 * num_outer_folds,
     num_inner_folds::T3=7,
     num_inner_folds_repeats::T4=num_inner_folds,
-    max_components::T5=ncomponents(spec),
     reshuffle_outer_folds::Bool=true,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true
@@ -1657,8 +1525,7 @@ function outlierscan(
     T1<:Integer,
     T2<:Integer,
     T3<:Integer,
-    T4<:Integer,
-    T5<:Integer
+    T4<:Integer
 }
     spec.analysis_mode ≡ :discriminant || throw(ArgumentError(
         "outlierscan expects spec.analysis_mode=:discriminant"))
@@ -1707,7 +1574,7 @@ function outlierscan(
         fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
         inner_strata = strata[train_indices]
 
-        best_k = optimize_num_latent_variables(X_train, Y_train, max_components, 
+        best_k = optimize_num_latent_variables(X_train, Y_train, spec.ncomponents,
             num_inner_folds, num_inner_folds_repeats, spec, base_fold_kwargs,
             obs_weight_fn, cb.score_fn, cb.predict_fn, cb.select_fn, rng, verbose;
             strata=inner_strata, sample_indices=train_indices)
@@ -1759,21 +1626,17 @@ end
         kwargs...
     )
 
-Convert non-numeric sample classes to one-hot form and forward to `outlierscan`.
-Numeric vectors are rejected because they are ambiguous with regression targets.
+Reject plain class-label vectors. Wrap labels in `categorical(...)` so pure DA label
+workflows are explicit, or pass a one-hot response matrix to the matrix method.
 """
 function outlierscan(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractVector;
     kwargs...
 )
-    if eltype(sampleclasses) <: Real
-        throw(ArgumentError(
-            "outlierscan expects categorical sampleclasses or one-hot Y."))
-    end
-
-    Y, _ = onehot(sampleclasses)
-    outlierscan(X, Y; kwargs...)
+    throw(ArgumentError(
+        "outlierscan expects a categorical vector of class labels. Wrap the labels in " *
+        "`categorical(...)`, or pass a one-hot response matrix to the matrix method."))
 end
 
 ############################################################################################

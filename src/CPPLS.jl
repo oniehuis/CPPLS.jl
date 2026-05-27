@@ -159,10 +159,12 @@ end
 
 const _require_extension_ref = Ref{Function}(_require_extension)
 const _scoreplot_plotly_ref = Ref{Function}(
-  (samples, groups, scores; kwargs...) -> scoreplot_plotly(samples, groups, scores; kwargs...)
+  (samples, groups, scores; kwargs...) ->
+    Base.invokelatest(scoreplot_plotly, samples, groups, scores; kwargs...)
 )
 const _scoreplot_makie_ref = Ref{Function}(
-  (samples, groups, scores; kwargs...) -> scoreplot_makie(samples, groups, scores; kwargs...)
+  (samples, groups, scores; kwargs...) ->
+    Base.invokelatest(scoreplot_makie, samples, groups, scores; kwargs...)
 )
 
 function scoreplot(

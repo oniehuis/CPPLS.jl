@@ -163,6 +163,24 @@ end
     @test subset.obs_weights == [1.0, 3.0]
     @test subset.samplelabels == ["a", "c"]
     @test subset.Yadd == [1.0 5.0; 3.0 7.0]
+
+    fold_weights = [10.0, 20.0]
+    @test CPPLS.subset_vector_like(fold_weights, [1, 3], 4, :obs_weights) === fold_weights
+    @test_throws DimensionMismatch CPPLS.subset_vector_like(
+        [1.0, 2.0, 3.0],
+        [1, 3],
+        4,
+        :obs_weights,
+    )
+
+    fold_yadd = [1.0 2.0; 3.0 4.0]
+    @test CPPLS.subset_matrix_like(fold_yadd, [1, 3], 4, :Yadd) === fold_yadd
+    @test_throws DimensionMismatch CPPLS.subset_matrix_like(
+        reshape(collect(1.0:6.0), 3, 2),
+        [1, 3],
+        4,
+        :Yadd,
+    )
 end
 
 @testset "nestedcv returns scores and component choices" begin
@@ -499,6 +517,21 @@ end
     )
 
     plain_classes = repeat(["A", "B"], inner = size(CROSSVAL_X, 1) ÷ 2)
+    categorical_out = suppress_info() do
+        CPPLS.outlierscan(
+            CROSSVAL_X,
+            categorical(plain_classes);
+            spec = spec,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            rng = CPPLS.MersenneTwister(113),
+            verbose = false,
+        )
+    end
+    @test length(categorical_out.n_tested) == size(CROSSVAL_X, 1)
+
     @test_throws ArgumentError CPPLS.outlierscan(
         CROSSVAL_X,
         plain_classes;

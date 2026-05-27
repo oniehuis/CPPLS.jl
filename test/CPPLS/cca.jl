@@ -213,6 +213,19 @@ end
 end
 
 @testset "weight helpers and gamma search utilities" begin
+    @test CPPLS.gamma_search_candidate_count(0.5) == 1
+    @test CPPLS.gamma_search_candidate_count((0.0, 1.0)) == 1
+    @test Base.invokelatest(CPPLS.gamma_search_candidate_count, Any[0.5][1]) == 1
+    @test Base.invokelatest(
+        CPPLS.gamma_search_candidate_count,
+        Any[(0.0, 1.0)][1],
+    ) == 1
+    @test CPPLS.gamma_search_candidate_count(Union{Float64,NTuple{2,Float64}}[
+        0.0,
+        (0.2, 0.8),
+        1.0,
+    ]) == 3
+
     σ = reshape([1.0, 2.0, 1.5], 1, :)
     variance_weights = CPPLS.compute_variance_weights(σ)
     @test size(variance_weights) == (3, 1)
@@ -289,6 +302,30 @@ end
     )
     @test 0.0 ≤ γ_tuple ≤ 1.0
     @test 0.0 ≤ corr_tuple ≤ 1.0
+
+    γ_rank_zero, corr_rank_zero = CPPLS.compute_best_gamma(
+        m,
+        zeros(size(X_def)),
+        X_std,
+        X_Y_corr,
+        corr_signs,
+        Y_prim,
+        nothing,
+        (0.2, 0.8),
+    )
+    @test 0.2 ≤ γ_rank_zero ≤ 0.8
+    @test corr_rank_zero == -0.0
+
+    @test_throws DimensionMismatch CPPLS.compute_best_gamma(
+        m,
+        X_def,
+        X_std,
+        X_Y_corr,
+        corr_signs,
+        Y_prim[1:3, :],
+        nothing,
+        (0.2, 0.8),
+    )
 
     gamma_choices = Union{Float64,NTuple{2,Float64}}[0.0, 0.5, (0.2, 0.8), (0.3, 0.3)]
     γ_vec, corr_vec = CPPLS.compute_best_gamma(

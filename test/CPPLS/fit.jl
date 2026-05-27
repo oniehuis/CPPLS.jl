@@ -1,6 +1,18 @@
 using CategoricalArrays
 using StatsAPI
 
+struct CoverageSumErrorMatrix <: AbstractMatrix{Float64}
+    data::Matrix{Float64}
+end
+
+Base.size(M::CoverageSumErrorMatrix) = size(M.data)
+Base.IndexStyle(::Type{<:CoverageSumErrorMatrix}) = IndexCartesian()
+Base.getindex(M::CoverageSumErrorMatrix, I::CartesianIndex{2}) = M.data[I]
+Base.getindex(M::CoverageSumErrorMatrix, i::Int, j::Int) = M.data[i, j]
+Base.getindex(M::CoverageSumErrorMatrix, ::Colon, cols::AbstractVector{<:Integer}) =
+    CoverageSumErrorMatrix(M.data[:, cols])
+Base.sum(::CoverageSumErrorMatrix; dims=:) = throw(DomainError(:sum, "forced sum failure"))
+
 @testset "CPPLS exports selected CategoricalArrays API" begin
     exported = names(CPPLS)
     @test :categorical in exported
@@ -307,6 +319,13 @@ end
         Y_vec;
         sampleclasses = [:A, :B, :A],
     )
+
+    discriminant_model = CPPLS.CPPLSModel(
+        ncomponents=2,
+        gamma=0.5,
+        analysis_mode=:discriminant,
+    )
+    @test_throws ArgumentError CPPLS.fit_cppls(discriminant_model, X, Y_vec)
 end
 
 @testset "fit_cppls validates class metadata against custom response blocks" begin
@@ -354,6 +373,12 @@ end
         Ybad;
         sampleclasses = sampleclasses,
         responselabels = ["A", "B", "trait"],
+    )
+
+    @test_throws DomainError CPPLS.validate_class_response_metadata(
+        CoverageSumErrorMatrix(Float64.(Yclass)),
+        sampleclasses,
+        ["A", "B"],
     )
 end
 

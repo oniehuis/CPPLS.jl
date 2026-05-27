@@ -61,6 +61,19 @@ end
     @test vec(sqrt.(sum(weights .* M_cs.^2, dims = 1) / sum(weights))) ≈ [1.0, 1.0]
 end
 
+@testset "colstd computes weighted and unweighted column scales" begin
+    M = [1.0 2.0; 3.0 4.0; 5.0 8.0]
+    weights = [1.0, 2.0, 1.0]
+
+    mu = CPPLS.colmean(M, nothing)
+    expected = sqrt.(sum((M .- mu).^2, dims = 1) / size(M, 1))
+    @test CPPLS.colstd(M, nothing) ≈ expected
+
+    weighted_mu = CPPLS.colmean(M, weights)
+    expected_weighted = sqrt.(sum(weights .* (M .- weighted_mu).^2, dims = 1) / sum(weights))
+    @test CPPLS.colstd(M, weights) ≈ expected_weighted
+end
+
 @testset "centerscale handles degenerate columns and invalid weights" begin
     single_row = [1.0 2.0 3.0]
     M_cs, μ, σ = CPPLS.centerscale(single_row, true, true, nothing)

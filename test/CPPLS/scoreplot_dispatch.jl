@@ -7,6 +7,8 @@ using Test
     scores = [1.0 2.0; 3.0 4.0]
 
     @test_throws ErrorException CPPLS._require_extension(:MissingExtension, "Missing")
+    @test_throws MethodError CPPLS._scoreplot_plotly_ref[](samples, groups, scores)
+    @test_throws MethodError CPPLS._scoreplot_makie_ref[](samples, groups, scores)
     @test_throws ErrorException CPPLS.scoreplot(samples, groups, scores; backend = :unknown)
 end
 
@@ -116,6 +118,12 @@ end
 
         res = CPPLS.scoreplot(cppls; backend = :plotly)
         @test res[1] == :plotly
+        @test res[2] == cppls.samplelabels
+        @test res[3] == cppls.sampleclasses
+        @test res[4] == cppls.T[:, 1:2]
+
+        res = CPPLS.scoreplot(cppls; backend = :makie)
+        @test res[1] == :makie
         @test res[2] == cppls.samplelabels
         @test res[3] == cppls.sampleclasses
         @test res[4] == cppls.T[:, 1:2]

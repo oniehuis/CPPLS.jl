@@ -48,3 +48,9 @@ end
     @test_throws ArgumentError CPPLS.sampleclasses([0 0 0; 0 1 0])
     @test_throws ArgumentError CPPLS.sampleclasses([2 0 0; 0 1 0])
 end
+
+@testset "dataset returns package example paths" begin
+    path = CPPLS.dataset("synthetic_cppls_da_dataset.jld2")
+    @test path == joinpath(pkgdir(CPPLS), "examples", "synthetic_cppls_da_dataset.jld2")
+    @test isfile(path)
+end

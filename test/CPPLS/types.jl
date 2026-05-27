@@ -150,6 +150,26 @@
         @test cppls.responselabels === responselabels
         @test cppls.analysis_mode=== :regression
         @test cppls.sampleclasses === nothing
+        @test CPPLS.coef(cppls) == B[:, :, end]
+        @test CPPLS.coef(cppls, 1) == B[:, :, 1]
+        @test CPPLS.coefall(cppls) === B
+        @test CPPLS.fitted(cppls) == Y_hat[:, :, end]
+        @test CPPLS.fitted(cppls, 1) == Y_hat[:, :, 1]
+        @test CPPLS.gamma(cppls) === gamma
+        @test CPPLS.predictorlabels(cppls) === predictorlabels
+        @test CPPLS.projectionmatrix(cppls) === R
+        @test CPPLS.residuals(cppls) == F[:, :, end]
+        @test CPPLS.residuals(cppls, 1) == F[:, :, 1]
+        @test CPPLS.responselabels(cppls) === responselabels
+        @test CPPLS.sampleclasses(cppls) === nothing
+        @test CPPLS.samplelabels(cppls) === samplelabels
+        @test CPPLS.xscores(cppls) === T_scores
+        @test CPPLS.xscores(cppls, 1) == T_scores[:, 1]
+        @test CPPLS.xscores(cppls, 1:ncomponents) == T_scores[:, 1:ncomponents]
+        @test CPPLS.xscores(cppls, [1]) == T_scores[:, [1]]
+        @test_throws ArgumentError CPPLS.xscores(cppls, 0)
+        @test_throws ArgumentError CPPLS.xscores(cppls, 0:ncomponents)
+        @test_throws ArgumentError CPPLS.xscores(cppls, [1, ncomponents + 1])
         @test size(cppls.B) ==
               (n_predictors, n_responses, ncomponents)
         @test size(cppls.Y_hat) == (n_samples, n_responses, ncomponents)
@@ -272,6 +292,9 @@ end
     @test spec.gamma == 0.5
     @test spec.center_X === true
     @test spec.analysis_mode=== :regression
+    @test CPPLS.gamma(spec) == 0.5
+    @test CPPLS.ncomponents(spec) == 2
+    @test CPPLS.analysis_mode(spec) === :regression
 
     tuned = CPPLS.CPPLSModel(
         ncomponents = 3,
@@ -288,6 +311,9 @@ end
     @test tuned.gamma == (0.2, 0.8)
     @test tuned.center_X === false
     @test tuned.analysis_mode=== :discriminant
+    @test CPPLS.gamma(tuned) == (0.2, 0.8)
+    @test CPPLS.ncomponents(tuned) == 3
+    @test CPPLS.analysis_mode(tuned) === :discriminant
 
     @test_throws ArgumentError CPPLS.CPPLSModel(ncomponents = 0)
     @test_throws ArgumentError CPPLS.CPPLSModel(analysis_mode=:unsupported)

@@ -92,8 +92,8 @@ of `Real` and/or 2-tuples, returns the vector length (number of candidates).
 
 Type stability tested: 03/25/2026
 """
-gamma_search_candidate_count(::Real) = 1
-gamma_search_candidate_count(::NTuple{2, <:Real}) = 1
+gamma_search_candidate_count(::Real) = 1  # COV_EXCL_LINE
+gamma_search_candidate_count(::NTuple{2, <:Real}) = 1  # COV_EXCL_LINE
 gamma_search_candidate_count(
     gamma::AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}
 ) = length(gamma)

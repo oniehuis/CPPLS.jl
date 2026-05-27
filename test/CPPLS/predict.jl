@@ -140,6 +140,7 @@ end
 
     preds = CPPLS.predict(cpplsfit, X, 1)
     @test_throws ArgumentError CPPLS.predictclasses(cpplsfit, preds)
+    @test_throws ArgumentError CPPLS.class_response_columns(cpplsfit)
 end
 
 @testset "project centers inputs before applying R" begin

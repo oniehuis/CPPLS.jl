@@ -250,10 +250,12 @@ concatenate the stored  `permutation_scores` vectors before passing them to
     permutation sequences and therefore to a biased null distribution.
 
 When the focus shifts from global performance to potentially problematic samples,
-[`outlierscan`](@ref) can be used as a follow-up diagnostic. By default it uses the
-same fold-local inverse-frequency weighting rule as `cvda` and `permda`, although you can
-still override that behavior with a custom `obs_weight_fn` or disable it by passing
-`obs_weight_fn=nothing`.
+[`outlierscan`](@ref) can be used as a follow-up diagnostic. By default it uses a single
+fixed outer partition, matching ordinary cross-validation. For repeated random holdouts,
+set `reshuffle_outer_folds=true` and increase `num_outer_folds_repeats`. The same
+fold-local inverse-frequency weighting rule as `cvda` and `permda` is used by default,
+although you can still override that behavior with a custom `obs_weight_fn` or disable it
+by passing `obs_weight_fn=nothing`.
 
 ```@example crossvalidation
 outlier_scan = outlierscan(
@@ -265,6 +267,7 @@ outlier_scan = outlierscan(
     num_outer_folds_repeats=100,
     num_inner_folds=4,
     num_inner_folds_repeats=4,
+    reshuffle_outer_folds=true,
     rng=MersenneTwister(54321),
     verbose=false,
 )

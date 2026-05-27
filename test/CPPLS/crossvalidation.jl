@@ -449,6 +449,7 @@ end
             spec = spec,
             fit_kwargs = (;),
             obs_weight_fn = nothing,
+            weighted = false,
             num_outer_folds = 2,
             num_outer_folds_repeats = 2,
             num_inner_folds = 2,
@@ -460,6 +461,35 @@ end
 
     @test length(out_unweighted.n_tested) == size(CROSSVAL_X, 1)
     @test all(out_unweighted.n_flagged .≤ out_unweighted.n_tested)
+
+    fixed_weight_calls = Ref(0)
+    out_fixed = suppress_info() do
+        CPPLS.outlierscan(
+            CROSSVAL_X,
+            CROSSVAL_Y;
+            spec = CPPLS.CPPLSModel(
+                ncomponents = 2,
+                gamma = 0.5,
+                analysis_mode=:discriminant,
+            ),
+            fit_kwargs = (;),
+            obs_weight_fn = (X, Y; kwargs...) -> begin
+                fixed_weight_calls[] += 1
+                ones(size(X, 1))
+            end,
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 0,
+            num_inner_folds_repeats = 0,
+            select_ncomponents = false,
+            rng = CPPLS.MersenneTwister(112),
+            verbose = false,
+        )
+    end
+
+    @test length(out_fixed.n_tested) == size(CROSSVAL_X, 1)
+    @test all(out_fixed.n_flagged .≤ out_fixed.n_tested)
+    @test fixed_weight_calls[] == 2
 
     @test_throws MethodError CPPLS.outlierscan(
         CROSSVAL_X,

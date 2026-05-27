@@ -1389,80 +1389,40 @@ function nestedcvperm(
 end
 
 """
-    outlierscan(
-        X::AbstractMatrix{<:Real}, 
-        Y::AbstractMatrix{<:Real};
-        spec::CPPLSModel,
-        fit_kwargs::NamedTuple=(;),
-        obs_weight_fn::Union{Function, Nothing}=nothing,
-        num_outer_folds::Integer=8,
-        num_outer_folds_repeats::Integer=10 * num_outer_folds,
-        num_inner_folds::Integer=7,
-        num_inner_folds_repeats::Integer=num_inner_folds,
-        reshuffle_outer_folds::Bool=true,
-        rng::AbstractRNG=Random.GLOBAL_RNG,
-        verbose::Bool=true
-    )
+    outlierscan(X, Y; spec, fit_kwargs=(;), obs_weight_fn=default_da_obs_weight_fn,
+                weighted=true, num_outer_folds=5,
+                num_outer_folds_repeats=num_outer_folds, num_inner_folds=4,
+                num_inner_folds_repeats=num_inner_folds,
+                select_ncomponents=true, reshuffle_outer_folds=false, ...)
+    outlierscan(X, sample_labels::AbstractCategoricalArray; spec, fit_kwargs=(;),
+                obs_weight_fn=default_da_obs_weight_fn, weighted=true,
+                num_outer_folds=5, num_outer_folds_repeats=num_outer_folds,
+                num_inner_folds=4, num_inner_folds_repeats=num_inner_folds,
+                select_ncomponents=true, reshuffle_outer_folds=false, ...)
 
-Run repeated nested cross-validation for discriminant analysis and count how often each
-sample is tested and misclassified. This is a diagnostic companion to `nestedcv`, not a
-replacement for it: the goal is to identify samples that repeatedly fail when held out,
-which can be useful when screening for mislabeled, contaminated, atypical, or otherwise
-problematic observations.
+Run discriminant-analysis CV, optionally repeated, and count how often each sample is flagged.
+The response must be an `AbstractCategoricalArray` of class labels or a pure one-hot
+class-indicator matrix; mixed response blocks with additional continuous columns are not
+supported here.
 
-Unlike `nestedcv`, this routine fixes the cross-validation callbacks internally by using
-the bundle returned by `CPPLS.cv_classification()`. On each outer split it selects the 
-number of latent variables by repeated inner cross-validation, predicts the held-out 
-samples, and records which of those samples were misclassified. Across repeats, each sample
-accumulates a test count and a misclassification count.
+`num_outer_folds` controls the size of each held-out test set. With the default
+`num_outer_folds=5`, each outer split trains on about four fifths of the samples and
+predicts the remaining fifth. With the default `reshuffle_outer_folds=false`, one outer
+partition is reused and `num_outer_folds_repeats=num_outer_folds`, so the default is the
+usual single 5-fold pass in which each fold serves once as the test set.
 
-This method expects discriminant-analysis settings, so `spec.analysis_mode` must be
-`:discriminant` and `Y` must be a one-hot response matrix. Stratification is derived
-automatically from `Y` via `sampleclasses(Y)`.
+Set `reshuffle_outer_folds=true` to run repeated random outer holdouts. In that mode,
+`outlierscan` draws a fresh outer partition for every repeat and uses one held-out fold
+from that partition. Larger repeat counts are useful when the goal is to estimate how
+consistently each sample is misclassified; for example,
+`num_outer_folds_repeats=10*num_outer_folds` gives each sample about ten expected
+held-out predictions. Exact per-sample counts are returned in `n_tested`.
 
-Arguments
-- `X`: predictor matrix with one row per sample.
-- `Y`: one-hot response matrix with one row per sample and one column per class.
-
-Keyword arguments
-- `spec`: CPPLS model specification used for every fit. During inner optimization, the
-    routine evaluates component counts `1:spec.ncomponents`.
-- `fit_kwargs`: additional keyword arguments forwarded to `fit`. Entries tied to the
-    sample axis, namely `obs_weights`, `samplelabels`, `sampleclasses`, and `Yadd`,
-    are subset automatically to the current training split. If
-    `responselabels` are not supplied, they are inferred from the number of columns in
-    `Y`.
-- `obs_weight_fn`: callback for fold-local observation weights. By default this is
-    `default_da_obs_weight_fn`, which applies `invfreqweights(sampleclasses(Y_train))`
-    inside each outer or inner training split, matching `cvda` and `permda`. It is
-    called as `obs_weight_fn(X_train, Y_train; sample_indices=..., fit_kwargs=...,
-    spec=...)` and must return either `nothing` or an `AbstractVector` of nonnegative
-    finite weights of length `size(X_train, 1)`. These weights are multiplied
-    elementwise with any fixed `obs_weights` present in `fit_kwargs`. Pass
-    `obs_weight_fn=nothing` to disable fold-local weighting.
-- `num_outer_folds`: number of folds in each outer partition.
-- `num_outer_folds_repeats`: number of outer-fold evaluations to run. With the default
-    `reshuffle_outer_folds=true`, new outer partitions are drawn between repeats so a
-    sample can be tested multiple times across different train/test splits.
-- `num_inner_folds`: number of folds used inside each outer training split to choose the
-    number of latent variables.
-- `num_inner_folds_repeats`: number of inner folds evaluated per outer split. This
-    cannot exceed `num_inner_folds`.
-- `reshuffle_outer_folds`: if `true`, regenerate the outer folds on each repeat; if
-    `false`, build one outer partition and reuse its folds. Since outlier scanning is
-    usually meant to probe sample stability across many different holdout sets, the
-    default is `true`.
-- `rng`: random-number generator used for fold construction and reshuffling.
-- `verbose`: if `true`, print progress for the outer and inner folds.
-
-Returns
-- `n_tested`: integer vector whose `i`th entry counts how often sample `i` appeared in an
-    outer test set.
-- `n_flagged`: integer vector whose `i`th entry counts how often sample `i` was
-    misclassified when it appeared in an outer test set.
-- `rate`: vector defined as `n_flagged ./ max.(1, n_tested)`. Larger values indicate
-    samples that are more frequently flagged when held out. A sample that was never
-    tested receives rate `0.0`.
+When `select_ncomponents=true`, each outer training set runs an inner CV to choose the
+component count from `1:spec.ncomponents`. `weighted` controls the class-balanced score
+used for that inner selection; final outlier flags are still raw per-sample
+misclassifications. Set `select_ncomponents=false` to use `spec.ncomponents` as a fixed
+count and skip the inner folds.
 
 See also
 [`CPPLSModel`](@ref CPPLS.CPPLSModel),
@@ -1514,11 +1474,13 @@ function outlierscan(
     spec::CPPLSModel,
     fit_kwargs::NamedTuple=(;),
     obs_weight_fn::Union{Function, Nothing}=default_da_obs_weight_fn,
-    num_outer_folds::T1=8,
-    num_outer_folds_repeats::T2=10 * num_outer_folds,
-    num_inner_folds::T3=7,
+    weighted::Bool=true,
+    num_outer_folds::T1=5,
+    num_outer_folds_repeats::T2=num_outer_folds,
+    num_inner_folds::T3=4,
     num_inner_folds_repeats::T4=num_inner_folds,
-    reshuffle_outer_folds::Bool=true,
+    select_ncomponents::Bool=true,
+    reshuffle_outer_folds::Bool=false,
     rng::AbstractRNG=Random.GLOBAL_RNG,
     verbose::Bool=true
 ) where {
@@ -1534,7 +1496,7 @@ function outlierscan(
     size(Y, 1) == n_samples || throw(DimensionMismatch(
         "Row count mismatch between X and Y"))
 
-    cb = cv_classification()
+    cb = cv_classification(; weighted=weighted)
     strata = sampleclasses(Y)
 
     n_tested = zeros(Int, n_samples)
@@ -1543,6 +1505,12 @@ function outlierscan(
     reshuffle_outer_folds || num_outer_folds_repeats ≤ num_outer_folds || throw(
         ArgumentError("The number of outer fold repeats cannot exceed the number of " * 
             "outer folds unless reshuffle_outer_folds=true"))
+    if select_ncomponents
+        num_inner_folds_repeats > 0 || throw(ArgumentError(
+            "The number of inner folds must be greater than zero"))
+        num_inner_folds_repeats ≤ num_inner_folds || throw(ArgumentError(
+            "The number of inner fold repeats cannot exceed the number of inner folds"))
+    end
 
     fixed_folds = reshuffle_outer_folds ? nothing :
                   build_folds(n_samples, num_outer_folds, rng; strata=strata)
@@ -1574,10 +1542,14 @@ function outlierscan(
         fold_kwargs = ensure_response_labels(fold_kwargs, Y_train)
         inner_strata = strata[train_indices]
 
-        best_k = optimize_num_latent_variables(X_train, Y_train, spec.ncomponents,
-            num_inner_folds, num_inner_folds_repeats, spec, base_fold_kwargs,
-            obs_weight_fn, cb.score_fn, cb.predict_fn, cb.select_fn, rng, verbose;
-            strata=inner_strata, sample_indices=train_indices)
+        best_k = if select_ncomponents
+            optimize_num_latent_variables(X_train, Y_train, spec.ncomponents,
+                num_inner_folds, num_inner_folds_repeats, spec, base_fold_kwargs,
+                obs_weight_fn, cb.score_fn, cb.predict_fn, cb.select_fn, rng, verbose;
+                strata=inner_strata, sample_indices=train_indices)
+        else
+            spec.ncomponents
+        end
 
         spec_k = with_n_components(spec, best_k)
         final_model = fit(spec_k, X_train, Y_train; fold_kwargs...)
@@ -1607,16 +1579,46 @@ Convert categorical sample classes to one-hot form and forward to `outlierscan`.
 function outlierscan(
     X::AbstractMatrix{<:Real},
     sampleclasses::AbstractCategoricalArray{T, 1, R, V, C, U};
-    kwargs...
+    spec::CPPLSModel,
+    fit_kwargs::NamedTuple=(;),
+    obs_weight_fn::Union{Function, Nothing}=default_da_obs_weight_fn,
+    weighted::Bool=true,
+    num_outer_folds::T1=5,
+    num_outer_folds_repeats::T2=num_outer_folds,
+    num_inner_folds::T3=4,
+    num_inner_folds_repeats::T4=num_inner_folds,
+    select_ncomponents::Bool=true,
+    reshuffle_outer_folds::Bool=false,
+    rng::AbstractRNG=Random.GLOBAL_RNG,
+    verbose::Bool=true
 ) where {
     T,
     R,
     V,
     C,
-    U
+    U,
+    T1<:Integer,
+    T2<:Integer,
+    T3<:Integer,
+    T4<:Integer
 }
     Y, _ = onehot(sampleclasses)
-    outlierscan(X, Y; kwargs...)
+    outlierscan(
+        X,
+        Y;
+        spec=spec,
+        fit_kwargs=fit_kwargs,
+        obs_weight_fn=obs_weight_fn,
+        weighted=weighted,
+        num_outer_folds=num_outer_folds,
+        num_outer_folds_repeats=num_outer_folds_repeats,
+        num_inner_folds=num_inner_folds,
+        num_inner_folds_repeats=num_inner_folds_repeats,
+        select_ncomponents=select_ncomponents,
+        reshuffle_outer_folds=reshuffle_outer_folds,
+        rng=rng,
+        verbose=verbose,
+    )
 end
 
 """

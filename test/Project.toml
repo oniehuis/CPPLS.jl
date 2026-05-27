@@ -11,7 +11,7 @@ Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 [compat]
 CategoricalArrays = "0.10, 1"
 Coverage = "1"
-Makie = "0.24"
+Makie = "0.23, 0.24"
 PlotlyJS = "0.18"
 StatsAPI = "1"
 SafeTestsets = "0.1"

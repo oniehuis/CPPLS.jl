@@ -22,7 +22,7 @@ PlotlyJSExtension = "PlotlyJS"
 
 [compat]
 CategoricalArrays = "0.10, 1"
-Makie = "0.24"
+Makie = "0.23, 0.24"
 Optim = "1, 2"
 PlotlyJS = "0.18"
 Statistics = "1"

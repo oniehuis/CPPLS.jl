@@ -17,6 +17,7 @@ include("CPPLS/cca.jl")
 include("CPPLS/fit.jl")
 include("CPPLS/fit_light.jl")
 include("CPPLS/predict.jl")
+include("CPPLS/scorecenters.jl")
 include("CPPLS/metrics.jl")
 include("CPPLS/crossvalidation.jl")
 
@@ -56,8 +57,16 @@ export residuals
 export responselabels
 export rhos
 export sampleclasses
+export sampleindices
 export samplelabels
+export ScoreCenters
+export ScoreRepresentatives
+export representativedistances
+export representativescores
+export scorecenter
+export scorecenters
 export scoreplot
+export scorerepresentatives
 export xmean
 export xstd
 export xscores

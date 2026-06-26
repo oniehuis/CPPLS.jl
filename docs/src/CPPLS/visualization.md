@@ -225,8 +225,52 @@ default choice for publication-style static figures, whereas Plotly is especiall
 for exploratory inspection of scores because sample identities and exact coordinates are
 available interactively.
 
+## Score Centers And Representatives
+
+`scorecenters` summarizes groups in score space. With a fitted model, the function uses
+the stored training scores, sample classes, and sample labels:
+
+```julia
+sc = scorecenters(mf; comps=1:2, center=:median)
+scorecenter(sc, "major")
+sampleindices(sc, "major")
+samplelabels(sc, "major")
+```
+
+The lower-level method accepts any score matrix, including projected scores for new
+samples:
+
+```julia
+heldout_scores = project(mf, Xheldout)
+sc = scorecenters(heldout_scores, heldout_classes;
+    samplelabels=heldout_labels,
+    comps=1:2,
+)
+```
+
+`scorerepresentatives` selects the samples closest to the corresponding class center in
+the selected score components. Distances are Euclidean.
+
+```julia
+sr = scorerepresentatives(mf; comps=1:2, center=:median, n=1)
+samplelabels(sr, "major")
+representativescores(sr, "major")
+representativedistances(sr, "major")
+```
+
 ## API
 
 ```@docs
 CPPLS.scoreplot
+CPPLS.ScoreCenters
+CPPLS.ScoreRepresentatives
+CPPLS.scorecenters
+CPPLS.scorerepresentatives
+CPPLS.scorecenter
+CPPLS.sampleindices(::CPPLS.ScoreCenters, ::Any)
+CPPLS.samplelabels(::CPPLS.ScoreCenters, ::Any)
+CPPLS.sampleindices(::CPPLS.ScoreRepresentatives, ::Any)
+CPPLS.samplelabels(::CPPLS.ScoreRepresentatives, ::Any)
+CPPLS.representativescores
+CPPLS.representativedistances
 ```

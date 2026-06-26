@@ -33,6 +33,10 @@ end
     include(joinpath("CPPLS", "predict.jl"))
 end
 
+@testset "CPPLS/scorecenters" begin
+    include(joinpath("CPPLS", "scorecenters.jl"))
+end
+
 @testset "CPPLS/cca" begin
     include(joinpath("CPPLS", "cca.jl"))
 end

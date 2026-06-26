@@ -129,6 +129,13 @@ and analysis_mode.
 abstract type AbstractCPPLSFit end
 
 """
+    ncomponents(fit::AbstractCPPLSFit)
+
+Return the number of latent components stored in a fitted CPPLS model.
+"""
+ncomponents(fit::AbstractCPPLSFit) = size(fit.B, 3)
+
+"""
     coef(fit::AbstractCPPLSFit)
     coef(fit::AbstractCPPLSFit, ncomponents::Integer)
 

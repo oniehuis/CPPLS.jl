@@ -31,6 +31,8 @@ export CPPLSFitLight
 export CPPLSModel
 export coef
 export cvda
+export decodeclasses
+export decodeonehot
 export cvreg
 export fit
 export fitted

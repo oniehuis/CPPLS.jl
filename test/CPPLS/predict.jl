@@ -34,7 +34,7 @@
     @test_throws DimensionMismatch CPPLS.predict(cppls, X, 3)
 end
 
-@testset "onehot converts summed predictions to labels" begin
+@testset "decodeonehot converts summed predictions to labels" begin
     B = ones(Float64, 1, 2, 1)
     X_mean = [0.0]
     X_std = [1.0]
@@ -67,7 +67,7 @@ end
         expected_one_hot[row, label] = 1
     end
 
-    result = CPPLS.onehot(cppls, predictions)
+    result = CPPLS.decodeonehot(cppls, predictions)
     @test result == expected_one_hot
 end
 
@@ -92,10 +92,34 @@ end
         -0.5 0.4
     ]
 
-    expected = CPPLS.onehot(cppls, CPPLS.predict(cppls, X, 2))
+    expected = CPPLS.decodeonehot(cppls, CPPLS.predict(cppls, X, 2))
     result = CPPLS.onehot(cppls, X, 2)
 
     @test result == expected
+end
+
+@testset "classification helpers require explicit components and decode tensors explicitly" begin
+    model = CPPLS.CPPLSModel(
+        gamma = 0.5,
+        ncomponents = 1,
+        analysis_mode = :discriminant,
+    )
+    X = Float64[
+        1 0
+        0 1
+        1 1
+        2 3
+    ]
+    labels = categorical(["red", "blue", "red", "blue"])
+    cpplsfit = CPPLS.fit(model, X, labels)
+    preds = CPPLS.predict(cpplsfit, X, 1)
+
+    @test_throws MethodError CPPLS.onehot(cpplsfit, X)
+    @test_throws MethodError CPPLS.predictclasses(cpplsfit, X)
+    @test_throws MethodError CPPLS.onehot(cpplsfit, preds)
+    @test_throws MethodError CPPLS.predictclasses(cpplsfit, preds)
+    @test CPPLS.onehot(cpplsfit, X, 1) == CPPLS.decodeonehot(cpplsfit, preds)
+    @test CPPLS.predictclasses(cpplsfit, X, 1) == CPPLS.decodeclasses(cpplsfit, preds)
 end
 
 @testset "predictclasses maps response labels" begin
@@ -116,10 +140,10 @@ end
     preds = CPPLS.predict(cpplsfit, X, 1)
     classlabels = CPPLS.responselabels(cpplsfit)[CPPLS.class_response_columns(cpplsfit)]
     expected = classlabels[
-        CPPLS.sampleclasses(CPPLS.onehot(cpplsfit, preds)),
+        CPPLS.sampleclasses(CPPLS.decodeonehot(cpplsfit, preds)),
     ]
 
-    @test CPPLS.predictclasses(cpplsfit, preds) == expected
+    @test CPPLS.decodeclasses(cpplsfit, preds) == expected
     @test CPPLS.predictclasses(cpplsfit, X, 1) == expected
     @test_throws MethodError CPPLS.sampleclasses(cpplsfit, preds)
 end
@@ -139,7 +163,7 @@ end
     cpplsfit = CPPLS.fit(model, X, y)
 
     preds = CPPLS.predict(cpplsfit, X, 1)
-    @test_throws ArgumentError CPPLS.predictclasses(cpplsfit, preds)
+    @test_throws ArgumentError CPPLS.decodeclasses(cpplsfit, preds)
     @test_throws ArgumentError CPPLS.class_response_columns(cpplsfit)
 end
 

@@ -354,7 +354,7 @@ end
     predictions = zeros(Float64, 4, 3, 1)
     predictions[:, 1:2, 1] .= Yclass
     predictions[:, 3, 1] .= 100.0
-    @test CPPLS.predictclasses(mf, predictions) == sampleclasses
+    @test CPPLS.decodeclasses(mf, predictions) == sampleclasses
     @test_throws MethodError CPPLS.sampleclasses(mf, predictions)
 
     @test_throws ArgumentError CPPLS.fit(

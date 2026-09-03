@@ -8,8 +8,8 @@ After fitting a CPPLS model with [`fit`](@ref), you can apply it in two main way
 
 For discriminant models, CPPLS provides helper functions to convert raw prediction arrays 
 into class assignments.
-[`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})) and
-[`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
+[`decodeonehot`](@ref CPPLS.decodeonehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})) and
+[`decodeclasses`](@ref CPPLS.decodeclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
 perform these conversions when you already have the output of [`predict`](@ref). 
 For convenience, 
 [`onehot`](@ref CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)) 
@@ -138,7 +138,7 @@ Let us now see what the model predicts:
 
 ```@example project
 heldout_predictions = predict(mf, X_holdout)
-predictclasses(mf, heldout_predictions)
+decodeclasses(mf, heldout_predictions)
 ```
 
 As we can see, the predicted labels match the classes from which the samples were
@@ -146,7 +146,7 @@ drawn. In this example, `heldout_predictions` is a three-dimensional array whose
 third dimension indexes the number of components used in the prediction.
 
 Instead of calling [`predict`](@ref) and
-[`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
+[`decodeclasses`](@ref CPPLS.decodeclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3}))
 successively, we could have used the convenience wrapper
 [`predictclasses`](@ref CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)).
 
@@ -158,16 +158,16 @@ This is often more convenient in discriminant-analysis workflows than working wi
 full prediction tensor.
 
 ```@example project
-predictclasses(mf, X_holdout)
+predictclasses(mf, X_holdout, ncomponents(mf))
 ```
 
 ## API
 
 ```@docs
-CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})
+CPPLS.decodeonehot(::CPPLS.AbstractCPPLSFit, ::AbstractArray{<:Real, 3})
 CPPLS.onehot(::CPPLS.AbstractCPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 CPPLS.predict
 CPPLS.project
-CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})
+CPPLS.decodeclasses(::CPPLS.CPPLSFit, ::AbstractArray{<:Real,3})
 CPPLS.predictclasses(::CPPLS.CPPLSFit, ::AbstractMatrix{<:Real}, ::Integer)
 ```

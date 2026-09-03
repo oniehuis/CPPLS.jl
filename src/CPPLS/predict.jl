@@ -66,7 +66,7 @@ end
     onehot(
         m::AbstractCPPLSFit,
         X::AbstractMatrix{<:Real},
-        ncomponents::Integer=size(coefall(m), 3)
+        ncomponents::Integer
     ) -> Matrix{Int}
 
 Generate one-hot encoded class predictions from a fitted CPPLS model and predictors `X`.
@@ -94,20 +94,20 @@ julia> mf = fit(m, X, classes);
 
 julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia> onehot(mf, Xnew) == [1 0; 0 1]
+julia> onehot(mf, Xnew, ncomponents(mf)) == [1 0; 0 1]
 true
 ```
 """
 function onehot(
     mf::AbstractCPPLSFit,
     X::AbstractMatrix{<:Real},
-    ncomponents::Integer=size(coefall(mf), 3)
+    ncomponents::Integer
 )
-    onehot(mf, predict(mf, X, ncomponents))
+    decodeonehot(mf, predict(mf, X, ncomponents))
 end
 
 """
-    onehot(
+    decodeonehot(
         mf::AbstractCPPLSFit,
         predictions::AbstractArray{<:Real, 3}
     ) -> Matrix{Int}
@@ -139,11 +139,11 @@ julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> raw = predict(mf, Xnew);
 
-julia> onehot(mf, raw) ≈ [1 0; 0 1]
+julia> decodeonehot(mf, raw) ≈ [1 0; 0 1]
 true
 ```
 """
-function onehot(
+function decodeonehot(
   mf::AbstractCPPLSFit, 
   predictions::AbstractArray{<:Real, 3}
 )
@@ -175,7 +175,7 @@ function class_response_columns(mf::CPPLSFit)
     ))
 end
 
-function onehot(
+function decodeonehot(
     mf::CPPLSFit,
     predictions::AbstractArray{<:Real, 3}
 )
@@ -192,7 +192,7 @@ end
     predictclasses(
         mf::CPPLSFit,
         X::AbstractMatrix{<:Real},
-        ncomponents::Integer=size(coefall(mf), 3)
+        ncomponents::Integer
     ) -> AbstractVector
 
 Generate predicted class labels from a discriminant CPPLS model and predictors `X`.
@@ -218,20 +218,20 @@ julia> mf = fit(m, X, classes);
 
 julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
-julia> predictclasses(mf, Xnew) == ["major", "minor"]
+julia> predictclasses(mf, Xnew, ncomponents(mf)) == ["major", "minor"]
 true
 ```
 """
 function predictclasses(
     mf::CPPLSFit,
     X::AbstractMatrix{<:Real},
-    ncomponents::Integer=size(coefall(mf), 3)
+    ncomponents::Integer
 )
-    predictclasses(mf, predict(mf, X, ncomponents))
+    decodeclasses(mf, predict(mf, X, ncomponents))
 end
 
 """
-    predictclasses(
+    decodeclasses(
         mf::CPPLSFit,
         predictions::AbstractArray{<:Real, 3}
     ) -> AbstractVector
@@ -265,11 +265,11 @@ julia> Xnew = randn(MersenneTwister(1234), 2, size(X, 2));
 
 julia> raw = predict(mf, Xnew);
 
-julia> predictclasses(mf, raw) == ["major", "minor"]
+julia> decodeclasses(mf, raw) == ["major", "minor"]
 true
 ```
 """
-function predictclasses(
+function decodeclasses(
     mf::CPPLSFit,
     predictions::AbstractArray{<:Real,3}
 )
@@ -281,7 +281,7 @@ function predictclasses(
 
     classcols = class_response_columns(mf)
     classlabels = responselabels(mf)[classcols]
-    classlabels[sampleclasses(onehot(mf, predictions))]
+    classlabels[sampleclasses(decodeonehot(mf, predictions))]
 end
 
 """

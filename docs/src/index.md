@@ -20,18 +20,15 @@ predictors.
 
 ## Installation
 
-The package is not registered, so install it directly from GitHub:
+Julia 1.9 or later is required. Install the development version from GitHub in
+your Julia environment:
 
-```
-julia> ]
-pkg> add https://github.com/oniehuis/CPPLS.jl
+```julia
+using Pkg
+Pkg.add(url="https://github.com/oniehuis/CPPLS.jl", rev="main")
 ```
 
-After the installation finishes you can load it in the Julia REPL with:
-
-```
-julia> using CPPLS
-```
+Then load the package with `using CPPLS`.
 
 ## Scope
 
